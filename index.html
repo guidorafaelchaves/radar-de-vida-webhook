@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Radar de Vida — Webhook Dashboard v0.1</title>
+  <style>
+    :root {
+      --bg:#07110d; --panel:#0d1c16; --card:#12291f; --line:rgba(184,255,218,.14);
+      --text:#effff7; --muted:#a6c9b9; --accent:#50f0a0; --accent2:#77d6ff; --danger:#ff6b6b; --warn:#ffd166;
+      --radius:22px; --shadow:0 20px 60px rgba(0,0,0,.32);
+      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --sans:Inter,system-ui,Segoe UI,sans-serif;
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:var(--sans);color:var(--text);background:radial-gradient(circle at 20% 0,rgba(80,240,160,.13),transparent 32%),linear-gradient(180deg,#06100c,#07110d 50%,#050806)}
+    .wrap{max-width:1280px;margin:0 auto;padding:28px}
+    header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+    h1{font-size:34px;line-height:1.05;margin:0 0 8px;letter-spacing:-1px} h2{margin:0 0 12px} p{margin-top:0}
+    .muted{color:var(--muted);line-height:1.5}.grid{display:grid;gap:16px}.cols4{grid-template-columns:repeat(4,1fr)}.cols2{grid-template-columns:repeat(2,1fr)}
+    .card{background:linear-gradient(180deg,rgba(18,41,31,.98),rgba(13,28,22,.96));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+    .metric{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:18px;padding:18px}.metric b{font-size:28px;display:block;margin-bottom:4px}.metric span{color:var(--muted);font-size:13px}
+    button,input,textarea{font-family:inherit} input,textarea{width:100%;padding:13px 14px;border-radius:16px;border:1px solid var(--line);background:#07130f;color:var(--text);outline:none}
+    textarea{min-height:100px;resize:vertical}.btn{border:0;border-radius:15px;padding:12px 15px;background:linear-gradient(135deg,var(--accent),#b2ffd6);color:#06100c;font-weight:900;cursor:pointer}.btn.secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line)}.btn.danger{background:rgba(255,107,107,.12);color:#ffdede;border:1px solid rgba(255,107,107,.35)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.status{font-family:var(--mono);font-size:12px;color:var(--muted)}
+    .event{display:grid;grid-template-columns:130px 1fr auto;gap:14px;padding:14px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);margin-bottom:10px}.time{font-family:var(--mono);font-size:12px;color:var(--muted)}.text{font-weight:800;margin-bottom:7px}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:11px;padding:5px 8px;border-radius:999px;background:rgba(80,240,160,.09);border:1px solid rgba(80,240,160,.18);color:#dfffee}.chip.blue{background:rgba(119,214,255,.08);border-color:rgba(119,214,255,.2)}
+    .money{font-family:var(--mono);font-weight:900;color:var(--accent);white-space:nowrap}.listItem{padding:14px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);margin-bottom:10px}
+    .bar{height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;width:var(--w);background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    pre{white-space:pre-wrap;background:#06100c;border:1px solid var(--line);border-radius:16px;padding:14px;max-height:380px;overflow:auto;color:#dfffee}
+    .notice{border-left:4px solid var(--accent);background:rgba(80,240,160,.07);border-radius:14px;padding:12px 14px;color:#dfffee}
+    @media(max-width:900px){.cols4,.cols2{grid-template-columns:1fr}.event{grid-template-columns:1fr}header{display:block}.wrap{padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Radar de Vida — Webhook</h1>
+        <p class="muted">Painel conectado ao backend local. Mensagens recebidas pelo webhook aparecem aqui depois da análise.</p>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="loadData()">Atualizar</button>
+        <button class="btn secondary" onclick="exportData()">Exportar</button>
+        <button class="btn danger" onclick="clearAll()">Limpar</button>
+      </div>
+    </header>
+
+    <div class="notice">
+      Servidor esperado: <b id="apiBaseLabel"></b>. Teste rápido: escreva uma frase abaixo e envie para <b>/api/test-message</b>.
+    </div>
+
+    <div style="height:16px"></div>
+
+    <section class="grid cols2">
+      <div class="card">
+        <h2>Teste local de mensagem</h2>
+        <textarea id="testText" placeholder="Ex.: gastei 61 no iFood porque estava exausto depois da audiência"></textarea>
+        <div style="height:10px"></div>
+        <div class="row">
+          <button class="btn" onclick="sendTest()">Enviar teste</button>
+          <button class="btn secondary" onclick="example()">Exemplo</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Status</h2>
+        <div id="status" class="status">Carregando...</div>
+        <pre id="lastResult">—</pre>
+      </div>
+    </section>
+
+    <div style="height:16px"></div>
+
+    <section class="grid cols4" id="metrics"></section>
+
+    <div style="height:16px"></div>
+
+    <section class="grid cols2">
+      <div class="card">
+        <h2>Mapa Vivo</h2>
+        <div id="cats"></div>
+      </div>
+      <div class="card">
+        <h2>Padrões</h2>
+        <div id="patterns"></div>
+      </div>
+    </section>
+
+    <div style="height:16px"></div>
+
+    <section class="card">
+      <h2>Linha do tempo</h2>
+      <div id="timeline"></div>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = location.origin;
+    let cache = {records:[], emergentCategories:[], patterns:[]};
+
+    document.getElementById("apiBaseLabel").textContent = API_BASE;
+
+    function brl(v){return (Number(v)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+    function dt(s){try{return new Date(s).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}catch{return s || "—"}}
+    function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+    async function loadData(){
+      const status = document.getElementById("status");
+      try{
+        const health = await fetch(API_BASE + "/health").then(r=>r.json());
+        const data = await fetch(API_BASE + "/api/records").then(r=>r.json());
+        cache = data;
+        status.textContent = JSON.stringify(health,null,2);
+        render();
+      }catch(e){
+        status.textContent = "Erro ao conectar: " + e.message;
+      }
+    }
+
+    async function sendTest(){
+      const text = document.getElementById("testText").value.trim();
+      if(!text) return alert("Digite uma mensagem.");
+      document.getElementById("lastResult").textContent = "Enviando...";
+      const res = await fetch(API_BASE + "/api/test-message", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({text, from:"teste-local", name:"Usuário Teste"})
+      });
+      const data = await res.json();
+      document.getElementById("lastResult").textContent = JSON.stringify(data,null,2);
+      document.getElementById("testText").value = "";
+      loadData();
+    }
+
+    function example(){
+      const arr = [
+        "gastei 61 no iFood porque estava exausto depois da audiência",
+        "dormi mal e acordei atrasado, peguei Uber de 28 reais",
+        "caminhei 35 minutos e fiquei mais calmo",
+        "recebi 1500 de honorários do cliente João",
+        "fiquei ansioso depois da reunião"
+      ];
+      document.getElementById("testText").value = arr[Math.floor(Math.random()*arr.length)];
+    }
+
+    function render(){
+      const records = cache.records || [];
+      const events = records.flatMap(r => (r.analysis?.eventos_detectados || []).map(e=>({...e, record:r})));
+      const expense = events.filter(e=>e.tipo==="financeiro").reduce((s,e)=>s+(Number(e.valor)||0),0);
+      const income = events.filter(e=>e.tipo==="receita").reduce((s,e)=>s+(Number(e.valor)||0),0);
+      const emotions = records.flatMap(r=>r.analysis?.emocoes_detectadas||[]).length;
+
+      document.getElementById("metrics").innerHTML = [
+        metric(records.length,"Registros","mensagens processadas"),
+        metric(brl(expense),"Despesas","gastos capturados"),
+        metric(brl(income),"Receitas","entradas capturadas"),
+        metric(emotions,"Emoções","menções detectadas")
+      ].join("");
+
+      document.getElementById("cats").innerHTML = renderCats(cache.emergentCategories || []);
+      document.getElementById("patterns").innerHTML = renderPatterns(cache.patterns || []);
+      document.getElementById("timeline").innerHTML = records.length ? records.map(renderRecord).join("") : `<div class="muted">Nenhum registro ainda.</div>`;
+    }
+
+    function metric(n,t,s){return `<div class="metric"><b>${esc(n)}</b><span>${esc(t)}<br>${esc(s)}</span></div>`}
+
+    function renderRecord(r){
+      const a = r.analysis || {};
+      const events = a.eventos_detectados || [];
+      const money = events.find(e=>e.valor);
+      const chips = [
+        events[0]?.tipo,
+        events[0]?.categoria_principal,
+        ...(a.tags||[]).slice(0,4),
+        ...(a.categorias_emergentes_candidatas||[]).map(c=>c.nome).slice(0,2)
+      ].filter(Boolean);
+      return `<div class="event">
+        <div class="time">${esc(dt(r.eventDateTime || r.createdAt))}<br>${esc(r.name || r.from || r.source)}</div>
+        <div>
+          <div class="text">${esc(r.originalText)}</div>
+          <div class="muted">${esc(a.resumo_curto || "")}</div>
+          <div class="chips" style="margin-top:8px">${chips.map((c,i)=>`<span class="chip ${i<2?"blue":""}">${esc(c)}</span>`).join("")}</div>
+        </div>
+        <div>${money?`<span class="money">${brl(money.valor)}</span>`:""}</div>
+      </div>`;
+    }
+
+    function renderCats(cats){
+      if(!cats.length) return `<div class="muted">Sem categorias emergentes ainda.</div>`;
+      return cats.map(c=>{
+        const pct = Math.round((c.confianca_media||0)*100);
+        return `<div class="listItem">
+          <b>${esc(c.nome)}</b><br><span class="muted">${esc(c.categoria_mae)} · ${esc(c.status)} · ${c.ocorrencias}x</span>
+          <div class="bar" style="--w:${pct}%"><i></i></div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderPatterns(patterns){
+      if(!patterns.length) return `<div class="muted">Sem padrões suficientes ainda.</div>`;
+      return patterns.map(p=>`<div class="listItem"><b>${esc(p.nome)}</b><br><span class="muted">${esc(p.status)} · ${p.ocorrencias}x · confiança ${Math.round((p.confianca||0)*100)}%</span></div>`).join("");
+    }
+
+    async function clearAll(){
+      if(!confirm("Apagar todos os registros do backend local?")) return;
+      await fetch(API_BASE + "/api/records", {method:"DELETE"});
+      loadData();
+    }
+
+    function exportData(){
+      window.open(API_BASE + "/api/export", "_blank");
+    }
+
+    loadData();
+    setInterval(loadData, 8000);
+  </script>
+</body>
+</html>

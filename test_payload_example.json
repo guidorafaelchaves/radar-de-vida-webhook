@@ -1,0 +1,39 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15551234567",
+              "phone_number_id": "PHONE_NUMBER_ID"
+            },
+            "contacts": [
+              {
+                "profile": {
+                  "name": "Guido"
+                },
+                "wa_id": "5587999999999"
+              }
+            ],
+            "messages": [
+              {
+                "from": "5587999999999",
+                "id": "wamid.TESTE123",
+                "timestamp": "1778216400",
+                "text": {
+                  "body": "gastei 61 no iFood porque estava exausto depois da audiência"
+                },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
