@@ -2,215 +2,2264 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Radar de Vida — Webhook Dashboard v0.1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radar de Vida — Cloud Completo v0.2</title>
   <style>
     :root {
-      --bg:#07110d; --panel:#0d1c16; --card:#12291f; --line:rgba(184,255,218,.14);
-      --text:#effff7; --muted:#a6c9b9; --accent:#50f0a0; --accent2:#77d6ff; --danger:#ff6b6b; --warn:#ffd166;
-      --radius:22px; --shadow:0 20px 60px rgba(0,0,0,.32);
-      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --sans:Inter,system-ui,Segoe UI,sans-serif;
+      --bg: #07110d;
+      --panel: #0d1c16;
+      --panel2: #10251d;
+      --card: #12291f;
+      --soft: #1a372b;
+      --line: rgba(184, 255, 218, 0.13);
+      --text: #effff7;
+      --muted: #a6c9b9;
+      --muted2: #77a08e;
+      --accent: #50f0a0;
+      --accent2: #77d6ff;
+      --warn: #ffd166;
+      --danger: #ff6b6b;
+      --good: #5cffb0;
+      --shadow: 0 24px 70px rgba(0,0,0,.35);
+      --radius: 22px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    *{box-sizing:border-box} body{margin:0;font-family:var(--sans);color:var(--text);background:radial-gradient(circle at 20% 0,rgba(80,240,160,.13),transparent 32%),linear-gradient(180deg,#06100c,#07110d 50%,#050806)}
-    .wrap{max-width:1280px;margin:0 auto;padding:28px}
-    header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
-    h1{font-size:34px;line-height:1.05;margin:0 0 8px;letter-spacing:-1px} h2{margin:0 0 12px} p{margin-top:0}
-    .muted{color:var(--muted);line-height:1.5}.grid{display:grid;gap:16px}.cols4{grid-template-columns:repeat(4,1fr)}.cols2{grid-template-columns:repeat(2,1fr)}
-    .card{background:linear-gradient(180deg,rgba(18,41,31,.98),rgba(13,28,22,.96));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
-    .metric{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:18px;padding:18px}.metric b{font-size:28px;display:block;margin-bottom:4px}.metric span{color:var(--muted);font-size:13px}
-    button,input,textarea{font-family:inherit} input,textarea{width:100%;padding:13px 14px;border-radius:16px;border:1px solid var(--line);background:#07130f;color:var(--text);outline:none}
-    textarea{min-height:100px;resize:vertical}.btn{border:0;border-radius:15px;padding:12px 15px;background:linear-gradient(135deg,var(--accent),#b2ffd6);color:#06100c;font-weight:900;cursor:pointer}.btn.secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line)}.btn.danger{background:rgba(255,107,107,.12);color:#ffdede;border:1px solid rgba(255,107,107,.35)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.status{font-family:var(--mono);font-size:12px;color:var(--muted)}
-    .event{display:grid;grid-template-columns:130px 1fr auto;gap:14px;padding:14px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);margin-bottom:10px}.time{font-family:var(--mono);font-size:12px;color:var(--muted)}.text{font-weight:800;margin-bottom:7px}
-    .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:11px;padding:5px 8px;border-radius:999px;background:rgba(80,240,160,.09);border:1px solid rgba(80,240,160,.18);color:#dfffee}.chip.blue{background:rgba(119,214,255,.08);border-color:rgba(119,214,255,.2)}
-    .money{font-family:var(--mono);font-weight:900;color:var(--accent);white-space:nowrap}.listItem{padding:14px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);margin-bottom:10px}
-    .bar{height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;width:var(--w);background:linear-gradient(90deg,var(--accent),var(--accent2))}
-    pre{white-space:pre-wrap;background:#06100c;border:1px solid var(--line);border-radius:16px;padding:14px;max-height:380px;overflow:auto;color:#dfffee}
-    .notice{border-left:4px solid var(--accent);background:rgba(80,240,160,.07);border-radius:14px;padding:12px 14px;color:#dfffee}
-    @media(max-width:900px){.cols4,.cols2{grid-template-columns:1fr}.event{grid-template-columns:1fr}header{display:block}.wrap{padding:18px}}
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 20% 5%, rgba(80,240,160,.14), transparent 30%),
+        radial-gradient(circle at 80% 0%, rgba(119,214,255,.12), transparent 28%),
+        linear-gradient(180deg, #06100c 0%, #07110d 42%, #050806 100%);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+    }
+
+    button, input, textarea, select {
+      font-family: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: rgba(6,16,12,.82);
+      backdrop-filter: blur(16px);
+      padding: 22px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    main {
+      padding: 28px;
+      max-width: 1500px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 26px rgba(80,240,160,.24);
+      display: grid;
+      place-items: center;
+      color: #062017;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: 32px; letter-spacing: -1px; line-height: 1.05; }
+    h2 { font-size: 22px; letter-spacing: -.4px; }
+    h3 { font-size: 15px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    nav {
+      display: grid;
+      gap: 8px;
+      margin: 20px 0;
+    }
+
+    .navbtn {
+      border: 1px solid transparent;
+      color: var(--muted);
+      background: transparent;
+      text-align: left;
+      padding: 12px 13px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: .18s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbtn:hover { background: rgba(255,255,255,.04); color: var(--text); }
+    .navbtn.active {
+      background: linear-gradient(135deg, rgba(80,240,160,.16), rgba(119,214,255,.08));
+      border-color: rgba(80,240,160,.25);
+      color: var(--text);
+    }
+
+    .pill {
+      font-size: 11px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .sidebox {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.025);
+      border-radius: 18px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .sidebox strong { color: var(--accent); }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+
+    .card {
+      background: linear-gradient(180deg, rgba(18,41,31,.96), rgba(13,28,22,.94));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card.soft {
+      box-shadow: none;
+      background: rgba(255,255,255,.025);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      color: var(--text);
+      background: #07130f;
+      border: 1px solid rgba(184,255,218,.18);
+      border-radius: 16px;
+      outline: none;
+      padding: 13px 14px;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    textarea:focus, input:focus, select:focus {
+      border-color: rgba(80,240,160,.55);
+      box-shadow: 0 0 0 4px rgba(80,240,160,.08);
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 7px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .spaced {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 15px;
+      padding: 12px 15px;
+      color: #06100c;
+      background: linear-gradient(135deg, var(--accent), #b2ffd6);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .15s, filter .15s;
+    }
+
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+    .btn.secondary {
+      background: rgba(255,255,255,.055);
+      color: var(--text);
+      border: 1px solid var(--line);
+      font-weight: 700;
+    }
+
+    .btn.warn { background: linear-gradient(135deg, var(--warn), #fff2bd); }
+    .btn.danger { background: rgba(255,107,107,.14); color: #ffdede; border: 1px solid rgba(255,107,107,.35); }
+
+    .metric {
+      padding: 17px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.035);
+      border: 1px solid var(--line);
+      min-height: 110px;
+    }
+
+    .metric .n {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -.9px;
+      margin-bottom: 4px;
+    }
+
+    .metric .t {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .metric .s {
+      color: var(--muted2);
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+      gap: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .event .time {
+      color: var(--muted2);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .event .text {
+      font-weight: 750;
+      margin-bottom: 8px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(80,240,160,.09);
+      color: #c8ffe1;
+      border: 1px solid rgba(80,240,160,.16);
+    }
+
+    .chip.blue {
+      background: rgba(119,214,255,.08);
+      border-color: rgba(119,214,255,.17);
+      color: #d9f6ff;
+    }
+
+    .chip.warn {
+      background: rgba(255,209,102,.08);
+      border-color: rgba(255,209,102,.2);
+      color: #fff0bb;
+    }
+
+    .chip.red {
+      background: rgba(255,107,107,.08);
+      border-color: rgba(255,107,107,.2);
+      color: #ffdddd;
+    }
+
+    .money {
+      font-family: var(--mono);
+      font-weight: 900;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .muted { color: var(--muted); }
+    .muted2 { color: var(--muted2); }
+
+    .analysisBox {
+      white-space: pre-wrap;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #dfffee;
+      background: #06100c;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      padding: 14px;
+      overflow: auto;
+      max-height: 380px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .listItem {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--line);
+    }
+
+    .bar {
+      height: 10px;
+      background: rgba(255,255,255,.08);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 9px;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: var(--w, 20%);
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 999px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 16px;
+    }
+
+    .table th, .table td {
+      border-bottom: 1px solid var(--line);
+      padding: 11px 9px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .table th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .notice {
+      border-left: 4px solid var(--accent);
+      background: rgba(80,240,160,.07);
+      border-radius: 15px;
+      padding: 13px 15px;
+      color: #dfffee;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .notice.warn { border-left-color: var(--warn); background: rgba(255,209,102,.07); }
+    .notice.danger { border-left-color: var(--danger); background: rgba(255,107,107,.08); }
+
+    .small {
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .kbd {
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .footer-actions {
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, transparent, rgba(7,17,13,.96) 30%);
+      padding-top: 18px;
+      margin-top: 24px;
+    }
+
+    .empty {
+      border: 1px dashed rgba(184,255,218,.22);
+      border-radius: 18px;
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+      background: rgba(255,255,255,.02);
+    }
+
+    .progressRing {
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, #0d1c16 56%, transparent 57%),
+        conic-gradient(var(--accent) calc(var(--p, 50)*1%), rgba(255,255,255,.08) 0);
+      display: grid;
+      place-items: center;
+      margin: 10px auto;
+      border: 1px solid var(--line);
+    }
+
+    .progressRing b {
+      font-size: 26px;
+    }
+
+    .two-pane {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 16px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1.3fr .8fr .8fr auto;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 1000px) {
+      .app { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      main { padding: 18px; }
+      .hero, .grid.cols-2, .grid.cols-3, .grid.cols-4, .two-pane, .filters {
+        grid-template-columns: 1fr;
+      }
+      .event { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      aside, .noPrint { display: none !important; }
+      .app { display: block; }
+      body { background: white; color: black; }
+      .card, .metric, .listItem, .event { box-shadow: none; border-color: #ddd; background: white; color: black; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Radar de Vida — Webhook</h1>
-        <p class="muted">Painel conectado ao backend local. Mensagens recebidas pelo webhook aparecem aqui depois da análise.</p>
-      </div>
-      <div class="row">
-        <button class="btn" onclick="loadData()">Atualizar</button>
-        <button class="btn secondary" onclick="exportData()">Exportar</button>
-        <button class="btn danger" onclick="clearAll()">Limpar</button>
-      </div>
-    </header>
-
-    <div class="notice">
-      Servidor esperado: <b id="apiBaseLabel"></b>. Teste rápido: escreva uma frase abaixo e envie para <b>/api/test-message</b>.
-    </div>
-
-    <div style="height:16px"></div>
-
-    <section class="grid cols2">
-      <div class="card">
-        <h2>Teste local de mensagem</h2>
-        <textarea id="testText" placeholder="Ex.: gastei 61 no iFood porque estava exausto depois da audiência"></textarea>
-        <div style="height:10px"></div>
-        <div class="row">
-          <button class="btn" onclick="sendTest()">Enviar teste</button>
-          <button class="btn secondary" onclick="example()">Exemplo</button>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="logo">RV</div>
+        <div>
+          <h2 style="margin:0">Radar de Vida</h2>
+          <div class="subtitle">Laboratório Local v0.1</div>
         </div>
       </div>
-      <div class="card">
-        <h2>Status</h2>
-        <div id="status" class="status">Carregando...</div>
-        <pre id="lastResult">—</pre>
+
+      <p class="subtitle">
+        Transforme frases soltas em registros estruturados, categorias emergentes, padrões e insights sobre a vida cotidiana.
+      </p>
+
+      <nav id="nav"></nav>
+
+      <div class="sidebox">
+        <h3>Estado do radar</h3>
+        <div class="small muted">
+          Modo: <strong id="sideMode">—</strong><br />
+          Servidor: <strong id="sideServer">—</strong><br />
+          Registros: <strong id="sideCount">0</strong><br />
+          Categorias emergentes: <strong id="sideCats">0</strong><br />
+          Último registro: <span id="sideLast">—</span>
+        </div>
       </div>
-    </section>
 
-    <div style="height:16px"></div>
-
-    <section class="grid cols4" id="metrics"></section>
-
-    <div style="height:16px"></div>
-
-    <section class="grid cols2">
-      <div class="card">
-        <h2>Mapa Vivo</h2>
-        <div id="cats"></div>
+      <div class="sidebox">
+        <h3>Privacidade</h3>
+        <div class="small muted">
+          Esta versão pode trabalhar em modo local ou conectada ao backend do Render. A chave da OpenAI deve ficar no backend quando o painel estiver público.
+        </div>
       </div>
-      <div class="card">
-        <h2>Padrões</h2>
-        <div id="patterns"></div>
+
+      <div class="footer-actions noPrint">
+        <button class="btn secondary" onclick="syncFromServer(true)">Sincronizar servidor</button>
+        <div style="height:8px"></div>
+        <button class="btn secondary" onclick="exportJSON()">Exportar backup JSON</button>
+        <div style="height:8px"></div>
+        <button class="btn danger" onclick="resetAll()">Apagar tudo</button>
       </div>
-    </section>
+    </aside>
 
-    <div style="height:16px"></div>
+    <main>
+      <section id="view-dashboard" class="view active">
+        <div class="hero">
+          <div class="card">
+            <h1>Seu WhatsApp como radar da vida real</h1>
+            <p class="subtitle">
+              Cole ou digite registros como “gastei 52 no iFood porque estava cansado”.
+              O sistema organiza fatos, contexto, hipóteses, categorias emergentes e padrões.
+            </p>
+            <div class="row">
+              <button class="btn" onclick="go('capture')">Registrar agora</button>
+              <button class="btn secondary" onclick="syncFromServer(true)">Sincronizar cloud</button>
+              <button class="btn secondary" onclick="go('settings')">Configurações</button>
+              <button class="btn secondary" onclick="go('import')">Importar WhatsApp</button>
+            </div>
+          </div>
 
-    <section class="card">
-      <h2>Linha do tempo</h2>
-      <div id="timeline"></div>
-    </section>
+          <div class="card">
+            <div class="spaced">
+              <div>
+                <h2 style="margin-bottom:4px">Índice de clareza</h2>
+                <p class="subtitle">Estimativa local baseada em registros, categorias, hábitos e padrões.</p>
+              </div>
+              <span class="pill">experimental</span>
+            </div>
+            <div class="progressRing" style="--p:50" id="clarityRing"><b id="clarityScore">50</b></div>
+            <p class="subtitle" id="clarityText" style="text-align:center;margin:0">Comece registrando eventos reais do seu dia.</p>
+          </div>
+        </div>
+
+        <div class="grid cols-4" id="metrics"></div>
+
+        <div style="height:18px"></div>
+
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="spaced">
+              <h2>Hoje</h2>
+              <span class="pill" id="todayLabel"></span>
+            </div>
+            <div id="todaySummary"></div>
+          </div>
+
+          <div class="card">
+            <div class="spaced">
+              <h2>Categorias que estão nascendo</h2>
+              <button class="btn secondary" onclick="go('emergent')">ver todas</button>
+            </div>
+            <div id="emergentPreview" class="list"></div>
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="card">
+          <div class="spaced">
+            <h2>Linha do tempo recente</h2>
+            <button class="btn secondary" onclick="go('timeline')">abrir linha do tempo</button>
+          </div>
+          <div id="timelinePreview" class="timeline"></div>
+        </div>
+      </section>
+
+      <section id="view-capture" class="view">
+        <div class="two-pane">
+          <div class="card">
+            <h2>Entrada rápida</h2>
+            <p class="subtitle">
+              Digite uma frase natural. Em modo servidor, o registro vai para o backend; em modo local, fica apenas no navegador.
+            </p>
+
+            <label for="messageInput">Mensagem</label>
+            <textarea id="messageInput" placeholder="Ex.: gastei 61 no iFood porque estava exausto depois da audiência"></textarea>
+
+            <div class="grid cols-2" style="margin-top:12px">
+              <div>
+                <label>Data do evento</label>
+                <input id="dateInput" type="date" />
+              </div>
+              <div>
+                <label>Hora aproximada</label>
+                <input id="timeInput" type="time" />
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div class="row">
+              <button class="btn" onclick="analyzeAndSave(true)">Registrar no servidor/IA</button>
+              <button class="btn secondary" onclick="analyzeAndSave(false)">Registrar local offline</button>
+              <button class="btn secondary" onclick="fillExamples()">Exemplos</button>
+            </div>
+
+            <div style="height:14px"></div>
+
+            <div class="notice warn small">
+              No modo servidor, a chave da IA fica no backend. No modo local, evite salvar chave da OpenAI em painel público.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="spaced">
+              <h2>Resultado da última análise</h2>
+              <span class="pill" id="analysisMode">—</span>
+            </div>
+            <div id="lastAnalysis" class="analysisBox">Nenhuma análise ainda.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-timeline" class="view">
+        <div class="card">
+          <div class="spaced">
+            <div>
+              <h2>Linha do tempo</h2>
+              <p class="subtitle">Registros locais e/ou sincronizados do servidor.</p>
+            </div>
+            <button class="btn secondary" onclick="reprocessEmergent()">Recalcular padrões</button>
+          </div>
+
+          <div class="filters">
+            <input id="searchFilter" placeholder="Buscar texto, tag, categoria..." oninput="renderTimeline()" />
+            <select id="typeFilter" onchange="renderTimeline()">
+              <option value="">Todos os tipos</option>
+            </select>
+            <select id="periodFilter" onchange="renderTimeline()">
+              <option value="all">Todo período</option>
+              <option value="today">Hoje</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+            </select>
+            <button class="btn secondary" onclick="clearFilters()">Limpar</button>
+          </div>
+
+          <div id="timelineFull" class="timeline"></div>
+        </div>
+      </section>
+
+      <section id="view-finance" class="view">
+        <div class="grid cols-3" id="financeMetrics"></div>
+        <div style="height:16px"></div>
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>Gastos por categoria</h2>
+            <div id="financeByCategory" class="list"></div>
+          </div>
+          <div class="card">
+            <h2>Gastos comportamentais</h2>
+            <div id="financeBehavior" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-habits" class="view">
+        <div class="grid cols-3" id="habitMetrics"></div>
+        <div style="height:16px"></div>
+        <div class="card">
+          <h2>Hábitos, saúde e energia</h2>
+          <div id="habitList" class="list"></div>
+        </div>
+      </section>
+
+      <section id="view-emotions" class="view">
+        <div class="grid cols-3" id="emotionMetrics"></div>
+        <div style="height:16px"></div>
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>Emoções e estados detectados</h2>
+            <div id="emotionList" class="list"></div>
+          </div>
+          <div class="card">
+            <h2>Gatilhos prováveis</h2>
+            <div id="triggerList" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-emergent" class="view">
+        <div class="card">
+          <div class="spaced">
+            <div>
+              <h2>Mapa Vivo — categorias emergentes</h2>
+              <p class="subtitle">
+                Categorias que nasceram das frases do usuário. Elas são hipóteses organizadoras, não verdades absolutas.
+              </p>
+            </div>
+            <button class="btn secondary" onclick="reprocessEmergent()">Recalcular</button>
+          </div>
+          <div id="emergentList" class="list"></div>
+        </div>
+      </section>
+
+      <section id="view-patterns" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>Padrões detectados</h2>
+            <div id="patternsList" class="list"></div>
+          </div>
+          <div class="card">
+            <h2>Insights profundos locais</h2>
+            <div id="insightsList" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-reports" class="view">
+        <div class="card">
+          <div class="spaced">
+            <div>
+              <h2>Relatório narrativo</h2>
+              <p class="subtitle">Gere uma leitura local ou use IA para uma análise mais profunda dos registros salvos.</p>
+            </div>
+            <div class="row">
+              <button class="btn secondary" onclick="generateLocalReport()">Relatório local</button>
+              <button class="btn" onclick="generateAIReport()">Relatório com IA</button>
+              <button class="btn secondary" onclick="window.print()">Imprimir/PDF</button>
+            </div>
+          </div>
+          <div id="reportBox" class="analysisBox">Nenhum relatório gerado ainda.</div>
+        </div>
+      </section>
+
+      <section id="view-import" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>Importar conversa do WhatsApp</h2>
+            <p class="subtitle">
+              Exporte a conversa do grupo sem mídia e importe o arquivo .txt. O sistema tentará separar data, hora, autor e mensagem.
+            </p>
+            <input type="file" id="whatsFile" accept=".txt,text/plain" />
+            <div style="height:12px"></div>
+            <div class="row">
+              <button class="btn" onclick="importWhatsAppTxt(false)">Importar offline</button>
+              <button class="btn secondary" onclick="importWhatsAppTxt(true)">Importar e analisar com IA</button>
+            </div>
+            <div style="height:14px"></div>
+            <div class="notice small">
+              Formatos comuns aceitos: <br>
+              <span class="kbd">08/05/2026 09:14 - Nome: mensagem</span><br>
+              <span class="kbd">[08/05/2026, 09:14:00] Nome: mensagem</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Importar/Restaurar backup JSON</h2>
+            <p class="subtitle">Use para migrar entre navegadores ou preservar versões do laboratório.</p>
+            <input type="file" id="jsonFile" accept=".json,application/json" />
+            <div style="height:12px"></div>
+            <button class="btn secondary" onclick="importJSON()">Restaurar JSON</button>
+            <div style="height:16px"></div>
+            <h2>Exportações rápidas</h2>
+            <div class="row">
+              <button class="btn secondary" onclick="exportCSV()">Exportar CSV</button>
+              <button class="btn secondary" onclick="exportJSON()">Exportar JSON</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>Conexão com o servidor</h2>
+            <p class="subtitle">
+              Use o backend do Render para receber automaticamente mensagens do WhatsApp via webhook. O modo local continua disponível para testes e importações.
+            </p>
+
+            <label>Modo de dados</label>
+            <select id="dataMode">
+              <option value="server">Servidor / Cloud</option>
+              <option value="local">Somente local</option>
+            </select>
+
+            <div style="height:10px"></div>
+
+            <label>URL base do servidor</label>
+            <input id="apiBase" placeholder="https://radar-de-vida-webhook.onrender.com" />
+
+            <div style="height:10px"></div>
+
+            <label>Sincronização automática</label>
+            <select id="autoSync">
+              <option value="true">Ativada</option>
+              <option value="false">Desativada</option>
+            </select>
+
+            <div style="height:14px"></div>
+
+            <div class="row">
+              <button class="btn" onclick="saveSettings()">Salvar configurações</button>
+              <button class="btn secondary" onclick="syncFromServer(true)">Testar/sincronizar</button>
+            </div>
+
+            <div style="height:14px"></div>
+            <div class="notice small" id="cloudStatusBox">Status do servidor ainda não testado.</div>
+          </div>
+
+          <div class="card">
+            <h2>Configurações da IA local</h2>
+            <p class="subtitle">
+              Só use chave aqui em teste privado. Na versão pública, prefira deixar a chave no backend do Render.
+            </p>
+
+            <label>Chave da OpenAI local</label>
+            <input id="apiKey" type="password" placeholder="sk-..." />
+
+            <div style="height:10px"></div>
+
+            <label>Modelo local</label>
+            <input id="modelName" placeholder="gpt-5.4-mini" />
+
+            <div style="height:10px"></div>
+
+            <label>Nível de análise</label>
+            <select id="depthMode">
+              <option value="simples">Simples</option>
+              <option value="inteligente">Inteligente</option>
+              <option value="profundo">Profundo</option>
+            </select>
+
+            <div style="height:14px"></div>
+
+            <button class="btn secondary" onclick="saveSettings()">Salvar IA local</button>
+          </div>
+
+          <div class="card" style="grid-column:1/-1">
+            <h2>Filosofia do motor</h2>
+            <div class="notice small">
+              Cada frase é tratada como pista. O sistema separa fatos, inferências e hipóteses. Categorias emergentes só indicam padrões possíveis.
+            </div>
+            <div style="height:12px"></div>
+            <table class="table">
+              <tr><th>Camada</th><th>Função</th></tr>
+              <tr><td>Fato</td><td>O que foi dito objetivamente.</td></tr>
+              <tr><td>Inferência</td><td>Leitura provável a partir do contexto.</td></tr>
+              <tr><td>Hipótese</td><td>Explicação comportamental candidata.</td></tr>
+              <tr><td>Categoria emergente</td><td>Nome dado a padrões que começam a aparecer.</td></tr>
+              <tr><td>Insight</td><td>Leitura prática para clareza e decisão.</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
-    const API_BASE = location.origin;
-    let cache = {records:[], emergentCategories:[], patterns:[]};
+    const APP_KEY = "radar_vida_cloud_v02";
+    const SETTINGS_KEY = "radar_vida_cloud_settings_v02";
+    const DEFAULT_API_BASE = "https://radar-de-vida-webhook.onrender.com";
 
-    document.getElementById("apiBaseLabel").textContent = API_BASE;
+    const navItems = [
+      ["dashboard", "Painel geral", "360"],
+      ["capture", "Registrar", "+"],
+      ["timeline", "Linha do tempo", ""],
+      ["finance", "Financeiro", "R$"],
+      ["habits", "Hábitos/Saúde", ""],
+      ["emotions", "Emoções", ""],
+      ["emergent", "Mapa Vivo", ""],
+      ["patterns", "Padrões", ""],
+      ["reports", "Relatórios", ""],
+      ["import", "Importar/Exportar", ""],
+      ["settings", "Configurações", ""]
+    ];
 
-    function brl(v){return (Number(v)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
-    function dt(s){try{return new Date(s).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}catch{return s || "—"}}
-    function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+    const baseTypes = [
+      "financeiro", "receita", "habito", "saude", "sono", "alimentacao",
+      "exercicio", "emocional", "produtividade", "agenda", "social",
+      "casa", "mobilidade", "lazer", "estudo", "livre"
+    ];
 
-    async function loadData(){
-      const status = document.getElementById("status");
-      try{
-        const health = await fetch(API_BASE + "/health").then(r=>r.json());
-        const data = await fetch(API_BASE + "/api/records").then(r=>r.json());
-        cache = data;
-        status.textContent = JSON.stringify(health,null,2);
-        render();
-      }catch(e){
-        status.textContent = "Erro ao conectar: " + e.message;
+    const defaultState = {
+      version: "0.2-cloud",
+      createdAt: new Date().toISOString(),
+      records: [],
+      emergentCategories: [],
+      patterns: [],
+      glossary: {},
+      notes: []
+    };
+
+    let state = loadState();
+    let settings = loadSettings();
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(APP_KEY)) || structuredClone(defaultState);
+      } catch {
+        return structuredClone(defaultState);
       }
     }
 
-    async function sendTest(){
-      const text = document.getElementById("testText").value.trim();
-      if(!text) return alert("Digite uma mensagem.");
-      document.getElementById("lastResult").textContent = "Enviando...";
-      const res = await fetch(API_BASE + "/api/test-message", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({text, from:"teste-local", name:"Usuário Teste"})
+    function saveState() {
+      localStorage.setItem(APP_KEY, JSON.stringify(state));
+      renderAll();
+    }
+
+    function loadSettings() {
+      const defaults = {
+        apiKey: "",
+        modelName: "gpt-5.4-mini",
+        depthMode: "profundo",
+        dataMode: "server",
+        apiBase: inferDefaultApiBase(),
+        autoSync: true
+      };
+      try {
+        const loaded = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+        return { ...defaults, ...loaded, autoSync: loaded.autoSync !== false && loaded.autoSync !== "false" };
+      } catch {
+        return defaults;
+      }
+    }
+
+    function saveSettings() {
+      settings.apiKey = document.getElementById("apiKey").value.trim();
+      settings.modelName = document.getElementById("modelName").value.trim() || "gpt-5.4-mini";
+      settings.depthMode = document.getElementById("depthMode").value;
+      settings.dataMode = document.getElementById("dataMode").value;
+      settings.apiBase = cleanApiBase(document.getElementById("apiBase").value.trim() || inferDefaultApiBase());
+      settings.autoSync = document.getElementById("autoSync").value === "true";
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      renderSide();
+      alert("Configurações salvas neste navegador.");
+    }
+
+    function inferDefaultApiBase() {
+      if (location.protocol.startsWith("http") && location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+        return location.origin;
+      }
+      return DEFAULT_API_BASE;
+    }
+
+    function cleanApiBase(url) {
+      return String(url || "").replace(/\/+$/, "");
+    }
+
+    function isServerMode() {
+      return settings.dataMode !== "local";
+    }
+
+    function apiBase() {
+      return cleanApiBase(settings.apiBase || inferDefaultApiBase());
+    }
+
+    function setCloudStatus(message, ok = null) {
+      const box = document.getElementById("cloudStatusBox");
+      if (box) {
+        box.textContent = message;
+        box.classList.toggle("warn", ok === false);
+      }
+      const side = document.getElementById("sideServer");
+      if (side) side.textContent = ok === true ? "online" : ok === false ? "erro" : (isServerMode() ? "—" : "desativado");
+    }
+
+    function init() {
+      renderNav();
+      document.getElementById("dateInput").value = todayISO();
+      document.getElementById("timeInput").value = new Date().toTimeString().slice(0,5);
+      document.getElementById("apiKey").value = settings.apiKey;
+      document.getElementById("modelName").value = settings.modelName;
+      document.getElementById("depthMode").value = settings.depthMode;
+      document.getElementById("dataMode").value = settings.dataMode || "server";
+      document.getElementById("apiBase").value = apiBase();
+      document.getElementById("autoSync").value = String(settings.autoSync !== false);
+      renderTypeOptions();
+      renderAll();
+      if (isServerMode() && settings.autoSync !== false) {
+        syncFromServer(false);
+      }
+      setInterval(() => {
+        if (isServerMode() && settings.autoSync !== false) syncFromServer(false);
+      }, 30000);
+    }
+
+    function renderNav() {
+      const nav = document.getElementById("nav");
+      nav.innerHTML = navItems.map(([id,label,pill]) => `
+        <button class="navbtn ${id==="dashboard" ? "active" : ""}" data-id="${id}" onclick="go('${id}')">
+          <span>${label}</span>${pill ? `<span class="pill">${pill}</span>` : ""}
+        </button>
+      `).join("");
+    }
+
+    function go(id) {
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      document.getElementById("view-" + id).classList.add("active");
+      document.querySelectorAll(".navbtn").forEach(b => b.classList.toggle("active", b.dataset.id === id));
+      renderAll();
+    }
+
+    function renderTypeOptions() {
+      const sel = document.getElementById("typeFilter");
+      const existing = new Set(baseTypes);
+      state.records.forEach(r => (r.analysis?.eventos_detectados || []).forEach(e => existing.add(e.tipo)));
+      sel.innerHTML = `<option value="">Todos os tipos</option>` + [...existing].sort().map(t => `<option>${escapeHTML(t)}</option>`).join("");
+    }
+
+    async function syncFromServer(showAlert = false) {
+      if (!isServerMode()) {
+        if (showAlert) alert("Modo local ativado. Altere para Servidor/Cloud em Configurações.");
+        return;
+      }
+
+      try {
+        setCloudStatus("Conectando ao servidor...", null);
+        const base = apiBase();
+        const health = await fetch(base + "/health", { cache: "no-store" }).then(r => {
+          if (!r.ok) throw new Error("Servidor respondeu " + r.status);
+          return r.json();
+        });
+
+        const payload = await fetch(base + "/api/records", { cache: "no-store" }).then(r => {
+          if (!r.ok) throw new Error("Registros responderam " + r.status);
+          return r.json();
+        });
+
+        const serverRecords = (payload.records || []).map(normalizeServerRecord);
+        state.records = dedupeRecords(serverRecords);
+        state.emergentCategories = payload.emergentCategories || calculateEmergentFromRecords(state.records);
+        state.patterns = payload.patterns || calculatePatternsFromRecords(state.records);
+        persistOnly();
+        renderTypeOptions();
+        renderAll();
+
+        setCloudStatus(`Servidor online. ${state.records.length} registro(s) sincronizado(s). WhatsApp: ${health.whatsappConfigured ? "configurado" : "não configurado"}.`, true);
+        if (showAlert) alert("Sincronização concluída com o servidor.");
+      } catch (err) {
+        console.error(err);
+        setCloudStatus("Erro ao conectar: " + err.message, false);
+        if (showAlert) alert("Erro ao conectar ao servidor: " + err.message);
+      }
+    }
+
+    function normalizeServerRecord(r) {
+      return {
+        ...r,
+        author: r.author || r.name || r.from || r.source || "servidor",
+        source: r.source || "server",
+        originalText: r.originalText || r.text || "",
+        createdAt: r.createdAt || new Date().toISOString(),
+        eventDateTime: r.eventDateTime || r.createdAt || new Date().toISOString(),
+        analysis: r.analysis || heuristicAnalysis(r.originalText || r.text || "", r.eventDateTime || r.createdAt || new Date().toISOString())
+      };
+    }
+
+    async function postToServer(text) {
+      const res = await fetch(apiBase() + "/api/test-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, from: "painel-web", name: "Painel Web" })
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || ("Servidor respondeu " + res.status));
+      return normalizeServerRecord(data.record);
+    }
+
+    async function deleteRecordOnServer(id) {
+      const res = await fetch(apiBase() + "/api/records/" + encodeURIComponent(id), { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao excluir no servidor: " + res.status);
+      return res.json();
+    }
+
+    async function clearServerRecords() {
+      const res = await fetch(apiBase() + "/api/records", { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao limpar servidor: " + res.status);
+      return res.json();
+    }
+
+    function calculateEmergentFromRecords(records) {
+      const map = new Map();
+      for (const r of records) {
+        for (const c of (r.analysis?.categorias_emergentes_candidatas || [])) {
+          const key = normalizeKey(c.nome);
+          if (!map.has(key)) map.set(key, {
+            id: "cat_" + key,
+            nome: c.nome,
+            categoria_mae: c.categoria_mae || "livre",
+            motivo: c.motivo || "",
+            ocorrencias: 0,
+            confianca_media: 0,
+            evidencias: [],
+            status: "candidata"
+          });
+          const item = map.get(key);
+          item.ocorrencias++;
+          item.confianca_media += Number(c.confianca || .5);
+          item.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
+        }
+      }
+      return [...map.values()].map(c => {
+        c.confianca_media = c.ocorrencias ? c.confianca_media / c.ocorrencias : 0;
+        c.status = c.ocorrencias >= 5 ? "consolidada" : c.ocorrencias >= 2 ? "ativa" : "candidata";
+        return c;
+      }).sort((a,b) => b.ocorrencias - a.ocorrencias);
+    }
+
+    function calculatePatternsFromRecords(records) {
+      const map = new Map();
+      const add = (name, r) => {
+        if (!map.has(name)) map.set(name, { id: "pat_" + normalizeKey(name), nome: name, ocorrencias: 0, evidencias: [], confianca: .55, status: "inicial" });
+        const p = map.get(name);
+        p.ocorrencias++;
+        p.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
+      };
+
+      for (const r of records) {
+        const a = r.analysis || {};
+        const tags = a.tags || [];
+        const triggers = a.gatilhos_possiveis || [];
+        const emotions = a.emocoes_detectadas || [];
+        const events = a.eventos_detectados || [];
+        if (tags.includes("cansaco") && events.some(e => e.categoria_principal === "alimentacao")) add("alimentação associada a cansaço", r);
+        if (tags.includes("atraso") && events.some(e => e.tipo === "financeiro")) add("custo financeiro do atraso", r);
+        if (triggers.includes("reuniao") && emotions.length) add("emoção após reunião", r);
+        if (events.some(e => e.tipo === "sono" && e.impacto === "negativo") && tags.includes("pressa")) add("sono ruim e pressa", r);
+        if (events.some(e => e.tipo === "habito" && e.categoria_principal === "exercicio") && (a.consequencias_possiveis || []).includes("melhora_percebida")) add("exercício restaurador", r);
+      }
+
+      return [...map.values()].map(p => ({
+        ...p,
+        confianca: Math.min(.95, .45 + p.ocorrencias * .12),
+        status: p.ocorrencias >= 3 ? "forte" : "inicial"
+      })).sort((a,b) => b.ocorrencias - a.ocorrencias);
+    }
+
+    function todayISO() {
+      return new Date().toISOString().slice(0,10);
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (isNaN(d)) return iso;
+      return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    }
+
+    function currency(v) {
+      return (Number(v)||0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+
+    function uid(prefix="evt") {
+      return prefix + "_" + Math.random().toString(36).slice(2,10) + "_" + Date.now().toString(36);
+    }
+
+    function escapeHTML(s) {
+      return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[m]));
+    }
+
+    function normalizeText(s) {
+      return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    }
+
+    async function analyzeAndSave(useAI) {
+      const text = document.getElementById("messageInput").value.trim();
+      if (!text) return alert("Digite uma mensagem primeiro.");
+
+      const date = document.getElementById("dateInput").value || todayISO();
+      const time = document.getElementById("timeInput").value || new Date().toTimeString().slice(0,5);
+      const eventDateTime = new Date(`${date}T${time}:00`).toISOString();
+
+      const cloud = useAI && isServerMode();
+      document.getElementById("analysisMode").textContent = cloud ? "enviando ao servidor..." : (useAI ? "analisando com IA local..." : "offline");
+      document.getElementById("lastAnalysis").textContent = "Processando...";
+
+      let record;
+      try {
+        if (cloud) {
+          record = await postToServer(text);
+          state.records.unshift(record);
+          state.records = dedupeRecords(state.records);
+          state.emergentCategories = calculateEmergentFromRecords(state.records);
+          state.patterns = calculatePatternsFromRecords(state.records);
+          persistOnly();
+          setCloudStatus("Registro enviado ao servidor e sincronizado.", true);
+        } else {
+          const analysis = useAI ? await analyzeWithOpenAI(text, eventDateTime) : heuristicAnalysis(text, eventDateTime);
+          record = {
+            id: uid("rec"),
+            source: useAI ? "manual_ai_local" : "manual_local",
+            author: "usuario",
+            originalText: text,
+            createdAt: new Date().toISOString(),
+            eventDateTime,
+            analysis
+          };
+          state.records.unshift(record);
+          reprocessEmergent(false);
+          persistOnly();
+        }
+      } catch (err) {
+        console.error(err);
+        const analysis = heuristicAnalysis(text, eventDateTime);
+        analysis.insight_imediato = "A análise principal falhou; registrei usando modo offline. Erro: " + err.message;
+        record = {
+          id: uid("rec"),
+          source: "manual_fallback",
+          author: "usuario",
+          originalText: text,
+          createdAt: new Date().toISOString(),
+          eventDateTime,
+          analysis
+        };
+        state.records.unshift(record);
+        reprocessEmergent(false);
+        persistOnly();
+        setCloudStatus("Falha no servidor: " + err.message, false);
+      }
+
+      document.getElementById("messageInput").value = "";
+      document.getElementById("timeInput").value = new Date().toTimeString().slice(0,5);
+      document.getElementById("analysisMode").textContent = cloud ? "servidor" : (useAI ? "IA local" : "offline");
+      document.getElementById("lastAnalysis").textContent = JSON.stringify(record, null, 2);
+      renderAll();
+
+      if (cloud) syncFromServer(false);
+    }
+
+    function dedupeRecords(records) {
+      const seen = new Set();
+      const out = [];
+      for (const r of records) {
+        const key = r.whatsappMessageId || r.id || `${r.originalText}|${r.eventDateTime}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push(r);
+        }
+      }
+      return out.sort((a,b) => new Date(b.eventDateTime || b.createdAt) - new Date(a.eventDateTime || a.createdAt));
+    }
+
+    function getSystemPrompt() {
+      return `Você é o motor de interpretação do projeto Radar de Vida.
+
+Transforme mensagens livres do usuário em registros estruturados sobre vida cotidiana: finanças, hábitos, sono, saúde, alimentação, exercício, humor, produtividade, agenda, casa, mobilidade, lazer, estudo e relações sociais.
+
+Regras centrais:
+- Separe fatos objetivos, inferências prováveis e hipóteses comportamentais.
+- Nunca trate hipótese como certeza.
+- Não julgue o usuário.
+- Crie categorias emergentes candidatas quando a frase revelar um padrão comportamental possível.
+- Use português do Brasil.
+- Priorize clareza prática.
+- Não dê diagnóstico médico, psicológico, jurídico ou financeiro definitivo.
+- Evite qualquer conteúdo gráfico, perigoso ou inadequado.
+- O nível de análise solicitado é: ${settings.depthMode}.`;
+    }
+
+    const analysisSchema = {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        texto_original: { type: "string" },
+        resumo_curto: { type: "string" },
+        eventos_detectados: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              tipo: { type: "string" },
+              categoria_principal: { type: "string" },
+              subcategoria: { type: "string" },
+              valor: { type: ["number", "null"] },
+              moeda: { type: ["string", "null"] },
+              quantidade: { type: ["number", "null"] },
+              unidade: { type: ["string", "null"] },
+              data_evento: { type: ["string", "null"] },
+              hora_evento: { type: ["string", "null"] },
+              impacto: { type: "string" },
+              intensidade: { type: ["string", "null"] },
+              fato_ou_inferencia: { type: "string" },
+              confianca: { type: "number" }
+            },
+            required: ["tipo","categoria_principal","subcategoria","valor","moeda","quantidade","unidade","data_evento","hora_evento","impacto","intensidade","fato_ou_inferencia","confianca"]
+          }
+        },
+        tags: { type: "array", items: { type: "string" } },
+        contextos: { type: "array", items: { type: "string" } },
+        emocoes_detectadas: { type: "array", items: { type: "string" } },
+        gatilhos_possiveis: { type: "array", items: { type: "string" } },
+        consequencias_possiveis: { type: "array", items: { type: "string" } },
+        hipoteses: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              nome: { type: "string" },
+              descricao: { type: "string" },
+              nivel: { type: "string" },
+              confianca: { type: "number" }
+            },
+            required: ["nome","descricao","nivel","confianca"]
+          }
+        },
+        categorias_emergentes_candidatas: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              nome: { type: "string" },
+              categoria_mae: { type: "string" },
+              motivo: { type: "string" },
+              confianca: { type: "number" }
+            },
+            required: ["nome","categoria_mae","motivo","confianca"]
+          }
+        },
+        insight_imediato: { type: "string" },
+        pergunta_opcional: { type: ["string", "null"] }
+      },
+      required: [
+        "texto_original","resumo_curto","eventos_detectados","tags","contextos",
+        "emocoes_detectadas","gatilhos_possiveis","consequencias_possiveis",
+        "hipoteses","categorias_emergentes_candidatas","insight_imediato","pergunta_opcional"
+      ]
+    };
+
+    async function analyzeWithOpenAI(text, eventDateTime) {
+      if (!settings.apiKey) throw new Error("Chave da OpenAI não configurada.");
+
+      const body = {
+        model: settings.modelName || "gpt-5.4-mini",
+        input: [
+          { role: "system", content: getSystemPrompt() },
+          { role: "user", content: `Data/hora de referência: ${eventDateTime}\nMensagem: ${text}` }
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "radar_vida_analysis",
+            schema: analysisSchema,
+            strict: true
+          }
+        }
+      };
+
+      const res = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${settings.apiKey}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`OpenAI API ${res.status}: ${errText.slice(0, 400)}`);
+      }
+
       const data = await res.json();
-      document.getElementById("lastResult").textContent = JSON.stringify(data,null,2);
-      document.getElementById("testText").value = "";
-      loadData();
+      let out = data.output_text;
+
+      if (!out && Array.isArray(data.output)) {
+        out = data.output.flatMap(item => item.content || [])
+          .map(c => c.text || c.output_text || "")
+          .join("\n");
+      }
+
+      if (!out) throw new Error("Resposta da IA sem texto estruturado.");
+      return JSON.parse(out);
     }
 
-    function example(){
-      const arr = [
-        "gastei 61 no iFood porque estava exausto depois da audiência",
-        "dormi mal e acordei atrasado, peguei Uber de 28 reais",
-        "caminhei 35 minutos e fiquei mais calmo",
-        "recebi 1500 de honorários do cliente João",
-        "fiquei ansioso depois da reunião"
+    function heuristicAnalysis(text, eventDateTime) {
+      const n = normalizeText(text);
+      const values = extractMoney(text);
+      const eventos = [];
+      const tags = [];
+      const contextos = [];
+      const emocoes = [];
+      const gatilhos = [];
+      const consequencias = [];
+      const hipoteses = [];
+      const emergentes = [];
+
+      const has = (...words) => words.some(w => n.includes(w));
+
+      if (values.length && has("gastei","paguei","comprei","pix","ifood","uber","mercado","almoço","almoco","jantar","lanche","gasolina","combustivel")) {
+        let cat = "despesa";
+        let sub = "geral";
+        if (has("ifood","delivery","pizza","hamburguer","jantar","almoço","almoco","lanche","cafe","restaurante")) { cat = "alimentacao"; sub = has("ifood","delivery") ? "delivery" : "refeicao"; }
+        else if (has("uber","99","gasolina","combustivel","estacionamento")) { cat = "mobilidade"; sub = has("uber","99") ? "app_transporte" : "combustivel_ou_transporte"; }
+        else if (has("remedio","farmacia","medico","consulta","exame")) { cat = "saude"; sub = "saude"; }
+        else if (has("energia","agua","internet","aluguel","condominio","gás","gas")) { cat = "casa"; sub = "conta_domestica"; }
+
+        eventos.push(evt("financeiro", cat, sub, values[0], "BRL", null, null, eventDateTime, "neutro", null, "fato", .82));
+      }
+
+      if (values.length && has("recebi","ganhei","honorario","honorários","cliente","salario","salário","vendi")) {
+        eventos.push(evt("receita", "receita", has("cliente","honorario","honorários") ? "profissional" : "geral", values[0], "BRL", null, null, eventDateTime, "positivo", null, "fato", .85));
+      }
+
+      if (has("treinei","caminhei","corrida","corri","academia","alonguei","pedalei")) {
+        eventos.push(evt("habito", "exercicio", detectExerciseSub(n), null, null, extractNumberBeforeUnit(text, ["min","minutos","h","hora","horas"]), "tempo", eventDateTime, "positivo", null, "fato", .78));
+        tags.push("movimento", "exercicio");
+      }
+
+      if (has("dormi","sono","acordei","insônia","insonia")) {
+        const impacto = has("mal","ruim","pouco","insônia","insonia","cansado") ? "negativo" : "positivo";
+        eventos.push(evt("sono", "sono", impacto === "negativo" ? "sono_ruim" : "sono_bom", null, null, extractSleepHours(text), "horas", eventDateTime, impacto, null, "fato", .72));
+        tags.push(impacto === "negativo" ? "sono_ruim" : "sono_bom");
+      }
+
+      const emotionMap = [
+        ["ansioso", "ansiedade"], ["ansiedade", "ansiedade"], ["irritado", "irritacao"],
+        ["triste", "tristeza"], ["feliz", "alegria"], ["cansado", "cansaco"],
+        ["exausto", "exaustao"], ["sem energia", "baixa_energia"], ["estressado", "estresse"],
+        ["calmo", "calma"], ["leve", "leveza"], ["orgulho", "orgulho"]
       ];
-      document.getElementById("testText").value = arr[Math.floor(Math.random()*arr.length)];
+      emotionMap.forEach(([w,e]) => {
+        if (n.includes(normalizeText(w)) && !emocoes.includes(e)) emocoes.push(e);
+      });
+
+      if (emocoes.length) {
+        eventos.push(evt("emocional", "estado_emocional", emocoes[0], null, null, null, null, eventDateTime, ["alegria","calma","leveza","orgulho"].includes(emocoes[0]) ? "positivo" : "alerta", detectIntensity(n), "inferencia", .70));
+      }
+
+      if (has("reuniao","reunião","audiencia","audiência","trabalho","cliente","prazo")) {
+        contextos.push("trabalho");
+        if (has("reuniao","reunião")) gatilhos.push("reuniao");
+        if (has("audiencia","audiência")) gatilhos.push("audiencia");
+      }
+
+      if (has("cansado","exausto","sem energia","morto")) {
+        tags.push("cansaco", "baixa_energia");
+        if (has("ifood","delivery","jantar","pizza","hamburguer")) {
+          emergentes.push(catCand("delivery por exaustão", "alimentacao", "A frase associa alimentação por conveniência a cansaço ou baixa energia.", .74));
+          hipoteses.push(hyp("alimentacao_por_exaustao", "Possível uso de delivery/refeição pronta como resposta a cansaço.", "hipotese_comportamental", .70));
+        }
+      }
+
+      if (has("atrasado","perdi a hora","acordei tarde") && has("uber","taxi","99")) {
+        emergentes.push(catCand("custo do atraso", "mobilidade", "A frase indica despesa gerada por atraso ou quebra da rotina matinal.", .78));
+        hipoteses.push(hyp("custo_da_desorganizacao", "Possível custo financeiro causado por atraso ou falta de planejamento.", "hipotese_comportamental", .72));
+        tags.push("atraso", "desorganizacao");
+      }
+
+      if (has("de novo","novamente","outra vez")) tags.push("recorrencia");
+
+      if (!eventos.length) {
+        eventos.push(evt("livre", "registro_livre", "anotacao", null, null, null, null, eventDateTime, "neutro", null, "fato", .55));
+      }
+
+      if (!contextos.length && has("casa","quarto","cozinha","limpei","organizei")) contextos.push("casa");
+      if (has("pressa","sem tempo","corrido")) { tags.push("pressa"); gatilhos.push("falta_de_tempo"); }
+      if (has("melhor","fiquei melhor","me ajudou")) consequencias.push("melhora_percebida");
+      if (has("pior","irritado","ansioso")) consequencias.push("piora_ou_alerta_percebido");
+
+      const unique = arr => [...new Set(arr.filter(Boolean))];
+
+      return {
+        texto_original: text,
+        resumo_curto: buildShortSummary(eventos, text),
+        eventos_detectados: eventos,
+        tags: unique(tags),
+        contextos: unique(contextos),
+        emocoes_detectadas: unique(emocoes),
+        gatilhos_possiveis: unique(gatilhos),
+        consequencias_possiveis: unique(consequencias),
+        hipoteses,
+        categorias_emergentes_candidatas: emergentes,
+        insight_imediato: localInsight(eventos, unique(tags), emergentes),
+        pergunta_opcional: null
+      };
     }
 
-    function render(){
-      const records = cache.records || [];
-      const events = records.flatMap(r => (r.analysis?.eventos_detectados || []).map(e=>({...e, record:r})));
-      const expense = events.filter(e=>e.tipo==="financeiro").reduce((s,e)=>s+(Number(e.valor)||0),0);
-      const income = events.filter(e=>e.tipo==="receita").reduce((s,e)=>s+(Number(e.valor)||0),0);
-      const emotions = records.flatMap(r=>r.analysis?.emocoes_detectadas||[]).length;
+    function evt(tipo, categoria, subcategoria, valor, moeda, quantidade, unidade, dt, impacto, intensidade, foi, conf) {
+      const d = new Date(dt);
+      return {
+        tipo,
+        categoria_principal: categoria,
+        subcategoria,
+        valor,
+        moeda,
+        quantidade,
+        unidade,
+        data_evento: isNaN(d) ? null : d.toISOString().slice(0,10),
+        hora_evento: isNaN(d) ? null : d.toTimeString().slice(0,5),
+        impacto,
+        intensidade,
+        fato_ou_inferencia: foi,
+        confianca: conf
+      };
+    }
+
+    function hyp(nome, descricao, nivel, confianca) {
+      return { nome, descricao, nivel, confianca };
+    }
+
+    function catCand(nome, categoria_mae, motivo, confianca) {
+      return { nome, categoria_mae, motivo, confianca };
+    }
+
+    function extractMoney(text) {
+      const out = [];
+      const patterns = [
+        /(?:r\$|\breais\b|\breal\b)?\s*(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:r\$|\breais\b|\breal\b)?/gi
+      ];
+      for (const p of patterns) {
+        let m;
+        while ((m = p.exec(text))) {
+          const raw = m[1];
+          if (!raw) continue;
+          const v = parseFloat(raw.replace(".", "").replace(",", "."));
+          if (!isNaN(v) && v > 0 && v < 1000000) out.push(v);
+        }
+      }
+      return out;
+    }
+
+    function extractNumberBeforeUnit(text, units) {
+      const unitRe = units.join("|");
+      const re = new RegExp("(\\d+(?:[\\.,]\\d+)?)\\s*(?:" + unitRe + ")", "i");
+      const m = text.match(re);
+      return m ? parseFloat(m[1].replace(",", ".")) : null;
+    }
+
+    function extractSleepHours(text) {
+      const n = normalizeText(text);
+      const m = n.match(/dormi\s+(\d+(?:[.,]\d+)?)\s*h/);
+      return m ? parseFloat(m[1].replace(",", ".")) : null;
+    }
+
+    function detectExerciseSub(n) {
+      if (n.includes("caminh")) return "caminhada";
+      if (n.includes("academia")) return "academia";
+      if (n.includes("corr")) return "corrida";
+      if (n.includes("along")) return "alongamento";
+      if (n.includes("pedal") || n.includes("bike")) return "bicicleta";
+      return "exercicio";
+    }
+
+    function detectIntensity(n) {
+      if (n.includes("muito") || n.includes("demais") || n.includes("exausto") || n.includes("forte")) return "alta";
+      if (n.includes("pouco") || n.includes("leve")) return "baixa";
+      return "media";
+    }
+
+    function buildShortSummary(eventos, text) {
+      const ev = eventos[0];
+      if (!ev) return "Registro livre.";
+      if (ev.tipo === "financeiro") return `Despesa em ${ev.categoria_principal}/${ev.subcategoria}${ev.valor ? " de " + currency(ev.valor) : ""}.`;
+      if (ev.tipo === "receita") return `Receita registrada${ev.valor ? " de " + currency(ev.valor) : ""}.`;
+      if (ev.tipo === "habito") return `Hábito registrado: ${ev.categoria_principal}/${ev.subcategoria}.`;
+      if (ev.tipo === "emocional") return `Estado emocional detectado: ${ev.subcategoria}.`;
+      return text.slice(0, 90);
+    }
+
+    function localInsight(eventos, tags, emergentes) {
+      if (emergentes.length) return `Este registro sugere uma categoria emergente: ${emergentes[0].nome}.`;
+      if (tags.includes("pressa")) return "O registro envolve pressa ou falta de tempo; isso pode ser acompanhado como fator de rotina.";
+      if (tags.includes("cansaco")) return "O registro envolve cansaço; vale observar se ele se relaciona com gastos, alimentação ou produtividade.";
+      if (eventos.some(e => e.tipo === "financeiro")) return "Registro financeiro salvo. Com repetição, o sistema poderá separar gasto necessário, planejado, social ou comportamental.";
+      return "Registro salvo como pista de rotina para análise futura.";
+    }
+
+    function persistOnly() {
+      localStorage.setItem(APP_KEY, JSON.stringify(state));
+    }
+
+    function reprocessEmergent(doRender=true) {
+      const map = new Map();
+      const patternMap = new Map();
+
+      for (const r of state.records) {
+        const a = r.analysis || {};
+        const cands = a.categorias_emergentes_candidatas || [];
+        for (const c of cands) {
+          const key = normalizeKey(c.nome);
+          if (!map.has(key)) {
+            map.set(key, {
+              id: uid("cat"),
+              nome: c.nome,
+              categoria_mae: c.categoria_mae || "livre",
+              motivo: c.motivo || "",
+              ocorrencias: 0,
+              confianca_media: 0,
+              evidencias: [],
+              status: "candidata",
+              createdAt: r.createdAt
+            });
+          }
+          const item = map.get(key);
+          item.ocorrencias++;
+          item.confianca_media += Number(c.confianca || .5);
+          item.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
+        }
+
+        const tags = a.tags || [];
+        const triggers = a.gatilhos_possiveis || [];
+        const emotions = a.emocoes_detectadas || [];
+        const events = a.eventos_detectados || [];
+
+        const combos = [];
+        if (tags.includes("cansaco") && events.some(e => e.categoria_principal === "alimentacao")) combos.push("alimentação associada a cansaço");
+        if (tags.includes("atraso") && events.some(e => e.tipo === "financeiro")) combos.push("custo financeiro do atraso");
+        if (triggers.includes("reuniao") && emotions.length) combos.push("emoção após reunião");
+        if (events.some(e => e.tipo === "sono" && e.impacto === "negativo") && tags.includes("pressa")) combos.push("sono ruim e pressa");
+        if (events.some(e => e.tipo === "habito" && e.categoria_principal === "exercicio") && (a.consequencias_possiveis || []).includes("melhora_percebida")) combos.push("exercício restaurador");
+
+        for (const name of combos) {
+          if (!patternMap.has(name)) {
+            patternMap.set(name, { id: uid("pat"), nome: name, ocorrencias: 0, evidencias: [], confianca: .55 });
+          }
+          const p = patternMap.get(name);
+          p.ocorrencias++;
+          p.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
+        }
+      }
+
+      state.emergentCategories = [...map.values()].map(c => {
+        c.confianca_media = c.ocorrencias ? c.confianca_media / c.ocorrencias : 0;
+        c.status = c.ocorrencias >= 5 ? "consolidada" : c.ocorrencias >= 2 ? "ativa" : "candidata";
+        return c;
+      }).sort((a,b) => b.ocorrencias - a.ocorrencias);
+
+      state.patterns = [...patternMap.values()]
+        .map(p => ({...p, confianca: Math.min(.95, .45 + p.ocorrencias * .12), status: p.ocorrencias >= 3 ? "forte" : "inicial"}))
+        .sort((a,b) => b.ocorrencias - a.ocorrencias);
+
+      persistOnly();
+      if (doRender) renderAll();
+    }
+
+    function normalizeKey(s) {
+      return normalizeText(s).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    }
+
+    function renderAll() {
+      renderTypeOptions();
+      renderSide();
+      renderDashboard();
+      renderTimeline();
+      renderFinance();
+      renderHabits();
+      renderEmotions();
+      renderEmergent();
+      renderPatterns();
+    }
+
+    function renderSide() {
+      document.getElementById("sideMode").textContent = isServerMode() ? "cloud" : "local";
+      const currentServer = document.getElementById("sideServer").textContent;
+      document.getElementById("sideServer").textContent = isServerMode() ? (currentServer || "—") : "desativado";
+      document.getElementById("sideCount").textContent = state.records.length;
+      document.getElementById("sideCats").textContent = state.emergentCategories.length;
+      document.getElementById("sideLast").textContent = state.records[0] ? formatDateTime(state.records[0].createdAt) : "—";
+    }
+
+    function allEvents() {
+      return state.records.flatMap(r => (r.analysis?.eventos_detectados || []).map(e => ({...e, record: r})));
+    }
+
+    function todayRecords() {
+      const t = todayISO();
+      return state.records.filter(r => (r.eventDateTime || r.createdAt || "").slice(0,10) === t);
+    }
+
+    function renderDashboard() {
+      const events = allEvents();
+      const today = todayRecords();
+      const expense = events.filter(e => e.tipo === "financeiro").reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const income = events.filter(e => e.tipo === "receita").reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const habitCount = events.filter(e => ["habito","exercicio","sono","saude"].includes(e.tipo)).length;
+      const emotionCount = events.filter(e => e.tipo === "emocional").length;
+
+      const clarity = Math.max(5, Math.min(100, Math.round(
+        8 + Math.min(35, state.records.length * 4)
+          + Math.min(25, state.emergentCategories.length * 5)
+          + Math.min(20, state.patterns.length * 6)
+          + Math.min(12, new Set(events.map(e => e.tipo)).size * 2)
+      )));
+
+      document.getElementById("clarityScore").textContent = clarity;
+      document.getElementById("clarityRing").style.setProperty("--p", clarity);
+      document.getElementById("clarityText").textContent =
+        clarity < 30 ? "Ainda há poucos dados. Registre frases reais por alguns dias." :
+        clarity < 65 ? "O mapa começou a formar padrões iniciais." :
+        "O mapa já possui material relevante para leitura de rotina.";
 
       document.getElementById("metrics").innerHTML = [
-        metric(records.length,"Registros","mensagens processadas"),
-        metric(brl(expense),"Despesas","gastos capturados"),
-        metric(brl(income),"Receitas","entradas capturadas"),
-        metric(emotions,"Emoções","menções detectadas")
+        metric(currency(expense), "Gastos registrados", "total acumulado"),
+        metric(currency(income), "Receitas registradas", "total acumulado"),
+        metric(String(habitCount), "Hábitos/saúde/sono", "eventos detectados"),
+        metric(String(state.emergentCategories.length), "Categorias emergentes", "mapa vivo")
       ].join("");
 
-      document.getElementById("cats").innerHTML = renderCats(cache.emergentCategories || []);
-      document.getElementById("patterns").innerHTML = renderPatterns(cache.patterns || []);
-      document.getElementById("timeline").innerHTML = records.length ? records.map(renderRecord).join("") : `<div class="muted">Nenhum registro ainda.</div>`;
-    }
-
-    function metric(n,t,s){return `<div class="metric"><b>${esc(n)}</b><span>${esc(t)}<br>${esc(s)}</span></div>`}
-
-    function renderRecord(r){
-      const a = r.analysis || {};
-      const events = a.eventos_detectados || [];
-      const money = events.find(e=>e.valor);
-      const chips = [
-        events[0]?.tipo,
-        events[0]?.categoria_principal,
-        ...(a.tags||[]).slice(0,4),
-        ...(a.categorias_emergentes_candidatas||[]).map(c=>c.nome).slice(0,2)
-      ].filter(Boolean);
-      return `<div class="event">
-        <div class="time">${esc(dt(r.eventDateTime || r.createdAt))}<br>${esc(r.name || r.from || r.source)}</div>
-        <div>
-          <div class="text">${esc(r.originalText)}</div>
-          <div class="muted">${esc(a.resumo_curto || "")}</div>
-          <div class="chips" style="margin-top:8px">${chips.map((c,i)=>`<span class="chip ${i<2?"blue":""}">${esc(c)}</span>`).join("")}</div>
+      document.getElementById("todayLabel").textContent = new Date().toLocaleDateString("pt-BR");
+      const todayExpense = today.flatMap(r => r.analysis?.eventos_detectados || []).filter(e => e.tipo === "financeiro").reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const todayTags = topCounts(today.flatMap(r => r.analysis?.tags || []), 5);
+      document.getElementById("todaySummary").innerHTML = today.length ? `
+        <div class="grid cols-3">
+          ${metric(String(today.length), "Registros hoje", "mensagens")}
+          ${metric(currency(todayExpense), "Gastos hoje", "despesas")}
+          ${metric(String(todayTags.length), "Tags fortes", "sinais do dia")}
         </div>
-        <div>${money?`<span class="money">${brl(money.valor)}</span>`:""}</div>
-      </div>`;
+        <div style="height:12px"></div>
+        <div class="chips">${todayTags.map(([k]) => `<span class="chip">${escapeHTML(k)}</span>`).join("")}</div>
+      ` : `<div class="empty">Nenhum registro hoje. Comece em “Registrar”.</div>`;
+
+      document.getElementById("emergentPreview").innerHTML = renderCatItems(state.emergentCategories.slice(0,4));
+      document.getElementById("timelinePreview").innerHTML = renderEvents(state.records.slice(0,5));
     }
 
-    function renderCats(cats){
-      if(!cats.length) return `<div class="muted">Sem categorias emergentes ainda.</div>`;
-      return cats.map(c=>{
-        const pct = Math.round((c.confianca_media||0)*100);
+    function metric(n,t,s) {
+      return `<div class="metric"><div class="n">${escapeHTML(n)}</div><div class="t">${escapeHTML(t)}</div><div class="s">${escapeHTML(s)}</div></div>`;
+    }
+
+    function renderTimeline() {
+      const box = document.getElementById("timelineFull");
+      if (!box) return;
+      const q = normalizeText(document.getElementById("searchFilter")?.value || "");
+      const type = document.getElementById("typeFilter")?.value || "";
+      const period = document.getElementById("periodFilter")?.value || "all";
+      let records = [...state.records];
+
+      if (period !== "all") {
+        const now = new Date();
+        records = records.filter(r => {
+          const d = new Date(r.eventDateTime || r.createdAt);
+          if (period === "today") return (r.eventDateTime || r.createdAt || "").slice(0,10) === todayISO();
+          const days = Number(period);
+          return (now - d) / 86400000 <= days;
+        });
+      }
+
+      if (type) {
+        records = records.filter(r => (r.analysis?.eventos_detectados || []).some(e => e.tipo === type));
+      }
+
+      if (q) {
+        records = records.filter(r => normalizeText([
+          r.originalText,
+          r.analysis?.resumo_curto,
+          ...(r.analysis?.tags || []),
+          ...(r.analysis?.contextos || []),
+          ...(r.analysis?.emocoes_detectadas || []),
+          ...(r.analysis?.categorias_emergentes_candidatas || []).map(c => c.nome),
+          ...(r.analysis?.eventos_detectados || []).map(e => `${e.tipo} ${e.categoria_principal} ${e.subcategoria}`)
+        ].join(" ")).includes(q));
+      }
+
+      box.innerHTML = renderEvents(records);
+    }
+
+    function renderEvents(records) {
+      if (!records.length) return `<div class="empty">Nenhum registro encontrado.</div>`;
+      return records.map(r => {
+        const a = r.analysis || {};
+        const events = a.eventos_detectados || [];
+        const money = events.find(e => e.valor);
+        const mainType = events[0]?.tipo || "livre";
+        const chips = [
+          mainType,
+          ...events.slice(0,2).map(e => e.categoria_principal),
+          ...(a.tags || []).slice(0,4),
+          ...(a.categorias_emergentes_candidatas || []).slice(0,2).map(c => c.nome)
+        ].filter(Boolean);
+        return `
+          <div class="event">
+            <div class="time">${escapeHTML(formatDateTime(r.eventDateTime || r.createdAt))}</div>
+            <div>
+              <div class="text">${escapeHTML(r.originalText)}</div>
+              <div class="muted small">${escapeHTML(a.resumo_curto || "")}</div>
+              <div class="chips" style="margin-top:9px">
+                ${chips.map((c,i) => `<span class="chip ${i===0 ? "blue" : ""}">${escapeHTML(c)}</span>`).join("")}
+              </div>
+            </div>
+            <div class="row">
+              ${money ? `<span class="money">${currency(money.valor)}</span>` : ""}
+              <button class="btn secondary" onclick="showRecord('${r.id}')">ver</button>
+              <button class="btn danger" onclick="deleteRecord('${r.id}')">×</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function showRecord(id) {
+      const r = state.records.find(x => x.id === id);
+      if (!r) return;
+      go("capture");
+      document.getElementById("analysisMode").textContent = "registro salvo";
+      document.getElementById("lastAnalysis").textContent = JSON.stringify(r, null, 2);
+    }
+
+    async function deleteRecord(id) {
+      if (!confirm("Apagar este registro?")) return;
+      try {
+        if (isServerMode()) {
+          await deleteRecordOnServer(id);
+        }
+      } catch (err) {
+        alert("Não consegui excluir no servidor. Vou remover apenas da visualização local. Erro: " + err.message);
+      }
+      state.records = state.records.filter(r => r.id !== id);
+      reprocessEmergent(false);
+      saveState();
+      if (isServerMode()) syncFromServer(false);
+    }
+
+    function clearFilters() {
+      document.getElementById("searchFilter").value = "";
+      document.getElementById("typeFilter").value = "";
+      document.getElementById("periodFilter").value = "all";
+      renderTimeline();
+    }
+
+    function renderFinance() {
+      const events = allEvents();
+      const expenses = events.filter(e => e.tipo === "financeiro");
+      const income = events.filter(e => e.tipo === "receita");
+      const totalExpense = expenses.reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const totalIncome = income.reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const avgExpense = expenses.length ? totalExpense / expenses.length : 0;
+
+      document.getElementById("financeMetrics").innerHTML = [
+        metric(currency(totalExpense), "Despesas", `${expenses.length} registros`),
+        metric(currency(totalIncome), "Receitas", `${income.length} registros`),
+        metric(currency(avgExpense), "Ticket médio", "por despesa")
+      ].join("");
+
+      const byCat = topMoney(expenses, e => e.categoria_principal);
+      document.getElementById("financeByCategory").innerHTML = renderMoneyList(byCat, totalExpense);
+
+      const behavior = [];
+      for (const r of state.records) {
+        const amount = (r.analysis?.eventos_detectados || []).filter(e => e.tipo === "financeiro").reduce((s,e) => s + (Number(e.valor)||0), 0);
+        if (!amount) continue;
+        for (const c of (r.analysis?.categorias_emergentes_candidatas || [])) {
+          behavior.push([c.nome, amount]);
+        }
+        for (const h of (r.analysis?.hipoteses || [])) {
+          behavior.push([h.nome, amount]);
+        }
+      }
+      const beh = aggregatePairs(behavior);
+      document.getElementById("financeBehavior").innerHTML = renderMoneyList(beh, totalExpense);
+    }
+
+    function renderMoneyList(items, total) {
+      if (!items.length) return `<div class="empty">Sem dados financeiros suficientes.</div>`;
+      return items.map(([name, value]) => {
+        const pct = total ? Math.round(value / total * 100) : 0;
         return `<div class="listItem">
-          <b>${esc(c.nome)}</b><br><span class="muted">${esc(c.categoria_mae)} · ${esc(c.status)} · ${c.ocorrencias}x</span>
+          <div class="spaced"><strong>${escapeHTML(name)}</strong><span class="money">${currency(value)}</span></div>
           <div class="bar" style="--w:${pct}%"><i></i></div>
+          <div class="muted2 small">${pct}% do total selecionado</div>
         </div>`;
       }).join("");
     }
 
-    function renderPatterns(patterns){
-      if(!patterns.length) return `<div class="muted">Sem padrões suficientes ainda.</div>`;
-      return patterns.map(p=>`<div class="listItem"><b>${esc(p.nome)}</b><br><span class="muted">${esc(p.status)} · ${p.ocorrencias}x · confiança ${Math.round((p.confianca||0)*100)}%</span></div>`).join("");
+    function renderHabits() {
+      const events = allEvents();
+      const hab = events.filter(e => ["habito","exercicio","sono","saude","alimentacao"].includes(e.tipo) || ["exercicio","sono","saude","alimentacao"].includes(e.categoria_principal));
+      const positives = hab.filter(e => e.impacto === "positivo").length;
+      const alerts = hab.filter(e => ["negativo","alerta"].includes(e.impacto)).length;
+      const movement = hab.filter(e => e.categoria_principal === "exercicio").length;
+
+      document.getElementById("habitMetrics").innerHTML = [
+        metric(String(hab.length), "Registros de corpo/rotina", "hábitos, sono, alimentação e saúde"),
+        metric(String(positives), "Sinais positivos", "impacto positivo"),
+        metric(String(alerts), "Pontos de atenção", "impacto negativo/alerta")
+      ].join("");
+
+      const by = topCounts(hab.map(e => `${e.categoria_principal}/${e.subcategoria}`), 20);
+      document.getElementById("habitList").innerHTML = by.length ? by.map(([k,v]) => `<div class="listItem">
+        <div class="spaced"><strong>${escapeHTML(k)}</strong><span class="pill">${v}x</span></div>
+      </div>`).join("") : `<div class="empty">Sem hábitos registrados ainda.</div>`;
     }
 
-    async function clearAll(){
-      if(!confirm("Apagar todos os registros do backend local?")) return;
-      await fetch(API_BASE + "/api/records", {method:"DELETE"});
-      loadData();
+    function renderEmotions() {
+      const emos = state.records.flatMap(r => r.analysis?.emocoes_detectadas || []);
+      const triggers = state.records.flatMap(r => r.analysis?.gatilhos_possiveis || []);
+      const contexts = state.records.flatMap(r => r.analysis?.contextos || []);
+
+      document.getElementById("emotionMetrics").innerHTML = [
+        metric(String(emos.length), "Estados emocionais", "menções detectadas"),
+        metric(String(new Set(emos).size), "Emoções diferentes", "variedade"),
+        metric(String(triggers.length), "Gatilhos prováveis", "inferências")
+      ].join("");
+
+      document.getElementById("emotionList").innerHTML = renderCountList(topCounts(emos, 20), "emoção");
+      document.getElementById("triggerList").innerHTML = renderCountList(topCounts([...triggers, ...contexts], 20), "gatilho/contexto");
     }
 
-    function exportData(){
-      window.open(API_BASE + "/api/export", "_blank");
+    function renderEmergent() {
+      document.getElementById("emergentList").innerHTML = renderCatItems(state.emergentCategories);
     }
 
-    loadData();
-    setInterval(loadData, 8000);
+    function renderCatItems(cats) {
+      if (!cats.length) return `<div class="empty">Nenhuma categoria emergente ainda. Registre frases com contexto real.</div>`;
+      return cats.map(c => {
+        const conf = Math.round((c.confianca_media || 0) * 100);
+        return `<div class="listItem">
+          <div class="spaced">
+            <div>
+              <strong>${escapeHTML(c.nome)}</strong>
+              <div class="muted small">${escapeHTML(c.categoria_mae)} · ${escapeHTML(c.status)}</div>
+            </div>
+            <span class="pill">${c.ocorrencias} ocorrência(s)</span>
+          </div>
+          <p class="small muted" style="margin:10px 0 0">${escapeHTML(c.motivo)}</p>
+          <div class="bar" style="--w:${conf}%"><i></i></div>
+          <div class="muted2 small">confiança média: ${conf}%</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderPatterns() {
+      const patterns = state.patterns || [];
+      document.getElementById("patternsList").innerHTML = patterns.length ? patterns.map(p => `
+        <div class="listItem">
+          <div class="spaced">
+            <strong>${escapeHTML(p.nome)}</strong>
+            <span class="pill">${escapeHTML(p.status)} · ${p.ocorrencias}x</span>
+          </div>
+          <p class="small muted">Confiança local: ${Math.round((p.confianca||0)*100)}%</p>
+          <div class="chips">${(p.evidencias||[]).slice(0,3).map(e => `<span class="chip warn">${escapeHTML(e.text.slice(0,48))}</span>`).join("")}</div>
+        </div>
+      `).join("") : `<div class="empty">Padrões aparecerão quando houver repetição ou combinação de sinais.</div>`;
+
+      document.getElementById("insightsList").innerHTML = buildLocalInsights().map(i => `
+        <div class="listItem"><strong>${escapeHTML(i.title)}</strong><p class="small muted" style="margin:8px 0 0">${escapeHTML(i.text)}</p></div>
+      `).join("") || `<div class="empty">Sem insights ainda.</div>`;
+    }
+
+    function buildLocalInsights() {
+      const insights = [];
+      const expenses = allEvents().filter(e => e.tipo === "financeiro");
+      const totalExpense = expenses.reduce((s,e) => s + (Number(e.valor)||0), 0);
+      if (totalExpense > 0) insights.push({title:"Custo de vida registrado", text:`Até agora, o sistema capturou ${currency(totalExpense)} em despesas. Com mais dados, será possível separar gasto necessário, gasto de conveniência, gasto social e gasto comportamental.`});
+
+      const exaust = state.emergentCategories.find(c => normalizeText(c.nome).includes("exaust"));
+      if (exaust) insights.push({title:"Possível custo da exaustão", text:`A categoria “${exaust.nome}” apareceu ${exaust.ocorrencias} vez(es). Isso sugere que baixa energia pode estar virando decisão prática ou financeira.`});
+
+      const atraso = state.emergentCategories.find(c => normalizeText(c.nome).includes("atras"));
+      if (atraso) insights.push({title:"Custo da desorganização", text:`A categoria “${atraso.nome}” indica eventos em que atraso ou quebra de rotina pode ter gerado custo ou impacto.`});
+
+      const exercise = allEvents().filter(e => e.categoria_principal === "exercicio").length;
+      if (exercise) insights.push({title:"Movimento registrado", text:`Há ${exercise} registro(s) de exercício/movimento. Observe se eles aparecem junto de melhora de humor, sono ou produtividade.`});
+
+      if (state.records.length >= 7 && state.emergentCategories.length === 0) insights.push({title:"Registros objetivos demais", text:"Você já tem vários registros, mas poucas categorias emergentes. Experimente incluir contexto: por quê, como se sentiu, o que causou ou o que aconteceu depois."});
+
+      return insights;
+    }
+
+    function renderCountList(items, label) {
+      if (!items.length) return `<div class="empty">Sem ${escapeHTML(label)} suficiente.</div>`;
+      const max = Math.max(...items.map(x => x[1]), 1);
+      return items.map(([k,v]) => `<div class="listItem">
+        <div class="spaced"><strong>${escapeHTML(k)}</strong><span class="pill">${v}x</span></div>
+        <div class="bar" style="--w:${Math.round(v/max*100)}%"><i></i></div>
+      </div>`).join("");
+    }
+
+    function topCounts(arr, limit=10) {
+      const m = new Map();
+      arr.filter(Boolean).forEach(x => m.set(x, (m.get(x)||0)+1));
+      return [...m.entries()].sort((a,b) => b[1]-a[1]).slice(0, limit);
+    }
+
+    function topMoney(arr, keyFn) {
+      const m = new Map();
+      arr.forEach(e => {
+        const k = keyFn(e) || "sem_categoria";
+        m.set(k, (m.get(k)||0) + (Number(e.valor)||0));
+      });
+      return [...m.entries()].sort((a,b) => b[1]-a[1]);
+    }
+
+    function aggregatePairs(pairs) {
+      const m = new Map();
+      pairs.forEach(([k,v]) => m.set(k, (m.get(k)||0) + (Number(v)||0)));
+      return [...m.entries()].sort((a,b) => b[1]-a[1]);
+    }
+
+    function fillExamples() {
+      const examples = [
+        "gastei 61 no iFood porque estava exausto depois da audiência",
+        "dormi mal e acordei atrasado, peguei Uber de 28 reais",
+        "caminhei 35 minutos e fiquei mais calmo",
+        "recebi 1500 de honorários do cliente João",
+        "fiquei ansioso depois da reunião",
+        "almocei fora 42 porque estava sem tempo",
+        "estudei 2 horas e terminei uma tarefa importante"
+      ];
+      document.getElementById("messageInput").value = examples[Math.floor(Math.random()*examples.length)];
+    }
+
+    function generateLocalReport() {
+      const lines = [];
+      const events = allEvents();
+      const expenses = events.filter(e => e.tipo === "financeiro");
+      const income = events.filter(e => e.tipo === "receita");
+      const totalExpense = expenses.reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const totalIncome = income.reduce((s,e) => s + (Number(e.valor)||0), 0);
+      const tags = topCounts(state.records.flatMap(r => r.analysis?.tags || []), 10);
+      const cats = state.emergentCategories.slice(0,8);
+
+      lines.push("RELATÓRIO LOCAL — RADAR DE VIDA");
+      lines.push("");
+      lines.push(`Registros totais: ${state.records.length}`);
+      lines.push(`Despesas registradas: ${currency(totalExpense)}`);
+      lines.push(`Receitas registradas: ${currency(totalIncome)}`);
+      lines.push(`Saldo capturado: ${currency(totalIncome - totalExpense)}`);
+      lines.push("");
+      lines.push("Categorias emergentes:");
+      if (cats.length) cats.forEach((c,i) => lines.push(`${i+1}. ${c.nome} — ${c.ocorrencias} ocorrência(s), status ${c.status}`));
+      else lines.push("Ainda não há categorias emergentes suficientes.");
+      lines.push("");
+      lines.push("Tags mais frequentes:");
+      if (tags.length) tags.forEach(([k,v],i) => lines.push(`${i+1}. ${k} — ${v}x`));
+      else lines.push("Ainda não há tags suficientes.");
+      lines.push("");
+      lines.push("Leitura local:");
+      buildLocalInsights().forEach(i => lines.push(`- ${i.title}: ${i.text}`));
+
+      document.getElementById("reportBox").textContent = lines.join("\n");
+    }
+
+    async function generateAIReport() {
+      if (!settings.apiKey) return alert("Configure a chave da OpenAI primeiro.");
+      const compact = state.records.slice(0,200).map(r => ({
+        data: r.eventDateTime,
+        texto: r.originalText,
+        resumo: r.analysis?.resumo_curto,
+        eventos: r.analysis?.eventos_detectados,
+        tags: r.analysis?.tags,
+        emergentes: r.analysis?.categorias_emergentes_candidatas,
+        hipoteses: r.analysis?.hipoteses
+      }));
+
+      document.getElementById("reportBox").textContent = "Gerando relatório com IA...";
+
+      const prompt = `Gere um relatório profundo, prático e não julgador sobre os registros abaixo.
+Separe em: visão geral, financeiro, hábitos/saúde, emoções/energia, padrões emergentes, riscos de interpretação e próximos 3 experimentos simples.
+Não faça diagnóstico. Não trate hipótese como certeza.
+
+Dados:
+${JSON.stringify(compact, null, 2)}`;
+
+      try {
+        const body = {
+          model: settings.modelName || "gpt-5.4-mini",
+          input: [
+            { role:"system", content:"Você é um analista de padrões de vida cotidiana. Seja claro, profundo e prudente." },
+            { role:"user", content: prompt }
+          ]
+        };
+
+        const res = await fetch("https://api.openai.com/v1/responses", {
+          method:"POST",
+          headers: { "Content-Type":"application/json", "Authorization":`Bearer ${settings.apiKey}` },
+          body: JSON.stringify(body)
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        let out = data.output_text;
+        if (!out && Array.isArray(data.output)) {
+          out = data.output.flatMap(item => item.content || []).map(c => c.text || "").join("\n");
+        }
+        document.getElementById("reportBox").textContent = out || "Sem resposta textual.";
+      } catch (err) {
+        document.getElementById("reportBox").textContent = "Erro ao gerar relatório: " + err.message;
+      }
+    }
+
+    async function importWhatsAppTxt(useAI) {
+      const file = document.getElementById("whatsFile").files[0];
+      if (!file) return alert("Selecione um arquivo .txt exportado do WhatsApp.");
+      const txt = await file.text();
+      const messages = parseWhatsApp(txt);
+      if (!messages.length) return alert("Não encontrei mensagens compatíveis no arquivo.");
+
+      if (!confirm(`Importar ${messages.length} mensagens? ${useAI ? "A análise com IA pode consumir créditos e demorar." : ""}`)) return;
+
+      document.getElementById("lastAnalysis").textContent = `Importando ${messages.length} mensagens...`;
+      go("capture");
+
+      for (const m of messages) {
+        let analysis;
+        const dt = m.datetime || new Date().toISOString();
+        try {
+          analysis = useAI ? await analyzeWithOpenAI(m.text, dt) : heuristicAnalysis(m.text, dt);
+        } catch (err) {
+          analysis = heuristicAnalysis(m.text, dt);
+          analysis.insight_imediato = "IA falhou na importação; usado modo offline. " + err.message;
+        }
+        state.records.unshift({
+          id: uid("rec"),
+          source: "whatsapp_import",
+          author: m.author,
+          originalText: m.text,
+          createdAt: new Date().toISOString(),
+          eventDateTime: dt,
+          analysis
+        });
+      }
+
+      reprocessEmergent(false);
+      saveState();
+      document.getElementById("lastAnalysis").textContent = `Importação concluída: ${messages.length} mensagens.`;
+    }
+
+    function parseWhatsApp(txt) {
+      const lines = txt.split(/\r?\n/);
+      const out = [];
+      let current = null;
+
+      const re1 = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*-\s*([^:]+):\s*(.*)$/;
+      const re2 = /^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\]\s*([^:]+):\s*(.*)$/;
+
+      for (const line of lines) {
+        let m = line.match(re1) || line.match(re2);
+        if (m) {
+          if (current && usefulMessage(current.text)) out.push(current);
+          const [, dd, mm, yyyyRaw, HH, MM, SS, author, msg] = m;
+          const yyyy = yyyyRaw.length === 2 ? "20" + yyyyRaw : yyyyRaw;
+          current = {
+            datetime: new Date(`${yyyy}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}T${HH.padStart(2,"0")}:${MM}:00`).toISOString(),
+            author: author.trim(),
+            text: cleanWhatsMsg(msg)
+          };
+        } else if (current) {
+          current.text += "\n" + cleanWhatsMsg(line);
+        }
+      }
+      if (current && usefulMessage(current.text)) out.push(current);
+      return out.filter(m => usefulMessage(m.text));
+    }
+
+    function cleanWhatsMsg(s) {
+      return String(s || "").replace(/\u200e/g,"").trim();
+    }
+
+    function usefulMessage(s) {
+      const n = normalizeText(s);
+      if (!n || n.length < 2) return false;
+      if (n.includes("mensagem apagada")) return false;
+      if (n.includes("midia oculta") || n.includes("imagem omitida") || n.includes("<midia")) return false;
+      if (n.includes("criptografia de ponta a ponta")) return false;
+      return true;
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify({ state, settings: {...settings, apiKey: ""} }, null, 2)], { type:"application/json" });
+      downloadBlob(blob, `radar_de_vida_backup_${todayISO()}.json`);
+    }
+
+    function exportCSV() {
+      const rows = [["data","origem","autor","texto","tipo","categoria","subcategoria","valor","moeda","tags","emergentes","insight"]];
+      for (const r of state.records) {
+        const events = r.analysis?.eventos_detectados || [{}];
+        for (const e of events) {
+          rows.push([
+            r.eventDateTime || r.createdAt,
+            r.source,
+            r.author || "",
+            r.originalText,
+            e.tipo || "",
+            e.categoria_principal || "",
+            e.subcategoria || "",
+            e.valor ?? "",
+            e.moeda || "",
+            (r.analysis?.tags || []).join("|"),
+            (r.analysis?.categorias_emergentes_candidatas || []).map(c => c.nome).join("|"),
+            r.analysis?.insight_imediato || ""
+          ]);
+        }
+      }
+      const csv = rows.map(row => row.map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(";")).join("\n");
+      downloadBlob(new Blob([csv], { type:"text/csv;charset=utf-8" }), `radar_de_vida_eventos_${todayISO()}.csv`);
+    }
+
+    async function importJSON() {
+      const file = document.getElementById("jsonFile").files[0];
+      if (!file) return alert("Selecione um arquivo JSON.");
+      const data = JSON.parse(await file.text());
+      const newState = data.state || data;
+      if (!newState.records || !Array.isArray(newState.records)) return alert("JSON inválido.");
+      if (!confirm("Restaurar este backup? Isso substituirá os dados atuais.")) return;
+      state = newState;
+      saveState();
+      alert("Backup restaurado.");
+    }
+
+    function downloadBlob(blob, filename) {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+
+    async function resetAll() {
+      const msg = isServerMode()
+        ? "Apagar todos os dados do servidor e também a cópia local? Esta ação afeta o painel online."
+        : "Apagar todos os registros locais? Esta ação não pode ser desfeita sem backup.";
+      if (!confirm(msg)) return;
+
+      if (isServerMode()) {
+        try {
+          await clearServerRecords();
+        } catch (err) {
+          if (!confirm("Falha ao limpar o servidor: " + err.message + "\nDeseja limpar apenas a cópia local?")) return;
+        }
+      }
+
+      state = structuredClone(defaultState);
+      saveState();
+      if (isServerMode()) syncFromServer(false);
+    }
+
+    init();
   </script>
 </body>
 </html>
