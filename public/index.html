@@ -3,2263 +3,1159 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar de Vida — Cloud Completo v0.2</title>
+  <title>Radar de Vida — Google Sheets</title>
+
   <style>
     :root {
-      --bg: #07110d;
-      --panel: #0d1c16;
-      --panel2: #10251d;
-      --card: #12291f;
-      --soft: #1a372b;
-      --line: rgba(184, 255, 218, 0.13);
-      --text: #effff7;
-      --muted: #a6c9b9;
-      --muted2: #77a08e;
-      --accent: #50f0a0;
-      --accent2: #77d6ff;
-      --warn: #ffd166;
-      --danger: #ff6b6b;
-      --good: #5cffb0;
-      --shadow: 0 24px 70px rgba(0,0,0,.35);
-      --radius: 22px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #07111f;
+      --bg2: #0f172a;
+      --card: rgba(15, 23, 42, 0.92);
+      --card2: rgba(30, 41, 59, 0.76);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a78bfa;
+      --radius: 20px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
-      background:
-        radial-gradient(circle at 20% 5%, rgba(80,240,160,.14), transparent 30%),
-        radial-gradient(circle at 80% 0%, rgba(119,214,255,.12), transparent 28%),
-        linear-gradient(180deg, #06100c 0%, #07110d 42%, #050806 100%);
+      min-height: 100vh;
       color: var(--text);
-      font-family: var(--sans);
-      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.16), transparent 28%),
+        radial-gradient(circle at 90% 0%, rgba(167, 139, 250, 0.14), transparent 30%),
+        radial-gradient(circle at 70% 90%, rgba(34, 197, 94, 0.10), transparent 32%),
+        var(--bg);
     }
 
-    button, input, textarea, select {
-      font-family: inherit;
-    }
-
-    .app {
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      min-height: 100vh;
-    }
-
-    aside {
-      border-right: 1px solid var(--line);
-      background: rgba(6,16,12,.82);
-      backdrop-filter: blur(16px);
-      padding: 22px;
+    header {
       position: sticky;
       top: 0;
-      height: 100vh;
-      overflow: auto;
+      z-index: 10;
+      background: rgba(7, 17, 31, 0.86);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+      padding: 22px 16px 18px;
     }
 
-    main {
-      padding: 28px;
-      max-width: 1500px;
-      width: 100%;
+    .wrap {
+      max-width: 1220px;
       margin: 0 auto;
     }
 
-    .brand {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 22px;
-    }
-
-    .logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 15px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      box-shadow: 0 0 26px rgba(80,240,160,.24);
-      display: grid;
-      place-items: center;
-      color: #062017;
-      font-weight: 900;
-      letter-spacing: -1px;
-    }
-
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { font-size: 32px; letter-spacing: -1px; line-height: 1.05; }
-    h2 { font-size: 22px; letter-spacing: -.4px; }
-    h3 { font-size: 15px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    nav {
-      display: grid;
-      gap: 8px;
-      margin: 20px 0;
-    }
-
-    .navbtn {
-      border: 1px solid transparent;
-      color: var(--muted);
-      background: transparent;
-      text-align: left;
-      padding: 12px 13px;
-      border-radius: 14px;
-      cursor: pointer;
-      transition: .18s;
+    .headerRow {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
     }
 
-    .navbtn:hover { background: rgba(255,255,255,.04); color: var(--text); }
-    .navbtn.active {
-      background: linear-gradient(135deg, rgba(80,240,160,.16), rgba(119,214,255,.08));
-      border-color: rgba(80,240,160,.25);
-      color: var(--text);
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: -0.7px;
+    }
+
+    .subtitle {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 780px;
+    }
+
+    .statusbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
     }
 
     .pill {
-      font-size: 11px;
       border: 1px solid var(--line);
-      color: var(--muted);
-      padding: 3px 8px;
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 999px;
+      padding: 8px 11px;
+      font-size: 12px;
+      color: #dbeafe;
       white-space: nowrap;
     }
 
-    .sidebox {
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.025);
-      border-radius: 18px;
-      padding: 14px;
-      margin-top: 14px;
+    .pill.ok {
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.10);
     }
 
-    .sidebox strong { color: var(--accent); }
+    .pill.warn {
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.10);
+    }
+
+    .pill.err {
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.10);
+    }
+
+    main {
+      padding: 22px 16px 64px;
+    }
 
     .grid {
       display: grid;
-      gap: 16px;
+      grid-template-columns: 410px 1fr;
+      gap: 18px;
+      align-items: start;
     }
 
-    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
-    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    @media (max-width: 940px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
 
     .card {
-      background: linear-gradient(180deg, rgba(18,41,31,.96), rgba(13,28,22,.94));
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 20px;
+      padding: 18px;
+      box-shadow: 0 20px 70px rgba(0,0,0,0.24);
     }
 
-    .card.soft {
-      box-shadow: none;
-      background: rgba(255,255,255,.025);
+    .card + .card {
+      margin-top: 16px;
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 16px;
-      align-items: stretch;
-      margin-bottom: 18px;
+    h2 {
+      margin: 0 0 13px;
+      font-size: 18px;
+      letter-spacing: -0.2px;
     }
 
-    textarea, input, select {
-      width: 100%;
-      color: var(--text);
-      background: #07130f;
-      border: 1px solid rgba(184,255,218,.18);
-      border-radius: 16px;
-      outline: none;
-      padding: 13px 14px;
-      font-size: 14px;
-    }
-
-    textarea {
-      min-height: 140px;
-      resize: vertical;
-      line-height: 1.55;
-    }
-
-    textarea:focus, input:focus, select:focus {
-      border-color: rgba(80,240,160,.55);
-      box-shadow: 0 0 0 4px rgba(80,240,160,.08);
+    h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #dbeafe;
     }
 
     label {
       display: block;
-      font-size: 12px;
-      color: var(--muted);
-      margin: 0 0 7px;
-      font-weight: 700;
-      letter-spacing: .03em;
-    }
-
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .spaced {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .btn {
-      border: 0;
-      border-radius: 15px;
-      padding: 12px 15px;
-      color: #06100c;
-      background: linear-gradient(135deg, var(--accent), #b2ffd6);
-      font-weight: 800;
-      cursor: pointer;
-      transition: transform .15s, filter .15s;
-    }
-
-    .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-
-    .btn.secondary {
-      background: rgba(255,255,255,.055);
-      color: var(--text);
-      border: 1px solid var(--line);
-      font-weight: 700;
-    }
-
-    .btn.warn { background: linear-gradient(135deg, var(--warn), #fff2bd); }
-    .btn.danger { background: rgba(255,107,107,.14); color: #ffdede; border: 1px solid rgba(255,107,107,.35); }
-
-    .metric {
-      padding: 17px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.035);
-      border: 1px solid var(--line);
-      min-height: 110px;
-    }
-
-    .metric .n {
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: -.9px;
-      margin-bottom: 4px;
-    }
-
-    .metric .t {
+      margin: 12px 0 6px;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.35;
     }
 
-    .metric .s {
-      color: var(--muted2);
-      font-size: 11px;
-      margin-top: 8px;
-    }
-
-    .view { display: none; }
-    .view.active { display: block; }
-
-    .timeline {
-      display: grid;
-      gap: 10px;
-    }
-
-    .event {
-      display: grid;
-      grid-template-columns: 100px 1fr auto;
-      gap: 14px;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--line);
-      align-items: start;
-    }
-
-    .event .time {
-      color: var(--muted2);
-      font-family: var(--mono);
-      font-size: 12px;
-    }
-
-    .event .text {
-      font-weight: 750;
-      margin-bottom: 8px;
-    }
-
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .chip {
-      font-size: 11px;
-      padding: 5px 8px;
-      border-radius: 999px;
-      background: rgba(80,240,160,.09);
-      color: #c8ffe1;
-      border: 1px solid rgba(80,240,160,.16);
-    }
-
-    .chip.blue {
-      background: rgba(119,214,255,.08);
-      border-color: rgba(119,214,255,.17);
-      color: #d9f6ff;
-    }
-
-    .chip.warn {
-      background: rgba(255,209,102,.08);
-      border-color: rgba(255,209,102,.2);
-      color: #fff0bb;
-    }
-
-    .chip.red {
-      background: rgba(255,107,107,.08);
-      border-color: rgba(255,107,107,.2);
-      color: #ffdddd;
-    }
-
-    .money {
-      font-family: var(--mono);
-      font-weight: 900;
-      color: var(--accent);
-      white-space: nowrap;
-    }
-
-    .muted { color: var(--muted); }
-    .muted2 { color: var(--muted2); }
-
-    .analysisBox {
-      white-space: pre-wrap;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: #dfffee;
-      background: #06100c;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      padding: 14px;
-      overflow: auto;
-      max-height: 380px;
-    }
-
-    .list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .listItem {
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--line);
-    }
-
-    .bar {
-      height: 10px;
-      background: rgba(255,255,255,.08);
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 9px;
-    }
-
-    .bar > i {
-      display: block;
-      height: 100%;
-      width: var(--w, 20%);
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 999px;
-    }
-
-    .table {
+    input,
+    textarea,
+    select {
       width: 100%;
-      border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 16px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 11px 12px;
+      background: rgba(255,255,255,0.065);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
     }
 
-    .table th, .table td {
-      border-bottom: 1px solid var(--line);
-      padding: 11px 9px;
-      text-align: left;
-      font-size: 13px;
-      vertical-align: top;
-    }
-
-    .table th {
-      color: var(--muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-
-    .notice {
-      border-left: 4px solid var(--accent);
-      background: rgba(80,240,160,.07);
-      border-radius: 15px;
-      padding: 13px 15px;
-      color: #dfffee;
-      line-height: 1.5;
-      font-size: 13px;
-    }
-
-    .notice.warn { border-left-color: var(--warn); background: rgba(255,209,102,.07); }
-    .notice.danger { border-left-color: var(--danger); background: rgba(255,107,107,.08); }
-
-    .small {
-      font-size: 12px;
+    textarea {
+      min-height: 116px;
+      resize: vertical;
       line-height: 1.45;
     }
 
-    .kbd {
-      font-family: var(--mono);
-      padding: 2px 6px;
-      border-radius: 8px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid var(--line);
+    select option {
+      color: #0f172a;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 520px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 13px;
+      padding: 11px 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--accent);
+      color: #04111f;
+      transition: transform .12s ease, opacity .12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.94;
+    }
+
+    button.secondary {
+      background: rgba(255,255,255,0.09);
       color: var(--text);
-    }
-
-    .footer-actions {
-      position: sticky;
-      bottom: 0;
-      background: linear-gradient(180deg, transparent, rgba(7,17,13,.96) 30%);
-      padding-top: 18px;
-      margin-top: 24px;
-    }
-
-    .empty {
-      border: 1px dashed rgba(184,255,218,.22);
-      border-radius: 18px;
-      padding: 24px;
-      color: var(--muted);
-      text-align: center;
-      background: rgba(255,255,255,.02);
-    }
-
-    .progressRing {
-      width: 112px;
-      height: 112px;
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at center, #0d1c16 56%, transparent 57%),
-        conic-gradient(var(--accent) calc(var(--p, 50)*1%), rgba(255,255,255,.08) 0);
-      display: grid;
-      place-items: center;
-      margin: 10px auto;
       border: 1px solid var(--line);
     }
 
-    .progressRing b {
-      font-size: 26px;
+    button.green {
+      background: var(--green);
+      color: #052e16;
     }
 
-    .two-pane {
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 16px;
+    button.yellow {
+      background: var(--yellow);
+      color: #111827;
+    }
+
+    button.red {
+      background: var(--red);
+      color: white;
+    }
+
+    button.purple {
+      background: var(--purple);
+      color: #1e1b4b;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .notice {
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      background: rgba(56, 189, 248, 0.09);
+      color: #bae6fd;
+      border-radius: 15px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .successBox {
+      border: 1px solid rgba(34, 197, 94, 0.30);
+      background: rgba(34, 197, 94, 0.09);
+      color: #bbf7d0;
+      border-radius: 15px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 12px;
+    }
+
+    .dangerBox {
+      border: 1px solid rgba(239, 68, 68, 0.30);
+      background: rgba(239, 68, 68, 0.09);
+      color: #fecaca;
+      border-radius: 15px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 12px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 7px;
     }
 
     .filters {
       display: grid;
-      grid-template-columns: 1.3fr .8fr .8fr auto;
+      grid-template-columns: 1.3fr 0.8fr 0.7fr 0.7fr;
       gap: 10px;
       margin-bottom: 14px;
     }
 
-    @media (max-width: 1000px) {
-      .app { grid-template-columns: 1fr; }
-      aside { position: static; height: auto; }
-      main { padding: 18px; }
-      .hero, .grid.cols-2, .grid.cols-3, .grid.cols-4, .two-pane, .filters {
+    @media (max-width: 860px) {
+      .filters {
         grid-template-columns: 1fr;
       }
-      .event { grid-template-columns: 1fr; }
     }
 
-    @media print {
-      aside, .noPrint { display: none !important; }
-      .app { display: block; }
-      body { background: white; color: black; }
-      .card, .metric, .listItem, .event { box-shadow: none; border-color: #ddd; background: white; color: black; }
+    .record {
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 14px;
+      background: rgba(255,255,255,0.055);
+      margin-bottom: 12px;
+    }
+
+    .recordTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .recordTitle {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+
+    .recordMeta {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .recordText {
+      margin-top: 10px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      font-size: 14px;
+      color: #e2e8f0;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 9px 6px 0 0;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.10);
+      border: 1px solid rgba(56, 189, 248, 0.24);
+      color: #bae6fd;
+      font-size: 12px;
+    }
+
+    .priority {
+      display: inline-block;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid var(--line);
+      color: #e2e8f0;
+      white-space: nowrap;
+    }
+
+    .priority.urgente {
+      background: rgba(239, 68, 68, 0.14);
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .priority.alta {
+      background: rgba(245, 158, 11, 0.13);
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .priority.baixa {
+      background: rgba(34, 197, 94, 0.10);
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.30);
+    }
+
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .loader {
+      display: none;
+      color: #bae6fd;
+      font-size: 13px;
+      margin: 12px 0;
+    }
+
+    .loader.show {
+      display: block;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    code {
+      background: rgba(255,255,255,0.08);
+      padding: 2px 5px;
+      border-radius: 6px;
+      color: #bfdbfe;
+    }
+
+    .footerNote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .topActions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
+
 <body>
-  <div class="app">
-    <aside>
-      <div class="brand">
-        <div class="logo">RV</div>
+  <header>
+    <div class="wrap">
+      <div class="headerRow">
         <div>
-          <h2 style="margin:0">Radar de Vida</h2>
-          <div class="subtitle">Laboratório Local v0.1</div>
+          <h1>Radar de Vida</h1>
+          <div class="subtitle">
+            Versão integrada ao Google Sheets por Apps Script. O Render/GitHub hospeda apenas a interface;
+            o histórico fica salvo na planilha-banco.
+          </div>
+        </div>
+
+        <div class="buttons" style="margin-top:0">
+          <button class="secondary" onclick="abrirApiDireta()">Abrir API</button>
+          <button class="green" onclick="sincronizar()">Sincronizar</button>
         </div>
       </div>
 
-      <p class="subtitle">
-        Transforme frases soltas em registros estruturados, categorias emergentes, padrões e insights sobre a vida cotidiana.
-      </p>
-
-      <nav id="nav"></nav>
-
-      <div class="sidebox">
-        <h3>Estado do radar</h3>
-        <div class="small muted">
-          Modo: <strong id="sideMode">—</strong><br />
-          Servidor: <strong id="sideServer">—</strong><br />
-          Registros: <strong id="sideCount">0</strong><br />
-          Categorias emergentes: <strong id="sideCats">0</strong><br />
-          Último registro: <span id="sideLast">—</span>
-        </div>
+      <div class="statusbar">
+        <div class="pill" id="pillApi">API: não testada</div>
+        <div class="pill" id="pillTotal">Registros: 0</div>
+        <div class="pill" id="pillOrigem">Banco: Google Sheets</div>
+        <div class="pill" id="pillAtualizado">Atualizado: —</div>
       </div>
+    </div>
+  </header>
 
-      <div class="sidebox">
-        <h3>Privacidade</h3>
-        <div class="small muted">
-          Esta versão pode trabalhar em modo local ou conectada ao backend do Render. A chave da OpenAI deve ficar no backend quando o painel estiver público.
-        </div>
-      </div>
+  <main>
+    <div class="wrap grid">
+      <aside>
+        <section class="card">
+          <h2>Conexão com Google Sheets</h2>
 
-      <div class="footer-actions noPrint">
-        <button class="btn secondary" onclick="syncFromServer(true)">Sincronizar servidor</button>
-        <div style="height:8px"></div>
-        <button class="btn secondary" onclick="exportJSON()">Exportar backup JSON</button>
-        <div style="height:8px"></div>
-        <button class="btn danger" onclick="resetAll()">Apagar tudo</button>
-      </div>
-    </aside>
+          <div class="notice">
+            Cole aqui a URL do <strong>App da Web</strong> do Apps Script, aquela que termina em <code>/exec</code>.
+            Ela fica salva neste navegador para as próximas aberturas.
+          </div>
 
-    <main>
-      <section id="view-dashboard" class="view active">
-        <div class="hero">
-          <div class="card">
-            <h1>Seu WhatsApp como radar da vida real</h1>
-            <p class="subtitle">
-              Cole ou digite registros como “gastei 52 no iFood porque estava cansado”.
-              O sistema organiza fatos, contexto, hipóteses, categorias emergentes e padrões.
-            </p>
+          <label for="apiUrl">URL da API Apps Script</label>
+          <input id="apiUrl" placeholder="https://script.google.com/macros/s/SEU_CODIGO/exec" />
+
+          <div class="buttons">
+            <button class="green" onclick="salvarApiUrl()">Salvar URL</button>
+            <button class="secondary" onclick="testarApi()">Testar API</button>
+          </div>
+
+          <div class="small">
+            Teste esperado: <code>{"ok":true,"app":"Radar de Vida API"}</code>
+          </div>
+
+          <div id="apiFeedback" class="successBox hidden"></div>
+          <div id="apiError" class="dangerBox hidden"></div>
+        </section>
+
+        <section class="card">
+          <h2>Novo registro</h2>
+
+          <form id="formRegistro">
+            <label for="titulo">Título</label>
+            <input id="titulo" required placeholder="Ex.: Prazo, ideia, alerta, conversa, tarefa..." />
+
             <div class="row">
-              <button class="btn" onclick="go('capture')">Registrar agora</button>
-              <button class="btn secondary" onclick="syncFromServer(true)">Sincronizar cloud</button>
-              <button class="btn secondary" onclick="go('settings')">Configurações</button>
-              <button class="btn secondary" onclick="go('import')">Importar WhatsApp</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="spaced">
               <div>
-                <h2 style="margin-bottom:4px">Índice de clareza</h2>
-                <p class="subtitle">Estimativa local baseada em registros, categorias, hábitos e padrões.</p>
+                <label for="tipo">Tipo</label>
+                <select id="tipo">
+                  <option value="Registro Manual">Registro Manual</option>
+                  <option value="Mensagem WhatsApp">Mensagem WhatsApp</option>
+                  <option value="Tarefa">Tarefa</option>
+                  <option value="Evento">Evento</option>
+                  <option value="Ideia">Ideia</option>
+                  <option value="Alerta">Alerta</option>
+                  <option value="Documento">Documento</option>
+                  <option value="Outro">Outro</option>
+                </select>
               </div>
-              <span class="pill">experimental</span>
-            </div>
-            <div class="progressRing" style="--p:50" id="clarityRing"><b id="clarityScore">50</b></div>
-            <p class="subtitle" id="clarityText" style="text-align:center;margin:0">Comece registrando eventos reais do seu dia.</p>
-          </div>
-        </div>
 
-        <div class="grid cols-4" id="metrics"></div>
-
-        <div style="height:18px"></div>
-
-        <div class="grid cols-2">
-          <div class="card">
-            <div class="spaced">
-              <h2>Hoje</h2>
-              <span class="pill" id="todayLabel"></span>
-            </div>
-            <div id="todaySummary"></div>
-          </div>
-
-          <div class="card">
-            <div class="spaced">
-              <h2>Categorias que estão nascendo</h2>
-              <button class="btn secondary" onclick="go('emergent')">ver todas</button>
-            </div>
-            <div id="emergentPreview" class="list"></div>
-          </div>
-        </div>
-
-        <div style="height:18px"></div>
-
-        <div class="card">
-          <div class="spaced">
-            <h2>Linha do tempo recente</h2>
-            <button class="btn secondary" onclick="go('timeline')">abrir linha do tempo</button>
-          </div>
-          <div id="timelinePreview" class="timeline"></div>
-        </div>
-      </section>
-
-      <section id="view-capture" class="view">
-        <div class="two-pane">
-          <div class="card">
-            <h2>Entrada rápida</h2>
-            <p class="subtitle">
-              Digite uma frase natural. Em modo servidor, o registro vai para o backend; em modo local, fica apenas no navegador.
-            </p>
-
-            <label for="messageInput">Mensagem</label>
-            <textarea id="messageInput" placeholder="Ex.: gastei 61 no iFood porque estava exausto depois da audiência"></textarea>
-
-            <div class="grid cols-2" style="margin-top:12px">
               <div>
-                <label>Data do evento</label>
-                <input id="dateInput" type="date" />
-              </div>
-              <div>
-                <label>Hora aproximada</label>
-                <input id="timeInput" type="time" />
+                <label for="categoria">Categoria</label>
+                <select id="categoria">
+                  <option value="Geral">Geral</option>
+                  <option value="Saúde">Saúde</option>
+                  <option value="Jurídico">Jurídico</option>
+                  <option value="Finanças">Finanças</option>
+                  <option value="Família">Família</option>
+                  <option value="Trabalho">Trabalho</option>
+                  <option value="Projeto">Projeto</option>
+                  <option value="Outro">Outro</option>
+                </select>
               </div>
             </div>
 
-            <div style="height:12px"></div>
+            <div class="row">
+              <div>
+                <label for="prioridade">Prioridade</label>
+                <select id="prioridade">
+                  <option value="Normal">Normal</option>
+                  <option value="Alta">Alta</option>
+                  <option value="Urgente">Urgente</option>
+                  <option value="Baixa">Baixa</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="status">Status</label>
+                <select id="status">
+                  <option value="Aberto">Aberto</option>
+                  <option value="Em andamento">Em andamento</option>
+                  <option value="Concluído">Concluído</option>
+                  <option value="Arquivado">Arquivado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </div>
+            </div>
 
             <div class="row">
-              <button class="btn" onclick="analyzeAndSave(true)">Registrar no servidor/IA</button>
-              <button class="btn secondary" onclick="analyzeAndSave(false)">Registrar local offline</button>
-              <button class="btn secondary" onclick="fillExamples()">Exemplos</button>
+              <div>
+                <label for="dataEvento">Data do evento</label>
+                <input id="dataEvento" type="date" />
+              </div>
+
+              <div>
+                <label for="horaEvento">Hora</label>
+                <input id="horaEvento" type="time" />
+              </div>
             </div>
 
-            <div style="height:14px"></div>
+            <label for="descricao">Descrição</label>
+            <textarea id="descricao" placeholder="Escreva aqui o conteúdo do registro..."></textarea>
 
-            <div class="notice warn small">
-              No modo servidor, a chave da IA fica no backend. No modo local, evite salvar chave da OpenAI em painel público.
+            <label for="tags">Tags</label>
+            <input id="tags" placeholder="Ex.: Ielma, Piutá, Radar, prazo, WhatsApp" />
+
+            <div class="split">
+              <div>
+                <label for="contatoNome">Contato</label>
+                <input id="contatoNome" placeholder="Nome do contato" />
+              </div>
+              <div>
+                <label for="contatoNumero">Telefone</label>
+                <input id="contatoNumero" placeholder="+55..." />
+              </div>
             </div>
+
+            <div class="buttons">
+              <button class="green" type="submit" id="btnSalvar">Salvar no Google Sheets</button>
+              <button class="secondary" type="button" onclick="limparFormulario()">Limpar</button>
+            </div>
+          </form>
+
+          <div id="saveFeedback" class="successBox hidden"></div>
+          <div id="saveError" class="dangerBox hidden"></div>
+        </section>
+
+        <section class="card">
+          <h2>Backup local emergencial</h2>
+          <div class="small">
+            O banco principal é o Google Sheets. Estes botões servem apenas para exportar a lista carregada na tela
+            ou importar registros antigos em lote para a planilha.
           </div>
 
-          <div class="card">
-            <div class="spaced">
-              <h2>Resultado da última análise</h2>
-              <span class="pill" id="analysisMode">—</span>
-            </div>
-            <div id="lastAnalysis" class="analysisBox">Nenhuma análise ainda.</div>
+          <div class="buttons">
+            <button class="secondary" onclick="exportarJsonTela()">Exportar JSON da tela</button>
+            <button class="purple" onclick="document.getElementById('importJson').click()">Importar JSON para Sheets</button>
+            <input id="importJson" class="hidden" type="file" accept="application/json" onchange="importarJsonParaSheets(event)" />
+          </div>
+        </section>
+      </aside>
+
+      <section class="card">
+        <div class="topActions">
+          <h2>Registros do Google Sheets</h2>
+          <div class="buttons" style="margin-top:0">
+            <button class="secondary" onclick="limparFiltros()">Limpar filtros</button>
+            <button class="green" onclick="sincronizar()">Recarregar</button>
           </div>
         </div>
-      </section>
 
-      <section id="view-timeline" class="view">
-        <div class="card">
-          <div class="spaced">
-            <div>
-              <h2>Linha do tempo</h2>
-              <p class="subtitle">Registros locais e/ou sincronizados do servidor.</p>
-            </div>
-            <button class="btn secondary" onclick="reprocessEmergent()">Recalcular padrões</button>
-          </div>
+        <div class="filters">
+          <input id="busca" placeholder="Buscar por título, descrição, tags..." oninput="renderizar()" />
+          <select id="filtroCategoria" onchange="renderizar()">
+            <option value="">Todas categorias</option>
+            <option value="Geral">Geral</option>
+            <option value="Saúde">Saúde</option>
+            <option value="Jurídico">Jurídico</option>
+            <option value="Finanças">Finanças</option>
+            <option value="Família">Família</option>
+            <option value="Trabalho">Trabalho</option>
+            <option value="Projeto">Projeto</option>
+            <option value="Outro">Outro</option>
+          </select>
+          <select id="filtroStatus" onchange="renderizar()">
+            <option value="">Todos status</option>
+            <option value="Aberto">Aberto</option>
+            <option value="Em andamento">Em andamento</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Arquivado">Arquivado</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+          <select id="ordenacao" onchange="renderizar()">
+            <option value="novo">Mais novos</option>
+            <option value="antigo">Mais antigos</option>
+            <option value="prioridade">Prioridade</option>
+            <option value="titulo">Título</option>
+          </select>
+        </div>
 
-          <div class="filters">
-            <input id="searchFilter" placeholder="Buscar texto, tag, categoria..." oninput="renderTimeline()" />
-            <select id="typeFilter" onchange="renderTimeline()">
-              <option value="">Todos os tipos</option>
-            </select>
-            <select id="periodFilter" onchange="renderTimeline()">
-              <option value="all">Todo período</option>
-              <option value="today">Hoje</option>
-              <option value="7">Últimos 7 dias</option>
-              <option value="30">Últimos 30 dias</option>
-            </select>
-            <button class="btn secondary" onclick="clearFilters()">Limpar</button>
-          </div>
+        <div id="loader" class="loader">Carregando dados do Google Sheets...</div>
+        <div id="lista"></div>
 
-          <div id="timelineFull" class="timeline"></div>
+        <div class="footerNote">
+          Observação: esta versão salva texto e metadados no Google Sheets. Fotos/arquivos entrarão na próxima etapa,
+          usando Google Drive + aba <code>Midias</code>.
         </div>
       </section>
-
-      <section id="view-finance" class="view">
-        <div class="grid cols-3" id="financeMetrics"></div>
-        <div style="height:16px"></div>
-        <div class="grid cols-2">
-          <div class="card">
-            <h2>Gastos por categoria</h2>
-            <div id="financeByCategory" class="list"></div>
-          </div>
-          <div class="card">
-            <h2>Gastos comportamentais</h2>
-            <div id="financeBehavior" class="list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-habits" class="view">
-        <div class="grid cols-3" id="habitMetrics"></div>
-        <div style="height:16px"></div>
-        <div class="card">
-          <h2>Hábitos, saúde e energia</h2>
-          <div id="habitList" class="list"></div>
-        </div>
-      </section>
-
-      <section id="view-emotions" class="view">
-        <div class="grid cols-3" id="emotionMetrics"></div>
-        <div style="height:16px"></div>
-        <div class="grid cols-2">
-          <div class="card">
-            <h2>Emoções e estados detectados</h2>
-            <div id="emotionList" class="list"></div>
-          </div>
-          <div class="card">
-            <h2>Gatilhos prováveis</h2>
-            <div id="triggerList" class="list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-emergent" class="view">
-        <div class="card">
-          <div class="spaced">
-            <div>
-              <h2>Mapa Vivo — categorias emergentes</h2>
-              <p class="subtitle">
-                Categorias que nasceram das frases do usuário. Elas são hipóteses organizadoras, não verdades absolutas.
-              </p>
-            </div>
-            <button class="btn secondary" onclick="reprocessEmergent()">Recalcular</button>
-          </div>
-          <div id="emergentList" class="list"></div>
-        </div>
-      </section>
-
-      <section id="view-patterns" class="view">
-        <div class="grid cols-2">
-          <div class="card">
-            <h2>Padrões detectados</h2>
-            <div id="patternsList" class="list"></div>
-          </div>
-          <div class="card">
-            <h2>Insights profundos locais</h2>
-            <div id="insightsList" class="list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-reports" class="view">
-        <div class="card">
-          <div class="spaced">
-            <div>
-              <h2>Relatório narrativo</h2>
-              <p class="subtitle">Gere uma leitura local ou use IA para uma análise mais profunda dos registros salvos.</p>
-            </div>
-            <div class="row">
-              <button class="btn secondary" onclick="generateLocalReport()">Relatório local</button>
-              <button class="btn" onclick="generateAIReport()">Relatório com IA</button>
-              <button class="btn secondary" onclick="window.print()">Imprimir/PDF</button>
-            </div>
-          </div>
-          <div id="reportBox" class="analysisBox">Nenhum relatório gerado ainda.</div>
-        </div>
-      </section>
-
-      <section id="view-import" class="view">
-        <div class="grid cols-2">
-          <div class="card">
-            <h2>Importar conversa do WhatsApp</h2>
-            <p class="subtitle">
-              Exporte a conversa do grupo sem mídia e importe o arquivo .txt. O sistema tentará separar data, hora, autor e mensagem.
-            </p>
-            <input type="file" id="whatsFile" accept=".txt,text/plain" />
-            <div style="height:12px"></div>
-            <div class="row">
-              <button class="btn" onclick="importWhatsAppTxt(false)">Importar offline</button>
-              <button class="btn secondary" onclick="importWhatsAppTxt(true)">Importar e analisar com IA</button>
-            </div>
-            <div style="height:14px"></div>
-            <div class="notice small">
-              Formatos comuns aceitos: <br>
-              <span class="kbd">08/05/2026 09:14 - Nome: mensagem</span><br>
-              <span class="kbd">[08/05/2026, 09:14:00] Nome: mensagem</span>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Importar/Restaurar backup JSON</h2>
-            <p class="subtitle">Use para migrar entre navegadores ou preservar versões do laboratório.</p>
-            <input type="file" id="jsonFile" accept=".json,application/json" />
-            <div style="height:12px"></div>
-            <button class="btn secondary" onclick="importJSON()">Restaurar JSON</button>
-            <div style="height:16px"></div>
-            <h2>Exportações rápidas</h2>
-            <div class="row">
-              <button class="btn secondary" onclick="exportCSV()">Exportar CSV</button>
-              <button class="btn secondary" onclick="exportJSON()">Exportar JSON</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-settings" class="view">
-        <div class="grid cols-2">
-          <div class="card">
-            <h2>Conexão com o servidor</h2>
-            <p class="subtitle">
-              Use o backend do Render para receber automaticamente mensagens do WhatsApp via webhook. O modo local continua disponível para testes e importações.
-            </p>
-
-            <label>Modo de dados</label>
-            <select id="dataMode">
-              <option value="server">Servidor / Cloud</option>
-              <option value="local">Somente local</option>
-            </select>
-
-            <div style="height:10px"></div>
-
-            <label>URL base do servidor</label>
-            <input id="apiBase" placeholder="https://radar-de-vida-webhook.onrender.com" />
-
-            <div style="height:10px"></div>
-
-            <label>Sincronização automática</label>
-            <select id="autoSync">
-              <option value="true">Ativada</option>
-              <option value="false">Desativada</option>
-            </select>
-
-            <div style="height:14px"></div>
-
-            <div class="row">
-              <button class="btn" onclick="saveSettings()">Salvar configurações</button>
-              <button class="btn secondary" onclick="syncFromServer(true)">Testar/sincronizar</button>
-            </div>
-
-            <div style="height:14px"></div>
-            <div class="notice small" id="cloudStatusBox">Status do servidor ainda não testado.</div>
-          </div>
-
-          <div class="card">
-            <h2>Configurações da IA local</h2>
-            <p class="subtitle">
-              Só use chave aqui em teste privado. Na versão pública, prefira deixar a chave no backend do Render.
-            </p>
-
-            <label>Chave da OpenAI local</label>
-            <input id="apiKey" type="password" placeholder="sk-..." />
-
-            <div style="height:10px"></div>
-
-            <label>Modelo local</label>
-            <input id="modelName" placeholder="gpt-5.4-mini" />
-
-            <div style="height:10px"></div>
-
-            <label>Nível de análise</label>
-            <select id="depthMode">
-              <option value="simples">Simples</option>
-              <option value="inteligente">Inteligente</option>
-              <option value="profundo">Profundo</option>
-            </select>
-
-            <div style="height:14px"></div>
-
-            <button class="btn secondary" onclick="saveSettings()">Salvar IA local</button>
-          </div>
-
-          <div class="card" style="grid-column:1/-1">
-            <h2>Filosofia do motor</h2>
-            <div class="notice small">
-              Cada frase é tratada como pista. O sistema separa fatos, inferências e hipóteses. Categorias emergentes só indicam padrões possíveis.
-            </div>
-            <div style="height:12px"></div>
-            <table class="table">
-              <tr><th>Camada</th><th>Função</th></tr>
-              <tr><td>Fato</td><td>O que foi dito objetivamente.</td></tr>
-              <tr><td>Inferência</td><td>Leitura provável a partir do contexto.</td></tr>
-              <tr><td>Hipótese</td><td>Explicação comportamental candidata.</td></tr>
-              <tr><td>Categoria emergente</td><td>Nome dado a padrões que começam a aparecer.</td></tr>
-              <tr><td>Insight</td><td>Leitura prática para clareza e decisão.</td></tr>
-            </table>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
+    </div>
+  </main>
 
   <script>
-    const APP_KEY = "radar_vida_cloud_v02";
-    const SETTINGS_KEY = "radar_vida_cloud_settings_v02";
-    const DEFAULT_API_BASE = "https://radar-de-vida-webhook.onrender.com";
+    /************************************************************
+     * Radar de Vida — Frontend Google Sheets
+     * Versão: 2.0 Sheets
+     ************************************************************/
 
-    const navItems = [
-      ["dashboard", "Painel geral", "360"],
-      ["capture", "Registrar", "+"],
-      ["timeline", "Linha do tempo", ""],
-      ["finance", "Financeiro", "R$"],
-      ["habits", "Hábitos/Saúde", ""],
-      ["emotions", "Emoções", ""],
-      ["emergent", "Mapa Vivo", ""],
-      ["patterns", "Padrões", ""],
-      ["reports", "Relatórios", ""],
-      ["import", "Importar/Exportar", ""],
-      ["settings", "Configurações", ""]
-    ];
+    const STORAGE_API_URL = "radar_vida_api_url_v2";
+    let registros = [];
 
-    const baseTypes = [
-      "financeiro", "receita", "habito", "saude", "sono", "alimentacao",
-      "exercicio", "emocional", "produtividade", "agenda", "social",
-      "casa", "mobilidade", "lazer", "estudo", "livre"
-    ];
+    document.addEventListener("DOMContentLoaded", iniciar);
 
-    const defaultState = {
-      version: "0.2-cloud",
-      createdAt: new Date().toISOString(),
-      records: [],
-      emergentCategories: [],
-      patterns: [],
-      glossary: {},
-      notes: []
-    };
+    function iniciar() {
+      const apiInput = document.getElementById("apiUrl");
+      const salva = localStorage.getItem(STORAGE_API_URL) || "";
+      apiInput.value = salva;
 
-    let state = loadState();
-    let settings = loadSettings();
+      document.getElementById("formRegistro").addEventListener("submit", salvarRegistro);
 
-    function loadState() {
-      try {
-        return JSON.parse(localStorage.getItem(APP_KEY)) || structuredClone(defaultState);
-      } catch {
-        return structuredClone(defaultState);
+      if (salva) {
+        testarApi(false).then(() => sincronizar()).catch(() => {});
+      } else {
+        setPill("pillApi", "API: informe a URL", "warn");
+        renderizar();
       }
     }
 
-    function saveState() {
-      localStorage.setItem(APP_KEY, JSON.stringify(state));
-      renderAll();
+    function getApiUrl() {
+      return (document.getElementById("apiUrl").value || "").trim();
     }
 
-    function loadSettings() {
-      const defaults = {
-        apiKey: "",
-        modelName: "gpt-5.4-mini",
-        depthMode: "profundo",
-        dataMode: "server",
-        apiBase: inferDefaultApiBase(),
-        autoSync: true
-      };
-      try {
-        const loaded = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
-        return { ...defaults, ...loaded, autoSync: loaded.autoSync !== false && loaded.autoSync !== "false" };
-      } catch {
-        return defaults;
-      }
+    function normalizarApiUrl(url) {
+      if (!url) return "";
+      url = url.trim();
+      const q = url.indexOf("?");
+      if (q !== -1) url = url.slice(0, q);
+      return url;
     }
 
-    function saveSettings() {
-      settings.apiKey = document.getElementById("apiKey").value.trim();
-      settings.modelName = document.getElementById("modelName").value.trim() || "gpt-5.4-mini";
-      settings.depthMode = document.getElementById("depthMode").value;
-      settings.dataMode = document.getElementById("dataMode").value;
-      settings.apiBase = cleanApiBase(document.getElementById("apiBase").value.trim() || inferDefaultApiBase());
-      settings.autoSync = document.getElementById("autoSync").value === "true";
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-      renderSide();
-      alert("Configurações salvas neste navegador.");
+    function montarUrl(action, params = {}) {
+      const base = normalizarApiUrl(getApiUrl());
+      if (!base) throw new Error("Informe a URL da API Apps Script.");
+      const query = new URLSearchParams({ action, ...params });
+      return base + "?" + query.toString();
     }
 
-    function inferDefaultApiBase() {
-      if (location.protocol.startsWith("http") && location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-        return location.origin;
-      }
-      return DEFAULT_API_BASE;
-    }
+    function salvarApiUrl() {
+      const url = normalizarApiUrl(getApiUrl());
 
-    function cleanApiBase(url) {
-      return String(url || "").replace(/\/+$/, "");
-    }
-
-    function isServerMode() {
-      return settings.dataMode !== "local";
-    }
-
-    function apiBase() {
-      return cleanApiBase(settings.apiBase || inferDefaultApiBase());
-    }
-
-    function setCloudStatus(message, ok = null) {
-      const box = document.getElementById("cloudStatusBox");
-      if (box) {
-        box.textContent = message;
-        box.classList.toggle("warn", ok === false);
-      }
-      const side = document.getElementById("sideServer");
-      if (side) side.textContent = ok === true ? "online" : ok === false ? "erro" : (isServerMode() ? "—" : "desativado");
-    }
-
-    function init() {
-      renderNav();
-      document.getElementById("dateInput").value = todayISO();
-      document.getElementById("timeInput").value = new Date().toTimeString().slice(0,5);
-      document.getElementById("apiKey").value = settings.apiKey;
-      document.getElementById("modelName").value = settings.modelName;
-      document.getElementById("depthMode").value = settings.depthMode;
-      document.getElementById("dataMode").value = settings.dataMode || "server";
-      document.getElementById("apiBase").value = apiBase();
-      document.getElementById("autoSync").value = String(settings.autoSync !== false);
-      renderTypeOptions();
-      renderAll();
-      if (isServerMode() && settings.autoSync !== false) {
-        syncFromServer(false);
-      }
-      setInterval(() => {
-        if (isServerMode() && settings.autoSync !== false) syncFromServer(false);
-      }, 30000);
-    }
-
-    function renderNav() {
-      const nav = document.getElementById("nav");
-      nav.innerHTML = navItems.map(([id,label,pill]) => `
-        <button class="navbtn ${id==="dashboard" ? "active" : ""}" data-id="${id}" onclick="go('${id}')">
-          <span>${label}</span>${pill ? `<span class="pill">${pill}</span>` : ""}
-        </button>
-      `).join("");
-    }
-
-    function go(id) {
-      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-      document.getElementById("view-" + id).classList.add("active");
-      document.querySelectorAll(".navbtn").forEach(b => b.classList.toggle("active", b.dataset.id === id));
-      renderAll();
-    }
-
-    function renderTypeOptions() {
-      const sel = document.getElementById("typeFilter");
-      const existing = new Set(baseTypes);
-      state.records.forEach(r => (r.analysis?.eventos_detectados || []).forEach(e => existing.add(e.tipo)));
-      sel.innerHTML = `<option value="">Todos os tipos</option>` + [...existing].sort().map(t => `<option>${escapeHTML(t)}</option>`).join("");
-    }
-
-    async function syncFromServer(showAlert = false) {
-      if (!isServerMode()) {
-        if (showAlert) alert("Modo local ativado. Altere para Servidor/Cloud em Configurações.");
+      if (!url || !url.includes("script.google.com") || !url.includes("/exec")) {
+        mostrarErro("apiError", "Cole a URL correta do App da Web do Apps Script. Ela deve conter script.google.com e terminar em /exec.");
         return;
       }
 
+      document.getElementById("apiUrl").value = url;
+      localStorage.setItem(STORAGE_API_URL, url);
+      mostrarOk("apiFeedback", "URL salva neste navegador.");
+      setPill("pillApi", "API: URL salva", "warn");
+    }
+
+    async function testarApi(mostrarAlerta = true) {
       try {
-        setCloudStatus("Conectando ao servidor...", null);
-        const base = apiBase();
-        const health = await fetch(base + "/health", { cache: "no-store" }).then(r => {
-          if (!r.ok) throw new Error("Servidor respondeu " + r.status);
-          return r.json();
-        });
+        salvarApiUrl();
 
-        const payload = await fetch(base + "/api/records", { cache: "no-store" }).then(r => {
-          if (!r.ok) throw new Error("Registros responderam " + r.status);
-          return r.json();
-        });
+        const url = montarUrl("ping");
+        const resposta = await fetch(url, { method: "GET" });
+        const data = await resposta.json();
 
-        const serverRecords = (payload.records || []).map(normalizeServerRecord);
-        state.records = dedupeRecords(serverRecords);
-        state.emergentCategories = payload.emergentCategories || calculateEmergentFromRecords(state.records);
-        state.patterns = payload.patterns || calculatePatternsFromRecords(state.records);
-        persistOnly();
-        renderTypeOptions();
-        renderAll();
-
-        setCloudStatus(`Servidor online. ${state.records.length} registro(s) sincronizado(s). WhatsApp: ${health.whatsappConfigured ? "configurado" : "não configurado"}.`, true);
-        if (showAlert) alert("Sincronização concluída com o servidor.");
-      } catch (err) {
-        console.error(err);
-        setCloudStatus("Erro ao conectar: " + err.message, false);
-        if (showAlert) alert("Erro ao conectar ao servidor: " + err.message);
-      }
-    }
-
-    function normalizeServerRecord(r) {
-      return {
-        ...r,
-        author: r.author || r.name || r.from || r.source || "servidor",
-        source: r.source || "server",
-        originalText: r.originalText || r.text || "",
-        createdAt: r.createdAt || new Date().toISOString(),
-        eventDateTime: r.eventDateTime || r.createdAt || new Date().toISOString(),
-        analysis: r.analysis || heuristicAnalysis(r.originalText || r.text || "", r.eventDateTime || r.createdAt || new Date().toISOString())
-      };
-    }
-
-    async function postToServer(text) {
-      const res = await fetch(apiBase() + "/api/test-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, from: "painel-web", name: "Painel Web" })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || ("Servidor respondeu " + res.status));
-      return normalizeServerRecord(data.record);
-    }
-
-    async function deleteRecordOnServer(id) {
-      const res = await fetch(apiBase() + "/api/records/" + encodeURIComponent(id), { method: "DELETE" });
-      if (!res.ok) throw new Error("Erro ao excluir no servidor: " + res.status);
-      return res.json();
-    }
-
-    async function clearServerRecords() {
-      const res = await fetch(apiBase() + "/api/records", { method: "DELETE" });
-      if (!res.ok) throw new Error("Erro ao limpar servidor: " + res.status);
-      return res.json();
-    }
-
-    function calculateEmergentFromRecords(records) {
-      const map = new Map();
-      for (const r of records) {
-        for (const c of (r.analysis?.categorias_emergentes_candidatas || [])) {
-          const key = normalizeKey(c.nome);
-          if (!map.has(key)) map.set(key, {
-            id: "cat_" + key,
-            nome: c.nome,
-            categoria_mae: c.categoria_mae || "livre",
-            motivo: c.motivo || "",
-            ocorrencias: 0,
-            confianca_media: 0,
-            evidencias: [],
-            status: "candidata"
-          });
-          const item = map.get(key);
-          item.ocorrencias++;
-          item.confianca_media += Number(c.confianca || .5);
-          item.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
+        if (!data.ok) {
+          throw new Error(data.erro || "API respondeu com erro.");
         }
+
+        setPill("pillApi", "API: conectada", "ok");
+        mostrarOk("apiFeedback", "API conectada: " + (data.mensagem || data.app || "ok"));
+
+        if (mostrarAlerta) {
+          alert("API conectada com sucesso.");
+        }
+
+        return data;
+      } catch (erro) {
+        setPill("pillApi", "API: erro", "err");
+        mostrarErro("apiError", "Erro ao testar API: " + erro.message + "\n\nSe aparecer bloqueio CORS, me avise para ativarmos o modo JSONP no Apps Script.");
+        throw erro;
       }
-      return [...map.values()].map(c => {
-        c.confianca_media = c.ocorrencias ? c.confianca_media / c.ocorrencias : 0;
-        c.status = c.ocorrencias >= 5 ? "consolidada" : c.ocorrencias >= 2 ? "ativa" : "candidata";
-        return c;
-      }).sort((a,b) => b.ocorrencias - a.ocorrencias);
     }
 
-    function calculatePatternsFromRecords(records) {
-      const map = new Map();
-      const add = (name, r) => {
-        if (!map.has(name)) map.set(name, { id: "pat_" + normalizeKey(name), nome: name, ocorrencias: 0, evidencias: [], confianca: .55, status: "inicial" });
-        const p = map.get(name);
-        p.ocorrencias++;
-        p.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
-      };
-
-      for (const r of records) {
-        const a = r.analysis || {};
-        const tags = a.tags || [];
-        const triggers = a.gatilhos_possiveis || [];
-        const emotions = a.emocoes_detectadas || [];
-        const events = a.eventos_detectados || [];
-        if (tags.includes("cansaco") && events.some(e => e.categoria_principal === "alimentacao")) add("alimentação associada a cansaço", r);
-        if (tags.includes("atraso") && events.some(e => e.tipo === "financeiro")) add("custo financeiro do atraso", r);
-        if (triggers.includes("reuniao") && emotions.length) add("emoção após reunião", r);
-        if (events.some(e => e.tipo === "sono" && e.impacto === "negativo") && tags.includes("pressa")) add("sono ruim e pressa", r);
-        if (events.some(e => e.tipo === "habito" && e.categoria_principal === "exercicio") && (a.consequencias_possiveis || []).includes("melhora_percebida")) add("exercício restaurador", r);
-      }
-
-      return [...map.values()].map(p => ({
-        ...p,
-        confianca: Math.min(.95, .45 + p.ocorrencias * .12),
-        status: p.ocorrencias >= 3 ? "forte" : "inicial"
-      })).sort((a,b) => b.ocorrencias - a.ocorrencias);
-    }
-
-    function todayISO() {
-      return new Date().toISOString().slice(0,10);
-    }
-
-    function formatDateTime(iso) {
-      if (!iso) return "—";
-      const d = new Date(iso);
-      if (isNaN(d)) return iso;
-      return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-    }
-
-    function currency(v) {
-      return (Number(v)||0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
-    }
-
-    function uid(prefix="evt") {
-      return prefix + "_" + Math.random().toString(36).slice(2,10) + "_" + Date.now().toString(36);
-    }
-
-    function escapeHTML(s) {
-      return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[m]));
-    }
-
-    function normalizeText(s) {
-      return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    }
-
-    async function analyzeAndSave(useAI) {
-      const text = document.getElementById("messageInput").value.trim();
-      if (!text) return alert("Digite uma mensagem primeiro.");
-
-      const date = document.getElementById("dateInput").value || todayISO();
-      const time = document.getElementById("timeInput").value || new Date().toTimeString().slice(0,5);
-      const eventDateTime = new Date(`${date}T${time}:00`).toISOString();
-
-      const cloud = useAI && isServerMode();
-      document.getElementById("analysisMode").textContent = cloud ? "enviando ao servidor..." : (useAI ? "analisando com IA local..." : "offline");
-      document.getElementById("lastAnalysis").textContent = "Processando...";
-
-      let record;
+    async function sincronizar() {
       try {
-        if (cloud) {
-          record = await postToServer(text);
-          state.records.unshift(record);
-          state.records = dedupeRecords(state.records);
-          state.emergentCategories = calculateEmergentFromRecords(state.records);
-          state.patterns = calculatePatternsFromRecords(state.records);
-          persistOnly();
-          setCloudStatus("Registro enviado ao servidor e sincronizado.", true);
-        } else {
-          const analysis = useAI ? await analyzeWithOpenAI(text, eventDateTime) : heuristicAnalysis(text, eventDateTime);
-          record = {
-            id: uid("rec"),
-            source: useAI ? "manual_ai_local" : "manual_local",
-            author: "usuario",
-            originalText: text,
-            createdAt: new Date().toISOString(),
-            eventDateTime,
-            analysis
-          };
-          state.records.unshift(record);
-          reprocessEmergent(false);
-          persistOnly();
+        mostrarLoader(true);
+        limparMensagens();
+
+        const url = montarUrl("list", { limit: 500 });
+        const resposta = await fetch(url, { method: "GET" });
+        const data = await resposta.json();
+
+        if (!data.ok) {
+          throw new Error(data.erro || "Erro ao listar registros.");
         }
-      } catch (err) {
-        console.error(err);
-        const analysis = heuristicAnalysis(text, eventDateTime);
-        analysis.insight_imediato = "A análise principal falhou; registrei usando modo offline. Erro: " + err.message;
-        record = {
-          id: uid("rec"),
-          source: "manual_fallback",
-          author: "usuario",
-          originalText: text,
-          createdAt: new Date().toISOString(),
-          eventDateTime,
-          analysis
+
+        registros = Array.isArray(data.registros) ? data.registros : [];
+        setPill("pillApi", "API: conectada", "ok");
+        setPill("pillTotal", "Registros: " + registros.length, "");
+        setPill("pillAtualizado", "Atualizado: " + new Date().toLocaleString("pt-BR"), "");
+
+        renderizar();
+      } catch (erro) {
+        setPill("pillApi", "API: erro", "err");
+        mostrarErro("apiError", "Erro ao sincronizar: " + erro.message);
+        renderizar();
+      } finally {
+        mostrarLoader(false);
+      }
+    }
+
+    async function salvarRegistro(event) {
+      event.preventDefault();
+
+      const api = getApiUrl();
+      if (!api) {
+        alert("Informe e salve primeiro a URL da API.");
+        return;
+      }
+
+      const btn = document.getElementById("btnSalvar");
+      btn.disabled = true;
+      btn.textContent = "Salvando...";
+
+      try {
+        limparMensagens();
+
+        const payload = {
+          action: "create",
+          data: coletarFormulario()
         };
-        state.records.unshift(record);
-        reprocessEmergent(false);
-        persistOnly();
-        setCloudStatus("Falha no servidor: " + err.message, false);
-      }
 
-      document.getElementById("messageInput").value = "";
-      document.getElementById("timeInput").value = new Date().toTimeString().slice(0,5);
-      document.getElementById("analysisMode").textContent = cloud ? "servidor" : (useAI ? "IA local" : "offline");
-      document.getElementById("lastAnalysis").textContent = JSON.stringify(record, null, 2);
-      renderAll();
+        const resposta = await fetch(normalizarApiUrl(api), {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
 
-      if (cloud) syncFromServer(false);
-    }
+        const data = await resposta.json();
 
-    function dedupeRecords(records) {
-      const seen = new Set();
-      const out = [];
-      for (const r of records) {
-        const key = r.whatsappMessageId || r.id || `${r.originalText}|${r.eventDateTime}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          out.push(r);
+        if (!data.ok) {
+          throw new Error(data.erro || "Erro ao salvar registro.");
         }
+
+        mostrarOk("saveFeedback", "Registro salvo no Google Sheets: " + (data.registro && data.registro.id ? data.registro.id : ""));
+        limparFormulario();
+        await sincronizar();
+      } catch (erro) {
+        mostrarErro("saveError", "Erro ao salvar: " + erro.message + "\n\nSe o navegador bloquear a requisição, a próxima correção será ativar JSONP/no-cors no Apps Script.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Salvar no Google Sheets";
       }
-      return out.sort((a,b) => new Date(b.eventDateTime || b.createdAt) - new Date(a.eventDateTime || a.createdAt));
     }
 
-    function getSystemPrompt() {
-      return `Você é o motor de interpretação do projeto Radar de Vida.
-
-Transforme mensagens livres do usuário em registros estruturados sobre vida cotidiana: finanças, hábitos, sono, saúde, alimentação, exercício, humor, produtividade, agenda, casa, mobilidade, lazer, estudo e relações sociais.
-
-Regras centrais:
-- Separe fatos objetivos, inferências prováveis e hipóteses comportamentais.
-- Nunca trate hipótese como certeza.
-- Não julgue o usuário.
-- Crie categorias emergentes candidatas quando a frase revelar um padrão comportamental possível.
-- Use português do Brasil.
-- Priorize clareza prática.
-- Não dê diagnóstico médico, psicológico, jurídico ou financeiro definitivo.
-- Evite qualquer conteúdo gráfico, perigoso ou inadequado.
-- O nível de análise solicitado é: ${settings.depthMode}.`;
-    }
-
-    const analysisSchema = {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        texto_original: { type: "string" },
-        resumo_curto: { type: "string" },
-        eventos_detectados: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              tipo: { type: "string" },
-              categoria_principal: { type: "string" },
-              subcategoria: { type: "string" },
-              valor: { type: ["number", "null"] },
-              moeda: { type: ["string", "null"] },
-              quantidade: { type: ["number", "null"] },
-              unidade: { type: ["string", "null"] },
-              data_evento: { type: ["string", "null"] },
-              hora_evento: { type: ["string", "null"] },
-              impacto: { type: "string" },
-              intensidade: { type: ["string", "null"] },
-              fato_ou_inferencia: { type: "string" },
-              confianca: { type: "number" }
-            },
-            required: ["tipo","categoria_principal","subcategoria","valor","moeda","quantidade","unidade","data_evento","hora_evento","impacto","intensidade","fato_ou_inferencia","confianca"]
-          }
-        },
-        tags: { type: "array", items: { type: "string" } },
-        contextos: { type: "array", items: { type: "string" } },
-        emocoes_detectadas: { type: "array", items: { type: "string" } },
-        gatilhos_possiveis: { type: "array", items: { type: "string" } },
-        consequencias_possiveis: { type: "array", items: { type: "string" } },
-        hipoteses: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              nome: { type: "string" },
-              descricao: { type: "string" },
-              nivel: { type: "string" },
-              confianca: { type: "number" }
-            },
-            required: ["nome","descricao","nivel","confianca"]
-          }
-        },
-        categorias_emergentes_candidatas: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              nome: { type: "string" },
-              categoria_mae: { type: "string" },
-              motivo: { type: "string" },
-              confianca: { type: "number" }
-            },
-            required: ["nome","categoria_mae","motivo","confianca"]
-          }
-        },
-        insight_imediato: { type: "string" },
-        pergunta_opcional: { type: ["string", "null"] }
-      },
-      required: [
-        "texto_original","resumo_curto","eventos_detectados","tags","contextos",
-        "emocoes_detectadas","gatilhos_possiveis","consequencias_possiveis",
-        "hipoteses","categorias_emergentes_candidatas","insight_imediato","pergunta_opcional"
-      ]
-    };
-
-    async function analyzeWithOpenAI(text, eventDateTime) {
-      if (!settings.apiKey) throw new Error("Chave da OpenAI não configurada.");
-
-      const body = {
-        model: settings.modelName || "gpt-5.4-mini",
-        input: [
-          { role: "system", content: getSystemPrompt() },
-          { role: "user", content: `Data/hora de referência: ${eventDateTime}\nMensagem: ${text}` }
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "radar_vida_analysis",
-            schema: analysisSchema,
-            strict: true
-          }
-        }
-      };
-
-      const res = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${settings.apiKey}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`OpenAI API ${res.status}: ${errText.slice(0, 400)}`);
-      }
-
-      const data = await res.json();
-      let out = data.output_text;
-
-      if (!out && Array.isArray(data.output)) {
-        out = data.output.flatMap(item => item.content || [])
-          .map(c => c.text || c.output_text || "")
-          .join("\n");
-      }
-
-      if (!out) throw new Error("Resposta da IA sem texto estruturado.");
-      return JSON.parse(out);
-    }
-
-    function heuristicAnalysis(text, eventDateTime) {
-      const n = normalizeText(text);
-      const values = extractMoney(text);
-      const eventos = [];
-      const tags = [];
-      const contextos = [];
-      const emocoes = [];
-      const gatilhos = [];
-      const consequencias = [];
-      const hipoteses = [];
-      const emergentes = [];
-
-      const has = (...words) => words.some(w => n.includes(w));
-
-      if (values.length && has("gastei","paguei","comprei","pix","ifood","uber","mercado","almoço","almoco","jantar","lanche","gasolina","combustivel")) {
-        let cat = "despesa";
-        let sub = "geral";
-        if (has("ifood","delivery","pizza","hamburguer","jantar","almoço","almoco","lanche","cafe","restaurante")) { cat = "alimentacao"; sub = has("ifood","delivery") ? "delivery" : "refeicao"; }
-        else if (has("uber","99","gasolina","combustivel","estacionamento")) { cat = "mobilidade"; sub = has("uber","99") ? "app_transporte" : "combustivel_ou_transporte"; }
-        else if (has("remedio","farmacia","medico","consulta","exame")) { cat = "saude"; sub = "saude"; }
-        else if (has("energia","agua","internet","aluguel","condominio","gás","gas")) { cat = "casa"; sub = "conta_domestica"; }
-
-        eventos.push(evt("financeiro", cat, sub, values[0], "BRL", null, null, eventDateTime, "neutro", null, "fato", .82));
-      }
-
-      if (values.length && has("recebi","ganhei","honorario","honorários","cliente","salario","salário","vendi")) {
-        eventos.push(evt("receita", "receita", has("cliente","honorario","honorários") ? "profissional" : "geral", values[0], "BRL", null, null, eventDateTime, "positivo", null, "fato", .85));
-      }
-
-      if (has("treinei","caminhei","corrida","corri","academia","alonguei","pedalei")) {
-        eventos.push(evt("habito", "exercicio", detectExerciseSub(n), null, null, extractNumberBeforeUnit(text, ["min","minutos","h","hora","horas"]), "tempo", eventDateTime, "positivo", null, "fato", .78));
-        tags.push("movimento", "exercicio");
-      }
-
-      if (has("dormi","sono","acordei","insônia","insonia")) {
-        const impacto = has("mal","ruim","pouco","insônia","insonia","cansado") ? "negativo" : "positivo";
-        eventos.push(evt("sono", "sono", impacto === "negativo" ? "sono_ruim" : "sono_bom", null, null, extractSleepHours(text), "horas", eventDateTime, impacto, null, "fato", .72));
-        tags.push(impacto === "negativo" ? "sono_ruim" : "sono_bom");
-      }
-
-      const emotionMap = [
-        ["ansioso", "ansiedade"], ["ansiedade", "ansiedade"], ["irritado", "irritacao"],
-        ["triste", "tristeza"], ["feliz", "alegria"], ["cansado", "cansaco"],
-        ["exausto", "exaustao"], ["sem energia", "baixa_energia"], ["estressado", "estresse"],
-        ["calmo", "calma"], ["leve", "leveza"], ["orgulho", "orgulho"]
-      ];
-      emotionMap.forEach(([w,e]) => {
-        if (n.includes(normalizeText(w)) && !emocoes.includes(e)) emocoes.push(e);
-      });
-
-      if (emocoes.length) {
-        eventos.push(evt("emocional", "estado_emocional", emocoes[0], null, null, null, null, eventDateTime, ["alegria","calma","leveza","orgulho"].includes(emocoes[0]) ? "positivo" : "alerta", detectIntensity(n), "inferencia", .70));
-      }
-
-      if (has("reuniao","reunião","audiencia","audiência","trabalho","cliente","prazo")) {
-        contextos.push("trabalho");
-        if (has("reuniao","reunião")) gatilhos.push("reuniao");
-        if (has("audiencia","audiência")) gatilhos.push("audiencia");
-      }
-
-      if (has("cansado","exausto","sem energia","morto")) {
-        tags.push("cansaco", "baixa_energia");
-        if (has("ifood","delivery","jantar","pizza","hamburguer")) {
-          emergentes.push(catCand("delivery por exaustão", "alimentacao", "A frase associa alimentação por conveniência a cansaço ou baixa energia.", .74));
-          hipoteses.push(hyp("alimentacao_por_exaustao", "Possível uso de delivery/refeição pronta como resposta a cansaço.", "hipotese_comportamental", .70));
-        }
-      }
-
-      if (has("atrasado","perdi a hora","acordei tarde") && has("uber","taxi","99")) {
-        emergentes.push(catCand("custo do atraso", "mobilidade", "A frase indica despesa gerada por atraso ou quebra da rotina matinal.", .78));
-        hipoteses.push(hyp("custo_da_desorganizacao", "Possível custo financeiro causado por atraso ou falta de planejamento.", "hipotese_comportamental", .72));
-        tags.push("atraso", "desorganizacao");
-      }
-
-      if (has("de novo","novamente","outra vez")) tags.push("recorrencia");
-
-      if (!eventos.length) {
-        eventos.push(evt("livre", "registro_livre", "anotacao", null, null, null, null, eventDateTime, "neutro", null, "fato", .55));
-      }
-
-      if (!contextos.length && has("casa","quarto","cozinha","limpei","organizei")) contextos.push("casa");
-      if (has("pressa","sem tempo","corrido")) { tags.push("pressa"); gatilhos.push("falta_de_tempo"); }
-      if (has("melhor","fiquei melhor","me ajudou")) consequencias.push("melhora_percebida");
-      if (has("pior","irritado","ansioso")) consequencias.push("piora_ou_alerta_percebido");
-
-      const unique = arr => [...new Set(arr.filter(Boolean))];
-
+    function coletarFormulario() {
       return {
-        texto_original: text,
-        resumo_curto: buildShortSummary(eventos, text),
-        eventos_detectados: eventos,
-        tags: unique(tags),
-        contextos: unique(contextos),
-        emocoes_detectadas: unique(emocoes),
-        gatilhos_possiveis: unique(gatilhos),
-        consequencias_possiveis: unique(consequencias),
-        hipoteses,
-        categorias_emergentes_candidatas: emergentes,
-        insight_imediato: localInsight(eventos, unique(tags), emergentes),
-        pergunta_opcional: null
+        origem: "manual_html",
+        tipo: valor("tipo"),
+        categoria: valor("categoria"),
+        titulo: valor("titulo"),
+        descricao: valor("descricao"),
+        data_evento: valor("dataEvento"),
+        hora_evento: valor("horaEvento"),
+        prioridade: valor("prioridade"),
+        status: valor("status"),
+        tags: parseTags(valor("tags")),
+        contato_nome: valor("contatoNome"),
+        contato_numero: valor("contatoNumero"),
+        tem_midia: "Não",
+        midia_ids: []
       };
     }
 
-    function evt(tipo, categoria, subcategoria, valor, moeda, quantidade, unidade, dt, impacto, intensidade, foi, conf) {
-      const d = new Date(dt);
-      return {
-        tipo,
-        categoria_principal: categoria,
-        subcategoria,
-        valor,
-        moeda,
-        quantidade,
-        unidade,
-        data_evento: isNaN(d) ? null : d.toISOString().slice(0,10),
-        hora_evento: isNaN(d) ? null : d.toTimeString().slice(0,5),
-        impacto,
-        intensidade,
-        fato_ou_inferencia: foi,
-        confianca: conf
-      };
+    function valor(id) {
+      return (document.getElementById(id).value || "").trim();
     }
 
-    function hyp(nome, descricao, nivel, confianca) {
-      return { nome, descricao, nivel, confianca };
+    function parseTags(texto) {
+      return (texto || "")
+        .split(",")
+        .map(t => t.trim())
+        .filter(Boolean);
     }
 
-    function catCand(nome, categoria_mae, motivo, confianca) {
-      return { nome, categoria_mae, motivo, confianca };
+    function limparFormulario() {
+      document.getElementById("formRegistro").reset();
     }
 
-    function extractMoney(text) {
-      const out = [];
-      const patterns = [
-        /(?:r\$|\breais\b|\breal\b)?\s*(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:r\$|\breais\b|\breal\b)?/gi
-      ];
-      for (const p of patterns) {
-        let m;
-        while ((m = p.exec(text))) {
-          const raw = m[1];
-          if (!raw) continue;
-          const v = parseFloat(raw.replace(".", "").replace(",", "."));
-          if (!isNaN(v) && v > 0 && v < 1000000) out.push(v);
-        }
-      }
-      return out;
+    function limparFiltros() {
+      document.getElementById("busca").value = "";
+      document.getElementById("filtroCategoria").value = "";
+      document.getElementById("filtroStatus").value = "";
+      document.getElementById("ordenacao").value = "novo";
+      renderizar();
     }
 
-    function extractNumberBeforeUnit(text, units) {
-      const unitRe = units.join("|");
-      const re = new RegExp("(\\d+(?:[\\.,]\\d+)?)\\s*(?:" + unitRe + ")", "i");
-      const m = text.match(re);
-      return m ? parseFloat(m[1].replace(",", ".")) : null;
-    }
+    function renderizar() {
+      const lista = document.getElementById("lista");
 
-    function extractSleepHours(text) {
-      const n = normalizeText(text);
-      const m = n.match(/dormi\s+(\d+(?:[.,]\d+)?)\s*h/);
-      return m ? parseFloat(m[1].replace(",", ".")) : null;
-    }
+      let filtrados = [...registros];
 
-    function detectExerciseSub(n) {
-      if (n.includes("caminh")) return "caminhada";
-      if (n.includes("academia")) return "academia";
-      if (n.includes("corr")) return "corrida";
-      if (n.includes("along")) return "alongamento";
-      if (n.includes("pedal") || n.includes("bike")) return "bicicleta";
-      return "exercicio";
-    }
+      const busca = normalizarTexto(document.getElementById("busca").value);
+      const categoria = document.getElementById("filtroCategoria").value;
+      const status = document.getElementById("filtroStatus").value;
+      const ordenacao = document.getElementById("ordenacao").value;
 
-    function detectIntensity(n) {
-      if (n.includes("muito") || n.includes("demais") || n.includes("exausto") || n.includes("forte")) return "alta";
-      if (n.includes("pouco") || n.includes("leve")) return "baixa";
-      return "media";
-    }
-
-    function buildShortSummary(eventos, text) {
-      const ev = eventos[0];
-      if (!ev) return "Registro livre.";
-      if (ev.tipo === "financeiro") return `Despesa em ${ev.categoria_principal}/${ev.subcategoria}${ev.valor ? " de " + currency(ev.valor) : ""}.`;
-      if (ev.tipo === "receita") return `Receita registrada${ev.valor ? " de " + currency(ev.valor) : ""}.`;
-      if (ev.tipo === "habito") return `Hábito registrado: ${ev.categoria_principal}/${ev.subcategoria}.`;
-      if (ev.tipo === "emocional") return `Estado emocional detectado: ${ev.subcategoria}.`;
-      return text.slice(0, 90);
-    }
-
-    function localInsight(eventos, tags, emergentes) {
-      if (emergentes.length) return `Este registro sugere uma categoria emergente: ${emergentes[0].nome}.`;
-      if (tags.includes("pressa")) return "O registro envolve pressa ou falta de tempo; isso pode ser acompanhado como fator de rotina.";
-      if (tags.includes("cansaco")) return "O registro envolve cansaço; vale observar se ele se relaciona com gastos, alimentação ou produtividade.";
-      if (eventos.some(e => e.tipo === "financeiro")) return "Registro financeiro salvo. Com repetição, o sistema poderá separar gasto necessário, planejado, social ou comportamental.";
-      return "Registro salvo como pista de rotina para análise futura.";
-    }
-
-    function persistOnly() {
-      localStorage.setItem(APP_KEY, JSON.stringify(state));
-    }
-
-    function reprocessEmergent(doRender=true) {
-      const map = new Map();
-      const patternMap = new Map();
-
-      for (const r of state.records) {
-        const a = r.analysis || {};
-        const cands = a.categorias_emergentes_candidatas || [];
-        for (const c of cands) {
-          const key = normalizeKey(c.nome);
-          if (!map.has(key)) {
-            map.set(key, {
-              id: uid("cat"),
-              nome: c.nome,
-              categoria_mae: c.categoria_mae || "livre",
-              motivo: c.motivo || "",
-              ocorrencias: 0,
-              confianca_media: 0,
-              evidencias: [],
-              status: "candidata",
-              createdAt: r.createdAt
-            });
-          }
-          const item = map.get(key);
-          item.ocorrencias++;
-          item.confianca_media += Number(c.confianca || .5);
-          item.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
-        }
-
-        const tags = a.tags || [];
-        const triggers = a.gatilhos_possiveis || [];
-        const emotions = a.emocoes_detectadas || [];
-        const events = a.eventos_detectados || [];
-
-        const combos = [];
-        if (tags.includes("cansaco") && events.some(e => e.categoria_principal === "alimentacao")) combos.push("alimentação associada a cansaço");
-        if (tags.includes("atraso") && events.some(e => e.tipo === "financeiro")) combos.push("custo financeiro do atraso");
-        if (triggers.includes("reuniao") && emotions.length) combos.push("emoção após reunião");
-        if (events.some(e => e.tipo === "sono" && e.impacto === "negativo") && tags.includes("pressa")) combos.push("sono ruim e pressa");
-        if (events.some(e => e.tipo === "habito" && e.categoria_principal === "exercicio") && (a.consequencias_possiveis || []).includes("melhora_percebida")) combos.push("exercício restaurador");
-
-        for (const name of combos) {
-          if (!patternMap.has(name)) {
-            patternMap.set(name, { id: uid("pat"), nome: name, ocorrencias: 0, evidencias: [], confianca: .55 });
-          }
-          const p = patternMap.get(name);
-          p.ocorrencias++;
-          p.evidencias.push({ recordId: r.id, text: r.originalText, date: r.eventDateTime });
-        }
+      if (categoria) {
+        filtrados = filtrados.filter(r => String(r.categoria || "") === categoria);
       }
 
-      state.emergentCategories = [...map.values()].map(c => {
-        c.confianca_media = c.ocorrencias ? c.confianca_media / c.ocorrencias : 0;
-        c.status = c.ocorrencias >= 5 ? "consolidada" : c.ocorrencias >= 2 ? "ativa" : "candidata";
-        return c;
-      }).sort((a,b) => b.ocorrencias - a.ocorrencias);
+      if (status) {
+        filtrados = filtrados.filter(r => String(r.status || "") === status);
+      }
 
-      state.patterns = [...patternMap.values()]
-        .map(p => ({...p, confianca: Math.min(.95, .45 + p.ocorrencias * .12), status: p.ocorrencias >= 3 ? "forte" : "inicial"}))
-        .sort((a,b) => b.ocorrencias - a.ocorrencias);
-
-      persistOnly();
-      if (doRender) renderAll();
-    }
-
-    function normalizeKey(s) {
-      return normalizeText(s).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-    }
-
-    function renderAll() {
-      renderTypeOptions();
-      renderSide();
-      renderDashboard();
-      renderTimeline();
-      renderFinance();
-      renderHabits();
-      renderEmotions();
-      renderEmergent();
-      renderPatterns();
-    }
-
-    function renderSide() {
-      document.getElementById("sideMode").textContent = isServerMode() ? "cloud" : "local";
-      const currentServer = document.getElementById("sideServer").textContent;
-      document.getElementById("sideServer").textContent = isServerMode() ? (currentServer || "—") : "desativado";
-      document.getElementById("sideCount").textContent = state.records.length;
-      document.getElementById("sideCats").textContent = state.emergentCategories.length;
-      document.getElementById("sideLast").textContent = state.records[0] ? formatDateTime(state.records[0].createdAt) : "—";
-    }
-
-    function allEvents() {
-      return state.records.flatMap(r => (r.analysis?.eventos_detectados || []).map(e => ({...e, record: r})));
-    }
-
-    function todayRecords() {
-      const t = todayISO();
-      return state.records.filter(r => (r.eventDateTime || r.createdAt || "").slice(0,10) === t);
-    }
-
-    function renderDashboard() {
-      const events = allEvents();
-      const today = todayRecords();
-      const expense = events.filter(e => e.tipo === "financeiro").reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const income = events.filter(e => e.tipo === "receita").reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const habitCount = events.filter(e => ["habito","exercicio","sono","saude"].includes(e.tipo)).length;
-      const emotionCount = events.filter(e => e.tipo === "emocional").length;
-
-      const clarity = Math.max(5, Math.min(100, Math.round(
-        8 + Math.min(35, state.records.length * 4)
-          + Math.min(25, state.emergentCategories.length * 5)
-          + Math.min(20, state.patterns.length * 6)
-          + Math.min(12, new Set(events.map(e => e.tipo)).size * 2)
-      )));
-
-      document.getElementById("clarityScore").textContent = clarity;
-      document.getElementById("clarityRing").style.setProperty("--p", clarity);
-      document.getElementById("clarityText").textContent =
-        clarity < 30 ? "Ainda há poucos dados. Registre frases reais por alguns dias." :
-        clarity < 65 ? "O mapa começou a formar padrões iniciais." :
-        "O mapa já possui material relevante para leitura de rotina.";
-
-      document.getElementById("metrics").innerHTML = [
-        metric(currency(expense), "Gastos registrados", "total acumulado"),
-        metric(currency(income), "Receitas registradas", "total acumulado"),
-        metric(String(habitCount), "Hábitos/saúde/sono", "eventos detectados"),
-        metric(String(state.emergentCategories.length), "Categorias emergentes", "mapa vivo")
-      ].join("");
-
-      document.getElementById("todayLabel").textContent = new Date().toLocaleDateString("pt-BR");
-      const todayExpense = today.flatMap(r => r.analysis?.eventos_detectados || []).filter(e => e.tipo === "financeiro").reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const todayTags = topCounts(today.flatMap(r => r.analysis?.tags || []), 5);
-      document.getElementById("todaySummary").innerHTML = today.length ? `
-        <div class="grid cols-3">
-          ${metric(String(today.length), "Registros hoje", "mensagens")}
-          ${metric(currency(todayExpense), "Gastos hoje", "despesas")}
-          ${metric(String(todayTags.length), "Tags fortes", "sinais do dia")}
-        </div>
-        <div style="height:12px"></div>
-        <div class="chips">${todayTags.map(([k]) => `<span class="chip">${escapeHTML(k)}</span>`).join("")}</div>
-      ` : `<div class="empty">Nenhum registro hoje. Comece em “Registrar”.</div>`;
-
-      document.getElementById("emergentPreview").innerHTML = renderCatItems(state.emergentCategories.slice(0,4));
-      document.getElementById("timelinePreview").innerHTML = renderEvents(state.records.slice(0,5));
-    }
-
-    function metric(n,t,s) {
-      return `<div class="metric"><div class="n">${escapeHTML(n)}</div><div class="t">${escapeHTML(t)}</div><div class="s">${escapeHTML(s)}</div></div>`;
-    }
-
-    function renderTimeline() {
-      const box = document.getElementById("timelineFull");
-      if (!box) return;
-      const q = normalizeText(document.getElementById("searchFilter")?.value || "");
-      const type = document.getElementById("typeFilter")?.value || "";
-      const period = document.getElementById("periodFilter")?.value || "all";
-      let records = [...state.records];
-
-      if (period !== "all") {
-        const now = new Date();
-        records = records.filter(r => {
-          const d = new Date(r.eventDateTime || r.createdAt);
-          if (period === "today") return (r.eventDateTime || r.createdAt || "").slice(0,10) === todayISO();
-          const days = Number(period);
-          return (now - d) / 86400000 <= days;
+      if (busca) {
+        filtrados = filtrados.filter(r => {
+          const texto = normalizarTexto([
+            r.id,
+            r.titulo,
+            r.descricao,
+            r.tipo,
+            r.categoria,
+            r.status,
+            r.prioridade,
+            r.tags,
+            r.contato_nome,
+            r.contato_numero
+          ].join(" "));
+          return texto.includes(busca);
         });
       }
 
-      if (type) {
-        records = records.filter(r => (r.analysis?.eventos_detectados || []).some(e => e.tipo === type));
-      }
+      filtrados.sort((a, b) => {
+        if (ordenacao === "antigo") {
+          return dataRegistro(a) - dataRegistro(b);
+        }
 
-      if (q) {
-        records = records.filter(r => normalizeText([
-          r.originalText,
-          r.analysis?.resumo_curto,
-          ...(r.analysis?.tags || []),
-          ...(r.analysis?.contextos || []),
-          ...(r.analysis?.emocoes_detectadas || []),
-          ...(r.analysis?.categorias_emergentes_candidatas || []).map(c => c.nome),
-          ...(r.analysis?.eventos_detectados || []).map(e => `${e.tipo} ${e.categoria_principal} ${e.subcategoria}`)
-        ].join(" ")).includes(q));
-      }
+        if (ordenacao === "prioridade") {
+          return pesoPrioridade(b.prioridade) - pesoPrioridade(a.prioridade);
+        }
 
-      box.innerHTML = renderEvents(records);
-    }
+        if (ordenacao === "titulo") {
+          return String(a.titulo || "").localeCompare(String(b.titulo || ""));
+        }
 
-    function renderEvents(records) {
-      if (!records.length) return `<div class="empty">Nenhum registro encontrado.</div>`;
-      return records.map(r => {
-        const a = r.analysis || {};
-        const events = a.eventos_detectados || [];
-        const money = events.find(e => e.valor);
-        const mainType = events[0]?.tipo || "livre";
-        const chips = [
-          mainType,
-          ...events.slice(0,2).map(e => e.categoria_principal),
-          ...(a.tags || []).slice(0,4),
-          ...(a.categorias_emergentes_candidatas || []).slice(0,2).map(c => c.nome)
-        ].filter(Boolean);
-        return `
-          <div class="event">
-            <div class="time">${escapeHTML(formatDateTime(r.eventDateTime || r.createdAt))}</div>
-            <div>
-              <div class="text">${escapeHTML(r.originalText)}</div>
-              <div class="muted small">${escapeHTML(a.resumo_curto || "")}</div>
-              <div class="chips" style="margin-top:9px">
-                ${chips.map((c,i) => `<span class="chip ${i===0 ? "blue" : ""}">${escapeHTML(c)}</span>`).join("")}
-              </div>
-            </div>
-            <div class="row">
-              ${money ? `<span class="money">${currency(money.valor)}</span>` : ""}
-              <button class="btn secondary" onclick="showRecord('${r.id}')">ver</button>
-              <button class="btn danger" onclick="deleteRecord('${r.id}')">×</button>
-            </div>
+        return dataRegistro(b) - dataRegistro(a);
+      });
+
+      if (!filtrados.length) {
+        lista.innerHTML = `
+          <div class="empty">
+            Nenhum registro encontrado.
+            <br><br>
+            Clique em <strong>Sincronizar</strong> para buscar dados do Google Sheets,
+            ou cadastre um novo registro.
           </div>
         `;
-      }).join("");
-    }
-
-    function showRecord(id) {
-      const r = state.records.find(x => x.id === id);
-      if (!r) return;
-      go("capture");
-      document.getElementById("analysisMode").textContent = "registro salvo";
-      document.getElementById("lastAnalysis").textContent = JSON.stringify(r, null, 2);
-    }
-
-    async function deleteRecord(id) {
-      if (!confirm("Apagar este registro?")) return;
-      try {
-        if (isServerMode()) {
-          await deleteRecordOnServer(id);
-        }
-      } catch (err) {
-        alert("Não consegui excluir no servidor. Vou remover apenas da visualização local. Erro: " + err.message);
+        return;
       }
-      state.records = state.records.filter(r => r.id !== id);
-      reprocessEmergent(false);
-      saveState();
-      if (isServerMode()) syncFromServer(false);
+
+      lista.innerHTML = filtrados.map(cardRegistro).join("");
     }
 
-    function clearFilters() {
-      document.getElementById("searchFilter").value = "";
-      document.getElementById("typeFilter").value = "";
-      document.getElementById("periodFilter").value = "all";
-      renderTimeline();
-    }
+    function cardRegistro(r) {
+      const prioridadeClass = normalizarTexto(r.prioridade || "normal");
+      const tags = String(r.tags || "")
+        .split(",")
+        .map(t => t.trim())
+        .filter(Boolean)
+        .map(t => `<span class="tag">${escapeHtml(t)}</span>`)
+        .join("");
 
-    function renderFinance() {
-      const events = allEvents();
-      const expenses = events.filter(e => e.tipo === "financeiro");
-      const income = events.filter(e => e.tipo === "receita");
-      const totalExpense = expenses.reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const totalIncome = income.reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const avgExpense = expenses.length ? totalExpense / expenses.length : 0;
-
-      document.getElementById("financeMetrics").innerHTML = [
-        metric(currency(totalExpense), "Despesas", `${expenses.length} registros`),
-        metric(currency(totalIncome), "Receitas", `${income.length} registros`),
-        metric(currency(avgExpense), "Ticket médio", "por despesa")
-      ].join("");
-
-      const byCat = topMoney(expenses, e => e.categoria_principal);
-      document.getElementById("financeByCategory").innerHTML = renderMoneyList(byCat, totalExpense);
-
-      const behavior = [];
-      for (const r of state.records) {
-        const amount = (r.analysis?.eventos_detectados || []).filter(e => e.tipo === "financeiro").reduce((s,e) => s + (Number(e.valor)||0), 0);
-        if (!amount) continue;
-        for (const c of (r.analysis?.categorias_emergentes_candidatas || [])) {
-          behavior.push([c.nome, amount]);
-        }
-        for (const h of (r.analysis?.hipoteses || [])) {
-          behavior.push([h.nome, amount]);
-        }
-      }
-      const beh = aggregatePairs(behavior);
-      document.getElementById("financeBehavior").innerHTML = renderMoneyList(beh, totalExpense);
-    }
-
-    function renderMoneyList(items, total) {
-      if (!items.length) return `<div class="empty">Sem dados financeiros suficientes.</div>`;
-      return items.map(([name, value]) => {
-        const pct = total ? Math.round(value / total * 100) : 0;
-        return `<div class="listItem">
-          <div class="spaced"><strong>${escapeHTML(name)}</strong><span class="money">${currency(value)}</span></div>
-          <div class="bar" style="--w:${pct}%"><i></i></div>
-          <div class="muted2 small">${pct}% do total selecionado</div>
-        </div>`;
-      }).join("");
-    }
-
-    function renderHabits() {
-      const events = allEvents();
-      const hab = events.filter(e => ["habito","exercicio","sono","saude","alimentacao"].includes(e.tipo) || ["exercicio","sono","saude","alimentacao"].includes(e.categoria_principal));
-      const positives = hab.filter(e => e.impacto === "positivo").length;
-      const alerts = hab.filter(e => ["negativo","alerta"].includes(e.impacto)).length;
-      const movement = hab.filter(e => e.categoria_principal === "exercicio").length;
-
-      document.getElementById("habitMetrics").innerHTML = [
-        metric(String(hab.length), "Registros de corpo/rotina", "hábitos, sono, alimentação e saúde"),
-        metric(String(positives), "Sinais positivos", "impacto positivo"),
-        metric(String(alerts), "Pontos de atenção", "impacto negativo/alerta")
-      ].join("");
-
-      const by = topCounts(hab.map(e => `${e.categoria_principal}/${e.subcategoria}`), 20);
-      document.getElementById("habitList").innerHTML = by.length ? by.map(([k,v]) => `<div class="listItem">
-        <div class="spaced"><strong>${escapeHTML(k)}</strong><span class="pill">${v}x</span></div>
-      </div>`).join("") : `<div class="empty">Sem hábitos registrados ainda.</div>`;
-    }
-
-    function renderEmotions() {
-      const emos = state.records.flatMap(r => r.analysis?.emocoes_detectadas || []);
-      const triggers = state.records.flatMap(r => r.analysis?.gatilhos_possiveis || []);
-      const contexts = state.records.flatMap(r => r.analysis?.contextos || []);
-
-      document.getElementById("emotionMetrics").innerHTML = [
-        metric(String(emos.length), "Estados emocionais", "menções detectadas"),
-        metric(String(new Set(emos).size), "Emoções diferentes", "variedade"),
-        metric(String(triggers.length), "Gatilhos prováveis", "inferências")
-      ].join("");
-
-      document.getElementById("emotionList").innerHTML = renderCountList(topCounts(emos, 20), "emoção");
-      document.getElementById("triggerList").innerHTML = renderCountList(topCounts([...triggers, ...contexts], 20), "gatilho/contexto");
-    }
-
-    function renderEmergent() {
-      document.getElementById("emergentList").innerHTML = renderCatItems(state.emergentCategories);
-    }
-
-    function renderCatItems(cats) {
-      if (!cats.length) return `<div class="empty">Nenhuma categoria emergente ainda. Registre frases com contexto real.</div>`;
-      return cats.map(c => {
-        const conf = Math.round((c.confianca_media || 0) * 100);
-        return `<div class="listItem">
-          <div class="spaced">
+      return `
+        <article class="record">
+          <div class="recordTop">
             <div>
-              <strong>${escapeHTML(c.nome)}</strong>
-              <div class="muted small">${escapeHTML(c.categoria_mae)} · ${escapeHTML(c.status)}</div>
+              <div class="recordTitle">${escapeHtml(r.titulo || "Sem título")}</div>
+              <div class="recordMeta">
+                ${escapeHtml(r.tipo || "Registro")} · ${escapeHtml(r.categoria || "Geral")} · ${escapeHtml(r.status || "Aberto")}
+                <br>
+                ID: ${escapeHtml(r.id || "")}
+                <br>
+                Criado: ${formatarDataHora(r.data_criacao)} · Atualizado: ${formatarDataHora(r.data_atualizacao)}
+              </div>
             </div>
-            <span class="pill">${c.ocorrencias} ocorrência(s)</span>
+            <span class="priority ${prioridadeClass}">${escapeHtml(r.prioridade || "Normal")}</span>
           </div>
-          <p class="small muted" style="margin:10px 0 0">${escapeHTML(c.motivo)}</p>
-          <div class="bar" style="--w:${conf}%"><i></i></div>
-          <div class="muted2 small">confiança média: ${conf}%</div>
-        </div>`;
-      }).join("");
+
+          ${r.descricao ? `<div class="recordText">${escapeHtml(r.descricao)}</div>` : ""}
+
+          ${(r.data_evento || r.hora_evento || r.contato_nome || r.contato_numero) ? `
+            <div class="recordMeta" style="margin-top:10px">
+              ${r.data_evento ? "Data do evento: " + escapeHtml(formatarDataSimples(r.data_evento)) + "<br>" : ""}
+              ${r.hora_evento ? "Hora: " + escapeHtml(r.hora_evento) + "<br>" : ""}
+              ${r.contato_nome ? "Contato: " + escapeHtml(r.contato_nome) + "<br>" : ""}
+              ${r.contato_numero ? "Telefone: " + escapeHtml(r.contato_numero) : ""}
+            </div>
+          ` : ""}
+
+          ${tags ? `<div>${tags}</div>` : ""}
+        </article>
+      `;
     }
 
-    function renderPatterns() {
-      const patterns = state.patterns || [];
-      document.getElementById("patternsList").innerHTML = patterns.length ? patterns.map(p => `
-        <div class="listItem">
-          <div class="spaced">
-            <strong>${escapeHTML(p.nome)}</strong>
-            <span class="pill">${escapeHTML(p.status)} · ${p.ocorrencias}x</span>
-          </div>
-          <p class="small muted">Confiança local: ${Math.round((p.confianca||0)*100)}%</p>
-          <div class="chips">${(p.evidencias||[]).slice(0,3).map(e => `<span class="chip warn">${escapeHTML(e.text.slice(0,48))}</span>`).join("")}</div>
-        </div>
-      `).join("") : `<div class="empty">Padrões aparecerão quando houver repetição ou combinação de sinais.</div>`;
-
-      document.getElementById("insightsList").innerHTML = buildLocalInsights().map(i => `
-        <div class="listItem"><strong>${escapeHTML(i.title)}</strong><p class="small muted" style="margin:8px 0 0">${escapeHTML(i.text)}</p></div>
-      `).join("") || `<div class="empty">Sem insights ainda.</div>`;
+    function dataRegistro(r) {
+      const d = r.data_atualizacao || r.data_criacao || r.data_evento || "";
+      const parsed = new Date(d);
+      const time = parsed.getTime();
+      return Number.isNaN(time) ? 0 : time;
     }
 
-    function buildLocalInsights() {
-      const insights = [];
-      const expenses = allEvents().filter(e => e.tipo === "financeiro");
-      const totalExpense = expenses.reduce((s,e) => s + (Number(e.valor)||0), 0);
-      if (totalExpense > 0) insights.push({title:"Custo de vida registrado", text:`Até agora, o sistema capturou ${currency(totalExpense)} em despesas. Com mais dados, será possível separar gasto necessário, gasto de conveniência, gasto social e gasto comportamental.`});
+    function pesoPrioridade(p) {
+      const mapa = {
+        "Urgente": 4,
+        "Alta": 3,
+        "Normal": 2,
+        "Baixa": 1
+      };
 
-      const exaust = state.emergentCategories.find(c => normalizeText(c.nome).includes("exaust"));
-      if (exaust) insights.push({title:"Possível custo da exaustão", text:`A categoria “${exaust.nome}” apareceu ${exaust.ocorrencias} vez(es). Isso sugere que baixa energia pode estar virando decisão prática ou financeira.`});
-
-      const atraso = state.emergentCategories.find(c => normalizeText(c.nome).includes("atras"));
-      if (atraso) insights.push({title:"Custo da desorganização", text:`A categoria “${atraso.nome}” indica eventos em que atraso ou quebra de rotina pode ter gerado custo ou impacto.`});
-
-      const exercise = allEvents().filter(e => e.categoria_principal === "exercicio").length;
-      if (exercise) insights.push({title:"Movimento registrado", text:`Há ${exercise} registro(s) de exercício/movimento. Observe se eles aparecem junto de melhora de humor, sono ou produtividade.`});
-
-      if (state.records.length >= 7 && state.emergentCategories.length === 0) insights.push({title:"Registros objetivos demais", text:"Você já tem vários registros, mas poucas categorias emergentes. Experimente incluir contexto: por quê, como se sentiu, o que causou ou o que aconteceu depois."});
-
-      return insights;
+      return mapa[p] || 0;
     }
 
-    function renderCountList(items, label) {
-      if (!items.length) return `<div class="empty">Sem ${escapeHTML(label)} suficiente.</div>`;
-      const max = Math.max(...items.map(x => x[1]), 1);
-      return items.map(([k,v]) => `<div class="listItem">
-        <div class="spaced"><strong>${escapeHTML(k)}</strong><span class="pill">${v}x</span></div>
-        <div class="bar" style="--w:${Math.round(v/max*100)}%"><i></i></div>
-      </div>`).join("");
+    function normalizarTexto(txt) {
+      return (txt || "")
+        .toString()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
     }
 
-    function topCounts(arr, limit=10) {
-      const m = new Map();
-      arr.filter(Boolean).forEach(x => m.set(x, (m.get(x)||0)+1));
-      return [...m.entries()].sort((a,b) => b[1]-a[1]).slice(0, limit);
+    function escapeHtml(str) {
+      return (str || "")
+        .toString()
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
-    function topMoney(arr, keyFn) {
-      const m = new Map();
-      arr.forEach(e => {
-        const k = keyFn(e) || "sem_categoria";
-        m.set(k, (m.get(k)||0) + (Number(e.valor)||0));
-      });
-      return [...m.entries()].sort((a,b) => b[1]-a[1]);
-    }
-
-    function aggregatePairs(pairs) {
-      const m = new Map();
-      pairs.forEach(([k,v]) => m.set(k, (m.get(k)||0) + (Number(v)||0)));
-      return [...m.entries()].sort((a,b) => b[1]-a[1]);
-    }
-
-    function fillExamples() {
-      const examples = [
-        "gastei 61 no iFood porque estava exausto depois da audiência",
-        "dormi mal e acordei atrasado, peguei Uber de 28 reais",
-        "caminhei 35 minutos e fiquei mais calmo",
-        "recebi 1500 de honorários do cliente João",
-        "fiquei ansioso depois da reunião",
-        "almocei fora 42 porque estava sem tempo",
-        "estudei 2 horas e terminei uma tarefa importante"
-      ];
-      document.getElementById("messageInput").value = examples[Math.floor(Math.random()*examples.length)];
-    }
-
-    function generateLocalReport() {
-      const lines = [];
-      const events = allEvents();
-      const expenses = events.filter(e => e.tipo === "financeiro");
-      const income = events.filter(e => e.tipo === "receita");
-      const totalExpense = expenses.reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const totalIncome = income.reduce((s,e) => s + (Number(e.valor)||0), 0);
-      const tags = topCounts(state.records.flatMap(r => r.analysis?.tags || []), 10);
-      const cats = state.emergentCategories.slice(0,8);
-
-      lines.push("RELATÓRIO LOCAL — RADAR DE VIDA");
-      lines.push("");
-      lines.push(`Registros totais: ${state.records.length}`);
-      lines.push(`Despesas registradas: ${currency(totalExpense)}`);
-      lines.push(`Receitas registradas: ${currency(totalIncome)}`);
-      lines.push(`Saldo capturado: ${currency(totalIncome - totalExpense)}`);
-      lines.push("");
-      lines.push("Categorias emergentes:");
-      if (cats.length) cats.forEach((c,i) => lines.push(`${i+1}. ${c.nome} — ${c.ocorrencias} ocorrência(s), status ${c.status}`));
-      else lines.push("Ainda não há categorias emergentes suficientes.");
-      lines.push("");
-      lines.push("Tags mais frequentes:");
-      if (tags.length) tags.forEach(([k,v],i) => lines.push(`${i+1}. ${k} — ${v}x`));
-      else lines.push("Ainda não há tags suficientes.");
-      lines.push("");
-      lines.push("Leitura local:");
-      buildLocalInsights().forEach(i => lines.push(`- ${i.title}: ${i.text}`));
-
-      document.getElementById("reportBox").textContent = lines.join("\n");
-    }
-
-    async function generateAIReport() {
-      if (!settings.apiKey) return alert("Configure a chave da OpenAI primeiro.");
-      const compact = state.records.slice(0,200).map(r => ({
-        data: r.eventDateTime,
-        texto: r.originalText,
-        resumo: r.analysis?.resumo_curto,
-        eventos: r.analysis?.eventos_detectados,
-        tags: r.analysis?.tags,
-        emergentes: r.analysis?.categorias_emergentes_candidatas,
-        hipoteses: r.analysis?.hipoteses
-      }));
-
-      document.getElementById("reportBox").textContent = "Gerando relatório com IA...";
-
-      const prompt = `Gere um relatório profundo, prático e não julgador sobre os registros abaixo.
-Separe em: visão geral, financeiro, hábitos/saúde, emoções/energia, padrões emergentes, riscos de interpretação e próximos 3 experimentos simples.
-Não faça diagnóstico. Não trate hipótese como certeza.
-
-Dados:
-${JSON.stringify(compact, null, 2)}`;
+    function formatarDataHora(valor) {
+      if (!valor) return "—";
 
       try {
-        const body = {
-          model: settings.modelName || "gpt-5.4-mini",
-          input: [
-            { role:"system", content:"Você é um analista de padrões de vida cotidiana. Seja claro, profundo e prudente." },
-            { role:"user", content: prompt }
-          ]
-        };
+        const d = new Date(valor);
+        if (!Number.isNaN(d.getTime())) {
+          return d.toLocaleString("pt-BR");
+        }
+      } catch (e) {}
 
-        const res = await fetch("https://api.openai.com/v1/responses", {
-          method:"POST",
-          headers: { "Content-Type":"application/json", "Authorization":`Bearer ${settings.apiKey}` },
-          body: JSON.stringify(body)
+      return String(valor);
+    }
+
+    function formatarDataSimples(valor) {
+      if (!valor) return "";
+
+      if (Object.prototype.toString.call(valor) === "[object Date]") {
+        return valor.toLocaleDateString("pt-BR");
+      }
+
+      const s = String(valor);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const [a, m, d] = s.split("-");
+        return `${d}/${m}/${a}`;
+      }
+
+      return s;
+    }
+
+    function setPill(id, texto, tipo) {
+      const el = document.getElementById(id);
+      el.textContent = texto;
+      el.className = "pill";
+      if (tipo) el.classList.add(tipo);
+    }
+
+    function mostrarLoader(ativo) {
+      document.getElementById("loader").classList.toggle("show", !!ativo);
+    }
+
+    function limparMensagens() {
+      ["apiFeedback", "apiError", "saveFeedback", "saveError"].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.add("hidden");
+        el.textContent = "";
+      });
+    }
+
+    function mostrarOk(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.remove("hidden");
+    }
+
+    function mostrarErro(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.remove("hidden");
+    }
+
+    function abrirApiDireta() {
+      try {
+        const url = montarUrl("ping");
+        window.open(url, "_blank");
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function exportarJsonTela() {
+      const pacote = {
+        app: "Radar de Vida",
+        origem: "tela_html",
+        exportado_em: new Date().toISOString(),
+        total: registros.length,
+        registros
+      };
+
+      baixarArquivo(
+        "radar-de-vida-registros-tela-" + new Date().toISOString().slice(0,10) + ".json",
+        JSON.stringify(pacote, null, 2),
+        "application/json"
+      );
+    }
+
+    async function importarJsonParaSheets(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        const texto = await file.text();
+        const json = JSON.parse(texto);
+
+        let itens = [];
+
+        if (Array.isArray(json)) {
+          itens = json;
+        } else if (Array.isArray(json.registros)) {
+          itens = json.registros;
+        } else if (json.database && Array.isArray(json.database.registros)) {
+          itens = json.database.registros;
+        }
+
+        if (!itens.length) {
+          alert("Nenhum registro encontrado no JSON.");
+          return;
+        }
+
+        const api = normalizarApiUrl(getApiUrl());
+        if (!api) {
+          alert("Informe a URL da API antes de importar.");
+          return;
+        }
+
+        const confirma = confirm("Importar " + itens.length + " registros para o Google Sheets?");
+        if (!confirma) return;
+
+        const resposta = await fetch(api, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify({
+            action: "bulkCreate",
+            data: itens
+          })
         });
 
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        let out = data.output_text;
-        if (!out && Array.isArray(data.output)) {
-          out = data.output.flatMap(item => item.content || []).map(c => c.text || "").join("\n");
+        const data = await resposta.json();
+
+        if (!data.ok) {
+          throw new Error(data.erro || "Erro na importação.");
         }
-        document.getElementById("reportBox").textContent = out || "Sem resposta textual.";
-      } catch (err) {
-        document.getElementById("reportBox").textContent = "Erro ao gerar relatório: " + err.message;
+
+        alert("Importação concluída: " + data.total + " registros enviados.");
+        await sincronizar();
+      } catch (erro) {
+        alert("Erro ao importar JSON: " + erro.message);
+      } finally {
+        event.target.value = "";
       }
     }
 
-    async function importWhatsAppTxt(useAI) {
-      const file = document.getElementById("whatsFile").files[0];
-      if (!file) return alert("Selecione um arquivo .txt exportado do WhatsApp.");
-      const txt = await file.text();
-      const messages = parseWhatsApp(txt);
-      if (!messages.length) return alert("Não encontrei mensagens compatíveis no arquivo.");
-
-      if (!confirm(`Importar ${messages.length} mensagens? ${useAI ? "A análise com IA pode consumir créditos e demorar." : ""}`)) return;
-
-      document.getElementById("lastAnalysis").textContent = `Importando ${messages.length} mensagens...`;
-      go("capture");
-
-      for (const m of messages) {
-        let analysis;
-        const dt = m.datetime || new Date().toISOString();
-        try {
-          analysis = useAI ? await analyzeWithOpenAI(m.text, dt) : heuristicAnalysis(m.text, dt);
-        } catch (err) {
-          analysis = heuristicAnalysis(m.text, dt);
-          analysis.insight_imediato = "IA falhou na importação; usado modo offline. " + err.message;
-        }
-        state.records.unshift({
-          id: uid("rec"),
-          source: "whatsapp_import",
-          author: m.author,
-          originalText: m.text,
-          createdAt: new Date().toISOString(),
-          eventDateTime: dt,
-          analysis
-        });
-      }
-
-      reprocessEmergent(false);
-      saveState();
-      document.getElementById("lastAnalysis").textContent = `Importação concluída: ${messages.length} mensagens.`;
-    }
-
-    function parseWhatsApp(txt) {
-      const lines = txt.split(/\r?\n/);
-      const out = [];
-      let current = null;
-
-      const re1 = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*-\s*([^:]+):\s*(.*)$/;
-      const re2 = /^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\]\s*([^:]+):\s*(.*)$/;
-
-      for (const line of lines) {
-        let m = line.match(re1) || line.match(re2);
-        if (m) {
-          if (current && usefulMessage(current.text)) out.push(current);
-          const [, dd, mm, yyyyRaw, HH, MM, SS, author, msg] = m;
-          const yyyy = yyyyRaw.length === 2 ? "20" + yyyyRaw : yyyyRaw;
-          current = {
-            datetime: new Date(`${yyyy}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}T${HH.padStart(2,"0")}:${MM}:00`).toISOString(),
-            author: author.trim(),
-            text: cleanWhatsMsg(msg)
-          };
-        } else if (current) {
-          current.text += "\n" + cleanWhatsMsg(line);
-        }
-      }
-      if (current && usefulMessage(current.text)) out.push(current);
-      return out.filter(m => usefulMessage(m.text));
-    }
-
-    function cleanWhatsMsg(s) {
-      return String(s || "").replace(/\u200e/g,"").trim();
-    }
-
-    function usefulMessage(s) {
-      const n = normalizeText(s);
-      if (!n || n.length < 2) return false;
-      if (n.includes("mensagem apagada")) return false;
-      if (n.includes("midia oculta") || n.includes("imagem omitida") || n.includes("<midia")) return false;
-      if (n.includes("criptografia de ponta a ponta")) return false;
-      return true;
-    }
-
-    function exportJSON() {
-      const blob = new Blob([JSON.stringify({ state, settings: {...settings, apiKey: ""} }, null, 2)], { type:"application/json" });
-      downloadBlob(blob, `radar_de_vida_backup_${todayISO()}.json`);
-    }
-
-    function exportCSV() {
-      const rows = [["data","origem","autor","texto","tipo","categoria","subcategoria","valor","moeda","tags","emergentes","insight"]];
-      for (const r of state.records) {
-        const events = r.analysis?.eventos_detectados || [{}];
-        for (const e of events) {
-          rows.push([
-            r.eventDateTime || r.createdAt,
-            r.source,
-            r.author || "",
-            r.originalText,
-            e.tipo || "",
-            e.categoria_principal || "",
-            e.subcategoria || "",
-            e.valor ?? "",
-            e.moeda || "",
-            (r.analysis?.tags || []).join("|"),
-            (r.analysis?.categorias_emergentes_candidatas || []).map(c => c.nome).join("|"),
-            r.analysis?.insight_imediato || ""
-          ]);
-        }
-      }
-      const csv = rows.map(row => row.map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(";")).join("\n");
-      downloadBlob(new Blob([csv], { type:"text/csv;charset=utf-8" }), `radar_de_vida_eventos_${todayISO()}.csv`);
-    }
-
-    async function importJSON() {
-      const file = document.getElementById("jsonFile").files[0];
-      if (!file) return alert("Selecione um arquivo JSON.");
-      const data = JSON.parse(await file.text());
-      const newState = data.state || data;
-      if (!newState.records || !Array.isArray(newState.records)) return alert("JSON inválido.");
-      if (!confirm("Restaurar este backup? Isso substituirá os dados atuais.")) return;
-      state = newState;
-      saveState();
-      alert("Backup restaurado.");
-    }
-
-    function downloadBlob(blob, filename) {
+    function baixarArquivo(nome, conteudo, tipo) {
+      const blob = new Blob([conteudo], { type: tipo || "text/plain" });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
+      a.href = url;
+      a.download = nome;
       document.body.appendChild(a);
       a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      a.remove();
+      URL.revokeObjectURL(url);
     }
-
-    async function resetAll() {
-      const msg = isServerMode()
-        ? "Apagar todos os dados do servidor e também a cópia local? Esta ação afeta o painel online."
-        : "Apagar todos os registros locais? Esta ação não pode ser desfeita sem backup.";
-      if (!confirm(msg)) return;
-
-      if (isServerMode()) {
-        try {
-          await clearServerRecords();
-        } catch (err) {
-          if (!confirm("Falha ao limpar o servidor: " + err.message + "\nDeseja limpar apenas a cópia local?")) return;
-        }
-      }
-
-      state = structuredClone(defaultState);
-      saveState();
-      if (isServerMode()) syncFromServer(false);
-    }
-
-    init();
   </script>
 </body>
 </html>
