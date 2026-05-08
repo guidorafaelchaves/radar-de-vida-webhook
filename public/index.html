@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar de Vida — Google Sheets</title>
+  <title>Radar de Vida — Google Sheets JSONP</title>
 
   <style>
     :root {
       --bg: #07111f;
-      --bg2: #0f172a;
       --card: rgba(15, 23, 42, 0.92);
-      --card2: rgba(30, 41, 59, 0.76);
       --line: rgba(255, 255, 255, 0.12);
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -22,9 +20,7 @@
       --radius: 20px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -42,7 +38,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(7, 17, 31, 0.86);
+      background: rgba(7, 17, 31, 0.88);
       backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--line);
       padding: 22px 16px 18px;
@@ -72,7 +68,7 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.45;
-      max-width: 780px;
+      max-width: 800px;
     }
 
     .statusbar {
@@ -122,9 +118,7 @@
     }
 
     @media (max-width: 940px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
+      .grid { grid-template-columns: 1fr; }
     }
 
     .card {
@@ -135,20 +129,12 @@
       box-shadow: 0 20px 70px rgba(0,0,0,0.24);
     }
 
-    .card + .card {
-      margin-top: 16px;
-    }
+    .card + .card { margin-top: 16px; }
 
     h2 {
       margin: 0 0 13px;
       font-size: 18px;
       letter-spacing: -0.2px;
-    }
-
-    h3 {
-      margin: 0 0 10px;
-      font-size: 15px;
-      color: #dbeafe;
     }
 
     label {
@@ -158,9 +144,7 @@
       font-size: 13px;
     }
 
-    input,
-    textarea,
-    select {
+    input, textarea, select {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 13px;
@@ -177,9 +161,7 @@
       line-height: 1.45;
     }
 
-    select option {
-      color: #0f172a;
-    }
+    select option { color: #0f172a; }
 
     .row {
       display: grid;
@@ -188,9 +170,7 @@
     }
 
     @media (max-width: 520px) {
-      .row {
-        grid-template-columns: 1fr;
-      }
+      .row { grid-template-columns: 1fr; }
     }
 
     .buttons {
@@ -211,10 +191,7 @@
       transition: transform .12s ease, opacity .12s ease;
     }
 
-    button:hover {
-      transform: translateY(-1px);
-      opacity: 0.94;
-    }
+    button:hover { transform: translateY(-1px); opacity: 0.94; }
 
     button.secondary {
       background: rgba(255,255,255,0.09);
@@ -222,25 +199,10 @@
       border: 1px solid var(--line);
     }
 
-    button.green {
-      background: var(--green);
-      color: #052e16;
-    }
-
-    button.yellow {
-      background: var(--yellow);
-      color: #111827;
-    }
-
-    button.red {
-      background: var(--red);
-      color: white;
-    }
-
-    button.purple {
-      background: var(--purple);
-      color: #1e1b4b;
-    }
+    button.green { background: var(--green); color: #052e16; }
+    button.yellow { background: var(--yellow); color: #111827; }
+    button.red { background: var(--red); color: white; }
+    button.purple { background: var(--purple); color: #1e1b4b; }
 
     button:disabled {
       opacity: 0.5;
@@ -259,26 +221,25 @@
       margin-bottom: 14px;
     }
 
-    .successBox {
-      border: 1px solid rgba(34, 197, 94, 0.30);
-      background: rgba(34, 197, 94, 0.09);
-      color: #bbf7d0;
+    .successBox, .dangerBox {
       border-radius: 15px;
       padding: 12px;
       font-size: 13px;
       line-height: 1.45;
       margin-top: 12px;
+      white-space: pre-wrap;
+    }
+
+    .successBox {
+      border: 1px solid rgba(34, 197, 94, 0.30);
+      background: rgba(34, 197, 94, 0.09);
+      color: #bbf7d0;
     }
 
     .dangerBox {
       border: 1px solid rgba(239, 68, 68, 0.30);
       background: rgba(239, 68, 68, 0.09);
       color: #fecaca;
-      border-radius: 15px;
-      padding: 12px;
-      font-size: 13px;
-      line-height: 1.45;
-      margin-top: 12px;
     }
 
     .small {
@@ -296,9 +257,7 @@
     }
 
     @media (max-width: 860px) {
-      .filters {
-        grid-template-columns: 1fr;
-      }
+      .filters { grid-template-columns: 1fr; }
     }
 
     .record {
@@ -393,9 +352,7 @@
       margin: 12px 0;
     }
 
-    .loader.show {
-      display: block;
-    }
+    .loader.show { display: block; }
 
     .split {
       display: grid;
@@ -404,9 +361,7 @@
     }
 
     @media (max-width: 640px) {
-      .split {
-        grid-template-columns: 1fr;
-      }
+      .split { grid-template-columns: 1fr; }
     }
 
     code {
@@ -432,9 +387,7 @@
       margin-bottom: 12px;
     }
 
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
   </style>
 </head>
 
@@ -445,8 +398,8 @@
         <div>
           <h1>Radar de Vida</h1>
           <div class="subtitle">
-            Versão integrada ao Google Sheets por Apps Script. O Render/GitHub hospeda apenas a interface;
-            o histórico fica salvo na planilha-banco.
+            Versão integrada ao Google Sheets por Apps Script. Leitura por JSONP para evitar bloqueio CORS;
+            gravação por POST sem leitura direta da resposta.
           </div>
         </div>
 
@@ -472,8 +425,8 @@
           <h2>Conexão com Google Sheets</h2>
 
           <div class="notice">
-            Cole aqui a URL do <strong>App da Web</strong> do Apps Script, aquela que termina em <code>/exec</code>.
-            Ela fica salva neste navegador para as próximas aberturas.
+            Cole a URL do <strong>App da Web</strong> do Apps Script, terminada em <code>/exec</code>.
+            Depois clique em <strong>Salvar URL</strong> e <strong>Testar API</strong>.
           </div>
 
           <label for="apiUrl">URL da API Apps Script</label>
@@ -485,7 +438,7 @@
           </div>
 
           <div class="small">
-            Teste esperado: <code>{"ok":true,"app":"Radar de Vida API"}</code>
+            Nesta versão, o teste usa JSONP. O Apps Script precisa estar com suporte a <code>callback</code>.
           </div>
 
           <div id="apiFeedback" class="successBox hidden"></div>
@@ -594,8 +547,7 @@
         <section class="card">
           <h2>Backup local emergencial</h2>
           <div class="small">
-            O banco principal é o Google Sheets. Estes botões servem apenas para exportar a lista carregada na tela
-            ou importar registros antigos em lote para a planilha.
+            Exporta a lista carregada na tela ou importa registros antigos em lote para a planilha.
           </div>
 
           <div class="buttons">
@@ -648,7 +600,7 @@
         <div id="lista"></div>
 
         <div class="footerNote">
-          Observação: esta versão salva texto e metadados no Google Sheets. Fotos/arquivos entrarão na próxima etapa,
+          Observação: esta versão salva texto e metadados no Google Sheets. Fotos/arquivos entram na próxima etapa,
           usando Google Drive + aba <code>Midias</code>.
         </div>
       </section>
@@ -656,19 +608,14 @@
   </main>
 
   <script>
-    /************************************************************
-     * Radar de Vida — Frontend Google Sheets
-     * Versão: 2.0 Sheets
-     ************************************************************/
-
-    const STORAGE_API_URL = "radar_vida_api_url_v2";
+    const STORAGE_API_URL = "radar_vida_api_url_v3_jsonp";
     let registros = [];
 
     document.addEventListener("DOMContentLoaded", iniciar);
 
     function iniciar() {
       const apiInput = document.getElementById("apiUrl");
-      const salva = localStorage.getItem(STORAGE_API_URL) || "";
+      const salva = localStorage.getItem(STORAGE_API_URL) || localStorage.getItem("radar_vida_api_url_v2") || "";
       apiInput.value = salva;
 
       document.getElementById("formRegistro").addEventListener("submit", salvarRegistro);
@@ -705,22 +652,66 @@
 
       if (!url || !url.includes("script.google.com") || !url.includes("/exec")) {
         mostrarErro("apiError", "Cole a URL correta do App da Web do Apps Script. Ela deve conter script.google.com e terminar em /exec.");
-        return;
+        return false;
       }
 
       document.getElementById("apiUrl").value = url;
       localStorage.setItem(STORAGE_API_URL, url);
       mostrarOk("apiFeedback", "URL salva neste navegador.");
       setPill("pillApi", "API: URL salva", "warn");
+      return true;
+    }
+
+    function jsonp(action, params = {}, timeoutMs = 15000) {
+      return new Promise((resolve, reject) => {
+        const base = normalizarApiUrl(getApiUrl());
+        if (!base) {
+          reject(new Error("Informe a URL da API Apps Script."));
+          return;
+        }
+
+        const callbackName = "__radarVidaJsonp_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+
+        const query = new URLSearchParams({
+          action,
+          ...params,
+          callback: callbackName,
+          _: String(Date.now())
+        });
+
+        const script = document.createElement("script");
+        script.src = base + "?" + query.toString();
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("Tempo esgotado ao chamar a API por JSONP."));
+        }, timeoutMs);
+
+        function cleanup() {
+          clearTimeout(timer);
+          try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error("Falha ao carregar resposta JSONP da API."));
+        };
+
+        document.body.appendChild(script);
+      });
     }
 
     async function testarApi(mostrarAlerta = true) {
       try {
-        salvarApiUrl();
+        if (!salvarApiUrl()) return;
 
-        const url = montarUrl("ping");
-        const resposta = await fetch(url, { method: "GET" });
-        const data = await resposta.json();
+        const data = await jsonp("ping");
 
         if (!data.ok) {
           throw new Error(data.erro || "API respondeu com erro.");
@@ -729,14 +720,11 @@
         setPill("pillApi", "API: conectada", "ok");
         mostrarOk("apiFeedback", "API conectada: " + (data.mensagem || data.app || "ok"));
 
-        if (mostrarAlerta) {
-          alert("API conectada com sucesso.");
-        }
-
+        if (mostrarAlerta) alert("API conectada com sucesso.");
         return data;
       } catch (erro) {
         setPill("pillApi", "API: erro", "err");
-        mostrarErro("apiError", "Erro ao testar API: " + erro.message + "\n\nSe aparecer bloqueio CORS, me avise para ativarmos o modo JSONP no Apps Script.");
+        mostrarErro("apiError", "Erro ao testar API: " + erro.message + "\n\nConfirme se você atualizou o Apps Script com suporte a callback/JSONP e reimplantou uma nova versão.");
         throw erro;
       }
     }
@@ -746,9 +734,7 @@
         mostrarLoader(true);
         limparMensagens();
 
-        const url = montarUrl("list", { limit: 500 });
-        const resposta = await fetch(url, { method: "GET" });
-        const data = await resposta.json();
+        const data = await jsonp("list", { limit: 500 });
 
         if (!data.ok) {
           throw new Error(data.erro || "Erro ao listar registros.");
@@ -758,7 +744,6 @@
         setPill("pillApi", "API: conectada", "ok");
         setPill("pillTotal", "Registros: " + registros.length, "");
         setPill("pillAtualizado", "Atualizado: " + new Date().toLocaleString("pt-BR"), "");
-
         renderizar();
       } catch (erro) {
         setPill("pillApi", "API: erro", "err");
@@ -772,7 +757,7 @@
     async function salvarRegistro(event) {
       event.preventDefault();
 
-      const api = getApiUrl();
+      const api = normalizarApiUrl(getApiUrl());
       if (!api) {
         alert("Informe e salve primeiro a URL da API.");
         return;
@@ -790,25 +775,27 @@
           data: coletarFormulario()
         };
 
-        const resposta = await fetch(normalizarApiUrl(api), {
+        await fetch(api, {
           method: "POST",
+          mode: "no-cors",
           headers: {
             "Content-Type": "text/plain;charset=utf-8"
           },
           body: JSON.stringify(payload)
         });
 
-        const data = await resposta.json();
+        mostrarOk(
+          "saveFeedback",
+          "Registro enviado ao Google Sheets. Como a gravação usa modo no-cors, a tela recarregará a lista agora para confirmar."
+        );
 
-        if (!data.ok) {
-          throw new Error(data.erro || "Erro ao salvar registro.");
-        }
-
-        mostrarOk("saveFeedback", "Registro salvo no Google Sheets: " + (data.registro && data.registro.id ? data.registro.id : ""));
         limparFormulario();
-        await sincronizar();
+
+        setTimeout(() => {
+          sincronizar();
+        }, 1800);
       } catch (erro) {
-        mostrarErro("saveError", "Erro ao salvar: " + erro.message + "\n\nSe o navegador bloquear a requisição, a próxima correção será ativar JSONP/no-cors no Apps Script.");
+        mostrarErro("saveError", "Erro ao enviar: " + erro.message);
       } finally {
         btn.disabled = false;
         btn.textContent = "Salvar no Google Sheets";
@@ -839,10 +826,7 @@
     }
 
     function parseTags(texto) {
-      return (texto || "")
-        .split(",")
-        .map(t => t.trim())
-        .filter(Boolean);
+      return (texto || "").split(",").map(t => t.trim()).filter(Boolean);
     }
 
     function limparFormulario() {
@@ -859,7 +843,6 @@
 
     function renderizar() {
       const lista = document.getElementById("lista");
-
       let filtrados = [...registros];
 
       const busca = normalizarTexto(document.getElementById("busca").value);
@@ -878,34 +861,17 @@
       if (busca) {
         filtrados = filtrados.filter(r => {
           const texto = normalizarTexto([
-            r.id,
-            r.titulo,
-            r.descricao,
-            r.tipo,
-            r.categoria,
-            r.status,
-            r.prioridade,
-            r.tags,
-            r.contato_nome,
-            r.contato_numero
+            r.id, r.titulo, r.descricao, r.tipo, r.categoria, r.status, r.prioridade,
+            r.tags, r.contato_nome, r.contato_numero
           ].join(" "));
           return texto.includes(busca);
         });
       }
 
       filtrados.sort((a, b) => {
-        if (ordenacao === "antigo") {
-          return dataRegistro(a) - dataRegistro(b);
-        }
-
-        if (ordenacao === "prioridade") {
-          return pesoPrioridade(b.prioridade) - pesoPrioridade(a.prioridade);
-        }
-
-        if (ordenacao === "titulo") {
-          return String(a.titulo || "").localeCompare(String(b.titulo || ""));
-        }
-
+        if (ordenacao === "antigo") return dataRegistro(a) - dataRegistro(b);
+        if (ordenacao === "prioridade") return pesoPrioridade(b.prioridade) - pesoPrioridade(a.prioridade);
+        if (ordenacao === "titulo") return String(a.titulo || "").localeCompare(String(b.titulo || ""));
         return dataRegistro(b) - dataRegistro(a);
       });
 
@@ -973,14 +939,7 @@
     }
 
     function pesoPrioridade(p) {
-      const mapa = {
-        "Urgente": 4,
-        "Alta": 3,
-        "Normal": 2,
-        "Baixa": 1
-      };
-
-      return mapa[p] || 0;
+      return { "Urgente": 4, "Alta": 3, "Normal": 2, "Baixa": 1 }[p] || 0;
     }
 
     function normalizarTexto(txt) {
@@ -1004,30 +963,20 @@
 
     function formatarDataHora(valor) {
       if (!valor) return "—";
-
       try {
         const d = new Date(valor);
-        if (!Number.isNaN(d.getTime())) {
-          return d.toLocaleString("pt-BR");
-        }
+        if (!Number.isNaN(d.getTime())) return d.toLocaleString("pt-BR");
       } catch (e) {}
-
       return String(valor);
     }
 
     function formatarDataSimples(valor) {
       if (!valor) return "";
-
-      if (Object.prototype.toString.call(valor) === "[object Date]") {
-        return valor.toLocaleDateString("pt-BR");
-      }
-
       const s = String(valor);
       if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
         const [a, m, d] = s.split("-");
         return `${d}/${m}/${a}`;
       }
-
       return s;
     }
 
@@ -1119,25 +1068,15 @@
         const confirma = confirm("Importar " + itens.length + " registros para o Google Sheets?");
         if (!confirma) return;
 
-        const resposta = await fetch(api, {
+        await fetch(api, {
           method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify({
-            action: "bulkCreate",
-            data: itens
-          })
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "bulkCreate", data: itens })
         });
 
-        const data = await resposta.json();
-
-        if (!data.ok) {
-          throw new Error(data.erro || "Erro na importação.");
-        }
-
-        alert("Importação concluída: " + data.total + " registros enviados.");
-        await sincronizar();
+        alert("Importação enviada. A lista será recarregada para confirmação.");
+        setTimeout(() => sincronizar(), 2200);
       } catch (erro) {
         alert("Erro ao importar JSON: " + erro.message);
       } finally {
