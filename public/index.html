@@ -3,1427 +3,354 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar de Vida — Painel Inteligente v5</title>
+  <title>Radar de Vida — v6 IA</title>
   <style>
     :root{
-      --bg:#eef4fb;
-      --bg2:#f8fbff;
-      --card:#ffffff;
-      --line:#d9e6f5;
-      --text:#17324d;
-      --muted:#66809c;
-      --blue:#3b82f6;
-      --cyan:#06b6d4;
-      --green:#16a34a;
-      --yellow:#d97706;
-      --red:#dc2626;
-      --purple:#7c3aed;
-      --soft-blue:#e8f1ff;
-      --soft-green:#eaf8ef;
-      --soft-yellow:#fff6e7;
-      --soft-red:#fdeeee;
-      --radius:20px;
-      --shadow:0 10px 35px rgba(31, 66, 114, .08);
+      --bg:#f4f8fd; --card:#fff; --line:#dbe7f5; --text:#16324d; --muted:#6a829b;
+      --blue:#2563eb; --green:#16a34a; --red:#dc2626; --yellow:#d97706; --purple:#7c3aed;
+      --softBlue:#eaf2ff; --softGreen:#eaf8ef; --softRed:#fdeeee; --softYellow:#fff6e7;
+      --shadow:0 12px 35px rgba(31,66,114,.08);
     }
-
     *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      color:var(--text);
-      font-family:Arial,Helvetica,sans-serif;
-      background:
-        radial-gradient(circle at 0% 0%, rgba(59,130,246,.09), transparent 26%),
-        radial-gradient(circle at 100% 0%, rgba(6,182,212,.08), transparent 24%),
-        linear-gradient(180deg, var(--bg2), var(--bg));
-    }
-
+    body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:
+      radial-gradient(circle at 0 0,rgba(37,99,235,.10),transparent 28%),
+      radial-gradient(circle at 100% 0,rgba(124,58,237,.08),transparent 25%),var(--bg)}
+    header{position:sticky;top:0;z-index:9;padding:18px 16px;background:rgba(244,248,253,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
     .wrap{max-width:1380px;margin:0 auto}
-    header{
-      position:sticky;top:0;z-index:12;
-      background:rgba(248,251,255,.9);
-      backdrop-filter:blur(14px);
-      border-bottom:1px solid var(--line);
-      padding:18px 16px 16px;
-    }
-
-    .head{
-      display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
-    }
-    h1{margin:0;font-size:36px;letter-spacing:-1px}
-    .sub{
-      margin-top:8px;color:var(--muted);font-size:14px;line-height:1.5;max-width:980px;
-    }
-
-    .statusbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
-    .pill{
-      padding:8px 12px;border-radius:999px;border:1px solid var(--line);
-      background:#fff;color:var(--text);font-size:12px;font-weight:700;
-    }
-    .pill.ok{background:var(--soft-green);border-color:#bfe3c9;color:#0f6c2e}
-    .pill.warn{background:var(--soft-yellow);border-color:#f0ddb0;color:#9a5e04}
-    .pill.err{background:var(--soft-red);border-color:#f0c3c3;color:#a31d1d}
-
-    main{padding:22px 16px 64px}
-
-    .grid{
-      display:grid;grid-template-columns:430px 1fr;gap:18px;align-items:start;
-    }
-    @media (max-width:1040px){.grid{grid-template-columns:1fr}}
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:18px;
-    }
-    .card + .card{margin-top:16px}
-
-    h2{margin:0 0 12px;font-size:20px;letter-spacing:-.3px}
-    h3{margin:0;font-size:16px}
-
-    .notice{
-      background:linear-gradient(180deg,#f0f7ff,#eef6ff);
-      border:1px solid #cfe0f4;
-      color:#315b84;
-      border-radius:16px;
-      padding:13px;
-      font-size:13px;line-height:1.5;
-      margin-bottom:14px;
-    }
-
-    label{display:block;margin:12px 0 6px;color:var(--muted);font-size:13px;font-weight:700}
-    input,textarea,select{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px 13px;
-      background:#fff;
-      color:var(--text);
-      font-size:14px;
-      outline:none;
-      transition:border-color .15s ease, box-shadow .15s ease;
-    }
-    input:focus,textarea:focus,select:focus{
-      border-color:#b8d1f4;
-      box-shadow:0 0 0 4px rgba(59,130,246,.08);
-    }
-    textarea{min-height:116px;resize:vertical;line-height:1.5}
-    select option{color:#18304b}
-
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width:620px){.row,.split{grid-template-columns:1fr}}
-
-    .buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
-    button{
-      border:none;border-radius:14px;padding:11px 14px;cursor:pointer;
-      font-weight:800;font-size:14px;
-      background:var(--blue);color:#fff;
-      transition:transform .12s ease, opacity .12s ease, box-shadow .12s ease;
-      box-shadow:0 8px 20px rgba(59,130,246,.16);
-    }
-    button:hover{transform:translateY(-1px);opacity:.96}
-    button.secondary{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none}
-    button.green{background:var(--green)}
-    button.yellow{background:var(--yellow)}
-    button.red{background:var(--red)}
-    button.purple{background:var(--purple)}
-    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
-
-    .successBox,.dangerBox{
-      border-radius:16px;padding:12px;font-size:13px;line-height:1.45;margin-top:12px;white-space:pre-wrap
-    }
-    .successBox{background:var(--soft-green);border:1px solid #cde8d5;color:#176239}
-    .dangerBox{background:var(--soft-red);border:1px solid #efcaca;color:#992222}
-    .hidden{display:none!important}
-    .small{font-size:12px;line-height:1.5;color:var(--muted)}
-    .loader{display:none;color:#275d92;font-weight:700;font-size:13px;margin:12px 0}
-    .loader.show{display:block}
-    .topActions{
-      display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px
-    }
-
-    .summaryGrid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-      margin-bottom:16px;
-    }
-    @media (max-width:1180px){.summaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:680px){.summaryGrid{grid-template-columns:1fr}}
-
-    .circleCard{
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:linear-gradient(180deg,#ffffff,#fbfdff);
-      padding:14px;
-      display:flex;gap:14px;align-items:center;
-      min-height:132px;
-    }
-    .ring{
-      --size:86px;
-      --value:60;
-      --color:var(--blue);
-      width:var(--size);
-      height:var(--size);
-      border-radius:50%;
-      background:
-        conic-gradient(var(--color) calc(var(--value) * 1%), #e8eef7 0);
-      display:grid;
-      place-items:center;
-      flex:0 0 auto;
-      position:relative;
-    }
-    .ring::before{
-      content:"";
-      position:absolute;inset:10px;
-      background:#fff;border-radius:50%;
-      border:1px solid #edf3fb;
-    }
-    .ringInner{
-      position:relative;z-index:1;
-      text-align:center;
-      line-height:1.05;
-    }
-    .ringNumber{
-      font-size:16px;font-weight:900;letter-spacing:-.3px
-    }
-    .ringLabelMini{
-      font-size:10px;color:var(--muted);font-weight:700;margin-top:3px
-    }
-
-    .circleInfo{min-width:0}
-    .circleTitle{font-size:15px;font-weight:900;margin-bottom:4px}
-    .circleValue{font-size:24px;font-weight:900;letter-spacing:-.5px}
-    .circleHint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
-
-    .dashboardGrid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-      margin-top:12px;
-    }
-    @media (max-width:1180px){.dashboardGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    @media (max-width:860px){.dashboardGrid{grid-template-columns:1fr 1fr}}
-    @media (max-width:620px){.dashboardGrid{grid-template-columns:1fr}}
-
-    .lifeCard{
-      border:1px solid var(--line);
-      background:linear-gradient(180deg,#fff,#fbfdff);
-      border-radius:18px;
-      padding:14px;
-      cursor:pointer;
-      transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;
-      min-height:180px;
-    }
-    .lifeCard:hover{transform:translateY(-2px);border-color:#bdd3ef;box-shadow:0 12px 26px rgba(37,89,151,.08)}
-    .lifeCard.selected{border-color:#79aef5;box-shadow:0 0 0 3px rgba(59,130,246,.10)}
-    .lifeTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-    .lifeIcon{
-      width:38px;height:38px;border-radius:14px;display:grid;place-items:center;
-      background:var(--soft-blue);border:1px solid #d2e4fb;font-size:18px
-    }
-    .score{font-size:30px;line-height:1;font-weight:900;letter-spacing:-.8px}
-    .scoreLabel{text-align:right;color:var(--muted);font-size:11px;margin-top:4px;font-weight:700}
-    .meter{height:10px;border-radius:999px;background:#edf3fa;overflow:hidden;margin:14px 0 10px;border:1px solid #e3edf9}
-    .meterFill{height:100%;width:0%}
-    .meterFill.good{background:linear-gradient(90deg,#22c55e,#4ade80)}
-    .meterFill.attention{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
-    .meterFill.risk{background:linear-gradient(90deg,#ef4444,#f87171)}
-    .lifeMeta,.lifeInsight{font-size:12px;line-height:1.45}
-    .lifeMeta{color:var(--muted)}
-    .lifeInsight{margin-top:8px;color:#24496d}
-
-    .filters{
-      display:grid;
-      grid-template-columns:1.35fr .8fr .8fr .75fr;
-      gap:10px;margin:16px 0 14px;
-    }
-    @media (max-width:920px){.filters{grid-template-columns:1fr}}
-    .recordsTitleBar{
-      display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px
-    }
-
-    .record{
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px;
-      background:linear-gradient(180deg,#fff,#fcfdff);
-      margin-bottom:12px;
-    }
-    .recordTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .recordTitle{font-size:17px;font-weight:900;margin-bottom:5px;letter-spacing:-.2px}
-    .recordMeta{font-size:12px;line-height:1.5;color:var(--muted)}
-    .recordText{margin-top:10px;white-space:pre-wrap;line-height:1.55;font-size:14px;color:#24486a}
-    .tag{
-      display:inline-block;margin:9px 6px 0 0;padding:6px 10px;border-radius:999px;
-      background:var(--soft-blue);border:1px solid #d8e8fb;color:#2864a4;font-size:12px;font-weight:700
-    }
-    .priority{
-      display:inline-block;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;
-      border:1px solid var(--line);background:#fff
-    }
-    .priority.urgente{background:var(--soft-red);border-color:#efcaca;color:#a31d1d}
-    .priority.alta{background:var(--soft-yellow);border-color:#f0ddb0;color:#9b5f03}
-    .priority.baixa{background:var(--soft-green);border-color:#cde8d5;color:#176239}
-    .empty{
-      border:1px dashed #ccdcec;border-radius:18px;padding:30px;text-align:center;color:var(--muted);line-height:1.55;background:#fff
-    }
-    .moneyBar{
-      display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px
-    }
-    @media (max-width:720px){.moneyBar{grid-template-columns:1fr}}
-    .miniStat{
-      background:#f8fbff;border:1px solid #dce8f6;border-radius:14px;padding:10px
-    }
-    .miniLabel{font-size:11px;color:var(--muted);font-weight:700}
-    .miniValue{font-size:17px;font-weight:900;margin-top:4px}
-    .footerNote{margin-top:18px;color:var(--muted);font-size:12px;line-height:1.5}
-    code{background:#eff5fd;padding:2px 6px;border-radius:7px;color:#326da8}
+    .head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+    h1{margin:0;font-size:34px;letter-spacing:-.9px}.sub{margin-top:7px;max-width:930px;color:var(--muted);line-height:1.45;font-size:14px}
+    .status{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800}
+    .ok{background:var(--softGreen);color:#12632f;border-color:#bee7ca}.warn{background:var(--softYellow);color:#8a5406;border-color:#f1dfb4}.err{background:var(--softRed);color:#9f1d1d;border-color:#efcaca}
+    main{padding:22px 16px 70px}.grid{display:grid;grid-template-columns:420px 1fr;gap:18px}@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.card+.card{margin-top:16px}
+    h2{margin:0 0 12px;font-size:20px;letter-spacing:-.3px} h3{margin:0;font-size:16px}
+    label{display:block;margin:12px 0 6px;color:var(--muted);font-size:13px;font-weight:800}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 13px;background:#fff;color:var(--text);font-size:14px;outline:none}
+    textarea{min-height:110px;resize:vertical;line-height:1.5}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:620px){.row{grid-template-columns:1fr}}
+    .buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}button{border:0;border-radius:14px;padding:11px 14px;background:var(--blue);color:white;font-weight:900;cursor:pointer}
+    button.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}button.green{background:var(--green)}button.red{background:var(--red)}button.purple{background:var(--purple)}button.yellow{background:var(--yellow)}
+    button:disabled{opacity:.55;cursor:not-allowed}.notice{background:#eef6ff;border:1px solid #cfe0f4;border-radius:16px;padding:13px;color:#315b84;line-height:1.45;font-size:13px}
+    .boxok,.boxerr{border-radius:16px;padding:12px;font-size:13px;line-height:1.45;margin-top:12px;white-space:pre-wrap}.boxok{background:var(--softGreen);color:#176239;border:1px solid #cde8d5}.boxerr{background:var(--softRed);color:#992222;border:1px solid #efcaca}.hidden{display:none!important}
+    .small{font-size:12px;line-height:1.5;color:var(--muted)}.loader{display:none;color:#275d92;font-weight:800;margin:12px 0}.loader.show{display:block}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}@media(max-width:1150px){.summary{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.summary{grid-template-columns:1fr}}
+    .circle{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px;min-height:130px}
+    .ring{--v:60;--c:var(--blue);width:88px;height:88px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--v)*1%),#e8eef7 0);display:grid;place-items:center;position:relative;flex:0 0 auto}.ring:before{content:"";position:absolute;inset:10px;background:#fff;border-radius:50%;border:1px solid #edf3fb}.ringIn{position:relative;text-align:center;font-weight:900}.ringMini{font-size:10px;color:var(--muted)}
+    .circleTitle{font-weight:900}.circleValue{font-size:25px;font-weight:900;margin-top:4px}.circleHint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:5px}
+    .areas{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:1180px){.areas{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.areas{grid-template-columns:1fr 1fr}}@media(max-width:620px){.areas{grid-template-columns:1fr}}
+    .area{border:1px solid var(--line);border-radius:20px;background:#fff;padding:14px;cursor:pointer}.area.selected{border-color:#79aef5;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.areaTop{display:flex;justify-content:space-between;gap:8px}
+    .icon{width:38px;height:38px;border-radius:14px;background:var(--softBlue);display:grid;place-items:center;border:1px solid #d2e4fb}.score{font-size:30px;font-weight:900}.scoreLabel{font-size:11px;color:var(--muted);text-align:right}.meter{height:10px;background:#edf3fa;border-radius:999px;overflow:hidden;margin:12px 0}.fill{height:100%;background:var(--blue)}.fill.good{background:var(--green)}.fill.att{background:var(--yellow)}.fill.risk{background:var(--red)}
+    .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.mini>div{background:#f8fbff;border:1px solid #dce8f6;border-radius:13px;padding:8px}.miniLab{font-size:10px;color:var(--muted);font-weight:900}.miniVal{font-size:13px;font-weight:900;margin-top:3px}
+    .filters{display:grid;grid-template-columns:1.3fr .8fr .8fr .75fr;gap:10px;margin:16px 0 14px}@media(max-width:920px){.filters{grid-template-columns:1fr}}
+    .record{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px}.recordTop{display:flex;justify-content:space-between;gap:12px}.recordTitle{font-size:17px;font-weight:900}.meta{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px}.text{margin-top:10px;white-space:pre-wrap;line-height:1.55;color:#24486a}
+    .tag{display:inline-block;margin:9px 6px 0 0;padding:6px 10px;border-radius:999px;background:var(--softBlue);border:1px solid #d8e8fb;color:#2864a4;font-size:12px;font-weight:800}
+    .prio{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;background:#fff;border:1px solid var(--line);white-space:nowrap}.prio.urgente{background:var(--softRed);color:#a31d1d}.prio.alta{background:var(--softYellow);color:#9b5f03}.prio.baixa{background:var(--softGreen);color:#176239}
+    .recordActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.empty{background:#fff;border:1px dashed #ccdcec;border-radius:18px;padding:30px;text-align:center;color:var(--muted);line-height:1.55}
+    .top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}code{background:#eff5fd;padding:2px 6px;border-radius:7px;color:#326da8}
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <div class="head">
-        <div>
-          <h1>Radar de Vida</h1>
-          <div class="sub">
-            Painel visual leve sobre os dados capturados pelo WhatsApp e pelo formulário.
-            <strong>A estrutura lógica já existente permanece a mesma</strong>: Render → Apps Script → Google Sheets.
-            Esta versão melhora apenas a apresentação e o tratamento visual dos dados recebidos.
-          </div>
-        </div>
-
-        <div class="buttons" style="margin-top:0">
-          <button class="secondary" onclick="abrirApiDireta()">Abrir API</button>
-          <button class="green" onclick="sincronizar()">Sincronizar</button>
+<header>
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <h1>Radar de Vida v6</h1>
+        <div class="sub">
+          Versão com tratamento real por ChatGPT no backend do Render, exclusão de registros e painel leve.
+          A estrutura principal permanece: WhatsApp → Render → Apps Script → Google Sheets → Painel.
         </div>
       </div>
-
-      <div class="statusbar">
-        <div class="pill" id="pillApi">API: não testada</div>
-        <div class="pill" id="pillTotal">Registros: 0</div>
-        <div class="pill" id="pillOrigem">Banco: Google Sheets</div>
-        <div class="pill" id="pillAtualizado">Atualizado: —</div>
+      <div class="buttons" style="margin-top:0">
+        <button class="secondary" onclick="abrirApiDireta()">Abrir API</button>
+        <button class="purple" onclick="analisarTudoComGpt()">Analisar tudo com GPT</button>
+        <button class="green" onclick="sincronizar()">Sincronizar</button>
       </div>
     </div>
-  </header>
+    <div class="status">
+      <div class="pill" id="pillApi">API: não testada</div>
+      <div class="pill" id="pillBackend">Backend GPT: não testado</div>
+      <div class="pill" id="pillTotal">Registros: 0</div>
+      <div class="pill" id="pillAtualizado">Atualizado: —</div>
+    </div>
+  </div>
+</header>
 
-  <main>
-    <div class="wrap grid">
-      <aside>
-        <section class="card">
-          <h2>Conexão com Google Sheets</h2>
-
-          <div class="notice">
-            Cole a URL do <strong>App da Web</strong> do Apps Script, terminada em <code>/exec</code>.
-            O aplicativo continua usando JSONP para leitura e POST para gravação, como já está funcionando hoje.
-          </div>
-
-          <label for="apiUrl">URL da API Apps Script</label>
-          <input id="apiUrl" placeholder="https://script.google.com/macros/s/SEU_CODIGO/exec" />
-
-          <div class="buttons">
-            <button class="green" onclick="salvarApiUrl()">Salvar URL</button>
-            <button class="secondary" onclick="testarApi()">Testar API</button>
-          </div>
-
-          <div id="apiFeedback" class="successBox hidden"></div>
-          <div id="apiError" class="dangerBox hidden"></div>
-        </section>
-
-        <section class="card">
-          <h2>Espaço da API do ChatGPT</h2>
-
-          <div class="notice">
-            Este bloco foi aberto especificamente para a futura camada de IA.
-            <strong>Nesta versão, ele ainda não altera a lógica central</strong>, mas já permite guardar localmente
-            a configuração que será usada para tratar internamente os dados capturados.
-          </div>
-
-          <label for="gptApiKey">OpenAI API Key</label>
-          <input id="gptApiKey" type="password" placeholder="sk-..." />
-
-          <div class="row">
-            <div>
-              <label for="gptModel">Modelo</label>
-              <input id="gptModel" placeholder="gpt-5, gpt-4.1, ou outro" />
-            </div>
-            <div>
-              <label for="gptStatus">Objetivo</label>
-              <select id="gptStatus">
-                <option value="classificacao">Classificação inteligente</option>
-                <option value="resumo">Resumo + classificação</option>
-                <option value="insights">Classificação + insights</option>
-              </select>
-            </div>
-          </div>
-
-          <label for="gptPromptBase">Prompt base interno</label>
-          <textarea id="gptPromptBase" placeholder="Ex.: Classifique a mensagem nas áreas da vida, extraia gastos, ganhos, horas, urgência, polaridade e ação sugerida."></textarea>
-
-          <div class="buttons">
-            <button class="purple" onclick="salvarConfigGpt()">Salvar configuração GPT</button>
-            <button class="secondary" onclick="limparConfigGpt()">Limpar</button>
-          </div>
-
-          <div id="gptFeedback" class="successBox hidden"></div>
-          <div class="small" style="margin-top:10px">
-            Nesta etapa, a configuração fica salva apenas neste navegador, para já preparar o terreno da próxima integração.
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>Novo registro</h2>
-
-          <form id="formRegistro">
-            <label for="titulo">Título</label>
-            <input id="titulo" required placeholder="Ex.: Prazo, ideia, alerta, conversa, tarefa..." />
-
-            <div class="row">
-              <div>
-                <label for="tipo">Tipo</label>
-                <select id="tipo">
-                  <option value="Registro Manual">Registro Manual</option>
-                  <option value="Mensagem WhatsApp">Mensagem WhatsApp</option>
-                  <option value="Tarefa">Tarefa</option>
-                  <option value="Evento">Evento</option>
-                  <option value="Ideia">Ideia</option>
-                  <option value="Alerta">Alerta</option>
-                  <option value="Documento">Documento</option>
-                  <option value="Outro">Outro</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="categoria">Categoria</label>
-                <select id="categoria">
-                  <option value="Geral">Geral</option>
-                  <option value="Saúde">Saúde</option>
-                  <option value="Jurídico">Jurídico</option>
-                  <option value="Finanças">Finanças</option>
-                  <option value="Família">Família</option>
-                  <option value="Trabalho">Trabalho</option>
-                  <option value="Projeto">Projeto</option>
-                  <option value="Relacionamento">Relacionamento</option>
-                  <option value="Corpo / Esporte">Corpo / Esporte</option>
-                  <option value="Emocional">Emocional</option>
-                  <option value="Social">Social</option>
-                  <option value="Casa / Rotina">Casa / Rotina</option>
-                  <option value="Aprendizado">Aprendizado</option>
-                  <option value="Lazer">Lazer</option>
-                  <option value="Outro">Outro</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label for="prioridade">Prioridade</label>
-                <select id="prioridade">
-                  <option value="Normal">Normal</option>
-                  <option value="Alta">Alta</option>
-                  <option value="Urgente">Urgente</option>
-                  <option value="Baixa">Baixa</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="status">Status</label>
-                <select id="status">
-                  <option value="Aberto">Aberto</option>
-                  <option value="Em andamento">Em andamento</option>
-                  <option value="Concluído">Concluído</option>
-                  <option value="Arquivado">Arquivado</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label for="dataEvento">Data do evento</label>
-                <input id="dataEvento" type="date" />
-              </div>
-
-              <div>
-                <label for="horaEvento">Hora</label>
-                <input id="horaEvento" type="time" />
-              </div>
-            </div>
-
-            <label for="descricao">Descrição</label>
-            <textarea id="descricao" placeholder="Escreva aqui o conteúdo do registro..."></textarea>
-
-            <label for="tags">Tags</label>
-            <input id="tags" placeholder="Ex.: Ielma, Piutá, Radar, prazo, WhatsApp" />
-
-            <div class="split">
-              <div>
-                <label for="contatoNome">Contato</label>
-                <input id="contatoNome" placeholder="Nome do contato" />
-              </div>
-              <div>
-                <label for="contatoNumero">Telefone</label>
-                <input id="contatoNumero" placeholder="+55..." />
-              </div>
-            </div>
-
-            <div class="buttons">
-              <button class="green" type="submit" id="btnSalvar">Salvar no Google Sheets</button>
-              <button class="secondary" type="button" onclick="limparFormulario()">Limpar</button>
-            </div>
-          </form>
-
-          <div id="saveFeedback" class="successBox hidden"></div>
-          <div id="saveError" class="dangerBox hidden"></div>
-        </section>
-
-        <section class="card">
-          <h2>Backup local emergencial</h2>
-          <div class="small">
-            Exporta a lista carregada na tela ou importa registros antigos em lote para a planilha, sem mexer na arquitetura já montada.
-          </div>
-
-          <div class="buttons">
-            <button class="secondary" onclick="exportarJsonTela()">Exportar JSON da tela</button>
-            <button class="purple" onclick="document.getElementById('importJson').click()">Importar JSON para Sheets</button>
-            <input id="importJson" class="hidden" type="file" accept="application/json" onchange="importarJsonParaSheets(event)" />
-          </div>
-        </section>
-      </aside>
+<main>
+  <div class="wrap grid">
+    <aside>
+      <section class="card">
+        <h2>Conexões</h2>
+        <div class="notice">
+          O Google Sheets continua sendo lido pelo Apps Script. A IA e a exclusão passam pelo backend do Render.
+        </div>
+        <label>URL da API Apps Script</label>
+        <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        <label>URL do Backend Render</label>
+        <input id="backendUrl" placeholder="https://radar-de-vida-webhook.onrender.com">
+        <div class="buttons">
+          <button class="green" onclick="salvarConexoes()">Salvar</button>
+          <button class="secondary" onclick="testarApi()">Testar Sheets</button>
+          <button class="secondary" onclick="testarBackend()">Testar Backend</button>
+        </div>
+        <div id="connFeedback" class="boxok hidden"></div>
+        <div id="connError" class="boxerr hidden"></div>
+      </section>
 
       <section class="card">
-        <div class="topActions">
-          <h2>Painel de Vida</h2>
-          <div class="buttons" style="margin-top:0">
-            <button class="secondary" onclick="selecionarArea('')">Todas as áreas</button>
-            <button class="green" onclick="sincronizar()">Recarregar</button>
-          </div>
+        <h2>Configuração GPT</h2>
+        <div class="notice">
+          A chave da OpenAI deve ficar no Render como <code>OPENAI_API_KEY</code>. Este painel apenas testa e aciona a análise.
         </div>
-
-        <div id="overview" class="summaryGrid"></div>
-
-        <div class="topActions" style="margin-top:8px">
-          <h2>Áreas da vida</h2>
-          <div class="small" id="areaAtivaInfo">Clique em uma área para filtrar os registros abaixo.</div>
+        <label>Prompt operacional</label>
+        <textarea id="promptLocal" placeholder="Classifique áreas da vida, gastos, ganhos, horas, polaridade, intensidade e ação sugerida."></textarea>
+        <div class="buttons">
+          <button class="purple" onclick="salvarPromptLocal()">Salvar prompt local</button>
         </div>
-        <div id="dashboard" class="dashboardGrid"></div>
-
-        <div class="recordsTitleBar">
-          <h2 id="listaTitulo">Registros interpretados</h2>
-          <div class="small">Destaque automático para gastos, ganhos e horas identificadas no texto.</div>
-        </div>
-
-        <div class="filters">
-          <input id="busca" placeholder="Buscar por título, descrição, tags..." oninput="renderizar()" />
-          <select id="filtroCategoria" onchange="renderizar()">
-            <option value="">Todas categorias</option>
-            <option value="Geral">Geral</option>
-            <option value="Saúde">Saúde</option>
-            <option value="Jurídico">Jurídico</option>
-            <option value="Finanças">Finanças</option>
-            <option value="Família">Família</option>
-            <option value="Trabalho">Trabalho</option>
-            <option value="Projeto">Projeto</option>
-            <option value="Relacionamento">Relacionamento</option>
-            <option value="Corpo / Esporte">Corpo / Esporte</option>
-            <option value="Emocional">Emocional</option>
-            <option value="Social">Social</option>
-            <option value="Casa / Rotina">Casa / Rotina</option>
-            <option value="Aprendizado">Aprendizado</option>
-            <option value="Lazer">Lazer</option>
-            <option value="Outro">Outro</option>
-          </select>
-          <select id="filtroStatus" onchange="renderizar()">
-            <option value="">Todos status</option>
-            <option value="Aberto">Aberto</option>
-            <option value="Em andamento">Em andamento</option>
-            <option value="Concluído">Concluído</option>
-            <option value="Arquivado">Arquivado</option>
-            <option value="Cancelado">Cancelado</option>
-          </select>
-          <select id="ordenacao" onchange="renderizar()">
-            <option value="novo">Mais novos</option>
-            <option value="antigo">Mais antigos</option>
-            <option value="prioridade">Prioridade</option>
-            <option value="titulo">Título</option>
-          </select>
-        </div>
-
-        <div id="loader" class="loader">Carregando dados do Google Sheets...</div>
-        <div id="lista"></div>
-
-        <div class="footerNote">
-          Esta versão não altera a estrutura funcional já aprovada. Ela apenas organiza melhor a visualização
-          e passa a tratar os textos recebidos para destacar valores em reais e horas usadas.
-        </div>
+        <div id="gptFeedback" class="boxok hidden"></div>
       </section>
-    </div>
-  </main>
 
-  <script>
-    const STORAGE_API_URL = "radar_vida_api_url_v5_jsonp";
-    const STORAGE_GPT_KEY = "radar_vida_gpt_api_key";
-    const STORAGE_GPT_MODEL = "radar_vida_gpt_model";
-    const STORAGE_GPT_MODE = "radar_vida_gpt_mode";
-    const STORAGE_GPT_PROMPT = "radar_vida_gpt_prompt";
-
-    let registros = [];
-    let areaSelecionada = "";
-
-    const AREA_INFO = {
-      "Saúde": { icon: "🩺", keywords: ["saúde", "saude", "remédio", "remedio", "médico", "medico", "consulta", "dor", "exame", "sono", "cansaço", "cansaco", "refluxo", "pressão", "pressao"] },
-      "Corpo / Esporte": { icon: "🏃", keywords: ["treino", "caminhei", "caminhada", "corrida", "academia", "exercício", "exercicio", "bicicleta", "peso", "musculação", "musculacao", "esporte", "hora de academia"] },
-      "Finanças": { icon: "💰", keywords: ["r$", "pix", "paguei", "pagar", "comprei", "compra", "boleto", "dinheiro", "mercado livre", "cartão", "cartao", "fatura", "investimento", "recebi", "ganhei", "vendi"] },
-      "Trabalho": { icon: "💼", keywords: ["trabalho", "cliente", "reunião", "reuniao", "proposta", "contrato", "empresa", "render", "github", "apps script", "prazo", "reunião de trabalho"] },
-      "Jurídico": { icon: "⚖️", keywords: ["processo", "petição", "peticao", "prazo", "juiz", "vara", "pje", "despacho", "sentença", "sentenca", "recurso", "audiência", "audiencia", "unimed"] },
-      "Relacionamento": { icon: "❤️", keywords: ["relacionamento", "namoro", "amor", "casal", "encontro", "thayna", "thayná"] },
-      "Família": { icon: "🏠", keywords: ["família", "familia", "mãe", "mae", "pai", "filho", "filha", "irmão", "irmao", "ielma"] },
-      "Social": { icon: "🤝", keywords: ["amigo", "amiga", "grupo", "evento", "encontro", "social", "visita"] },
-      "Projetos": { icon: "🚀", keywords: ["projeto", "app", "radar", "piutá", "piuta", "ideia", "desenvolver", "sistema", "webhook", "api"] },
-      "Emocional": { icon: "🧠", keywords: ["ansioso", "ansiedade", "triste", "feliz", "medo", "estresse", "estressado", "calmo", "paz", "emoção", "emocao", "humor"] },
-      "Espiritualidade / Sentido": { icon: "✨", keywords: ["sentido", "fé", "fe", "oração", "oracao", "espiritual", "propósito", "proposito", "alma", "gratidão", "gratidao"] },
-      "Casa / Rotina": { icon: "🧹", keywords: ["casa", "rotina", "limpeza", "organizar", "cozinha", "quarto", "documentos", "agenda"] },
-      "Aprendizado": { icon: "📚", keywords: ["estudei", "curso", "aula", "aprendi", "livro", "chinês", "chines", "estudo"] },
-      "Lazer": { icon: "🌄", keywords: ["viagem", "praia", "trilha", "lazer", "cinema", "música", "musica", "show", "turismo"] },
-      "Geral": { icon: "📌", keywords: [] }
-    };
-
-    const POSITIVE_WORDS = ["bom", "boa", "ótimo", "otimo", "excelente", "feliz", "melhor", "consegui", "resolvido", "feito", "concluído", "concluido", "funcionou", "parabéns", "parabens", "paz", "recebi", "ganhei"];
-    const NEGATIVE_WORDS = ["ruim", "dor", "cansado", "cansada", "atraso", "problema", "falha", "erro", "ansioso", "triste", "urgente", "perdi", "gastei demais", "não funcionou", "nao funcionou", "paguei", "gastei"];
-
-    document.addEventListener("DOMContentLoaded", iniciar);
-
-    function iniciar() {
-      const apiInput = document.getElementById("apiUrl");
-      const urlSalva = localStorage.getItem(STORAGE_API_URL) || localStorage.getItem("radar_vida_api_url_v3_jsonp") || localStorage.getItem("radar_vida_api_url_v2") || "";
-      apiInput.value = urlSalva;
-
-      document.getElementById("formRegistro").addEventListener("submit", salvarRegistro);
-
-      document.getElementById("gptApiKey").value = localStorage.getItem(STORAGE_GPT_KEY) || "";
-      document.getElementById("gptModel").value = localStorage.getItem(STORAGE_GPT_MODEL) || "gpt-5";
-      document.getElementById("gptStatus").value = localStorage.getItem(STORAGE_GPT_MODE) || "classificacao";
-      document.getElementById("gptPromptBase").value = localStorage.getItem(STORAGE_GPT_PROMPT) || "Classifique a mensagem nas áreas da vida, extraia gastos, ganhos, horas, urgência, polaridade e ação sugerida.";
-
-      if (urlSalva) {
-        testarApi(false).then(() => sincronizar()).catch(() => {});
-      } else {
-        setPill("pillApi", "API: informe a URL", "warn");
-        renderizar();
-      }
-    }
-
-    function getApiUrl() {
-      return (document.getElementById("apiUrl").value || "").trim();
-    }
-
-    function normalizarApiUrl(url) {
-      if (!url) return "";
-      url = url.trim();
-      const q = url.indexOf("?");
-      if (q !== -1) url = url.slice(0, q);
-      return url;
-    }
-
-    function montarUrl(action, params = {}) {
-      const base = normalizarApiUrl(getApiUrl());
-      if (!base) throw new Error("Informe a URL da API Apps Script.");
-      const query = new URLSearchParams({ action, ...params });
-      return base + "?" + query.toString();
-    }
-
-    function salvarApiUrl() {
-      const url = normalizarApiUrl(getApiUrl());
-
-      if (!url || !url.includes("script.google.com") || !url.includes("/exec")) {
-        mostrarErro("apiError", "Cole a URL correta do App da Web do Apps Script. Ela deve conter script.google.com e terminar em /exec.");
-        return false;
-      }
-
-      document.getElementById("apiUrl").value = url;
-      localStorage.setItem(STORAGE_API_URL, url);
-      mostrarOk("apiFeedback", "URL salva neste navegador.");
-      setPill("pillApi", "API: URL salva", "warn");
-      return true;
-    }
-
-    function salvarConfigGpt() {
-      localStorage.setItem(STORAGE_GPT_KEY, (document.getElementById("gptApiKey").value || "").trim());
-      localStorage.setItem(STORAGE_GPT_MODEL, (document.getElementById("gptModel").value || "").trim());
-      localStorage.setItem(STORAGE_GPT_MODE, document.getElementById("gptStatus").value || "classificacao");
-      localStorage.setItem(STORAGE_GPT_PROMPT, (document.getElementById("gptPromptBase").value || "").trim());
-      mostrarOk("gptFeedback", "Configuração GPT salva neste navegador. Espaço preparado para a futura integração.");
-    }
-
-    function limparConfigGpt() {
-      document.getElementById("gptApiKey").value = "";
-      document.getElementById("gptModel").value = "gpt-5";
-      document.getElementById("gptStatus").value = "classificacao";
-      document.getElementById("gptPromptBase").value = "";
-      localStorage.removeItem(STORAGE_GPT_KEY);
-      localStorage.removeItem(STORAGE_GPT_MODEL);
-      localStorage.removeItem(STORAGE_GPT_MODE);
-      localStorage.removeItem(STORAGE_GPT_PROMPT);
-      mostrarOk("gptFeedback", "Configuração GPT limpa neste navegador.");
-    }
-
-    function jsonp(action, params = {}, timeoutMs = 15000) {
-      return new Promise((resolve, reject) => {
-        const base = normalizarApiUrl(getApiUrl());
-        if (!base) {
-          reject(new Error("Informe a URL da API Apps Script."));
-          return;
-        }
-
-        const callbackName = "__radarVidaJsonp_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-        const query = new URLSearchParams({
-          action,
-          ...params,
-          callback: callbackName,
-          _: String(Date.now())
-        });
-
-        const script = document.createElement("script");
-        script.src = base + "?" + query.toString();
-
-        const timer = setTimeout(() => {
-          cleanup();
-          reject(new Error("Tempo esgotado ao chamar a API por JSONP."));
-        }, timeoutMs);
-
-        function cleanup() {
-          clearTimeout(timer);
-          try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
-          if (script.parentNode) script.parentNode.removeChild(script);
-        }
-
-        window[callbackName] = function(data) {
-          cleanup();
-          resolve(data);
-        };
-
-        script.onerror = function() {
-          cleanup();
-          reject(new Error("Falha ao carregar resposta JSONP da API."));
-        };
-
-        document.body.appendChild(script);
-      });
-    }
-
-    async function testarApi(mostrarAlerta = true) {
-      try {
-        if (!salvarApiUrl()) return;
-
-        const data = await jsonp("ping");
-        if (!data.ok) throw new Error(data.erro || "API respondeu com erro.");
-
-        setPill("pillApi", "API: conectada", "ok");
-        mostrarOk("apiFeedback", "API conectada: " + (data.mensagem || data.app || "ok"));
-        if (mostrarAlerta) alert("API conectada com sucesso.");
-        return data;
-      } catch (erro) {
-        setPill("pillApi", "API: erro", "err");
-        mostrarErro("apiError", "Erro ao testar API: " + erro.message);
-        throw erro;
-      }
-    }
-
-    async function sincronizar() {
-      try {
-        mostrarLoader(true);
-        limparMensagens();
-
-        const data = await jsonp("list", { limit: 800 });
-        if (!data.ok) throw new Error(data.erro || "Erro ao listar registros.");
-
-        registros = Array.isArray(data.registros) ? data.registros : [];
-        setPill("pillApi", "API: conectada", "ok");
-        setPill("pillTotal", "Registros: " + registros.length, "");
-        setPill("pillAtualizado", "Atualizado: " + new Date().toLocaleString("pt-BR"), "");
-        renderizar();
-      } catch (erro) {
-        setPill("pillApi", "API: erro", "err");
-        mostrarErro("apiError", "Erro ao sincronizar: " + erro.message);
-        renderizar();
-      } finally {
-        mostrarLoader(false);
-      }
-    }
-
-    async function salvarRegistro(event) {
-      event.preventDefault();
-
-      const api = normalizarApiUrl(getApiUrl());
-      if (!api) {
-        alert("Informe e salve primeiro a URL da API.");
-        return;
-      }
-
-      const btn = document.getElementById("btnSalvar");
-      btn.disabled = true;
-      btn.textContent = "Salvando...";
-
-      try {
-        limparMensagens();
-
-        const payload = {
-          action: "create",
-          data: coletarFormulario()
-        };
-
-        await fetch(api, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-
-        mostrarOk("saveFeedback", "Registro enviado ao Google Sheets. A lista será recarregada para confirmação.");
-        limparFormulario();
-        setTimeout(() => sincronizar(), 1800);
-      } catch (erro) {
-        mostrarErro("saveError", "Erro ao enviar: " + erro.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Salvar no Google Sheets";
-      }
-    }
-
-    function coletarFormulario() {
-      return {
-        origem: "manual_html",
-        tipo: valor("tipo"),
-        categoria: valor("categoria"),
-        titulo: valor("titulo"),
-        descricao: valor("descricao"),
-        data_evento: valor("dataEvento"),
-        hora_evento: valor("horaEvento"),
-        prioridade: valor("prioridade"),
-        status: valor("status"),
-        tags: parseTags(valor("tags")),
-        contato_nome: valor("contatoNome"),
-        contato_numero: valor("contatoNumero"),
-        tem_midia: "Não",
-        midia_ids: []
-      };
-    }
-
-    function valor(id) {
-      return (document.getElementById(id).value || "").trim();
-    }
-
-    function parseTags(texto) {
-      return (texto || "").split(",").map(t => t.trim()).filter(Boolean);
-    }
-
-    function limparFormulario() {
-      document.getElementById("formRegistro").reset();
-    }
-
-    function selecionarArea(area) {
-      areaSelecionada = area || "";
-      renderizar();
-    }
-
-    function renderizar() {
-      const interpretados = registros.map(r => {
-        const analisado = analisarRegistro(r);
-        return { ...r, ...analisado };
-      });
-
-      renderOverview(interpretados);
-      renderDashboard(interpretados);
-      renderLista(interpretados);
-    }
-
-    function renderOverview(items) {
-      const totalGastos = somar(items.map(i => i._gasto || 0));
-      const totalGanhos = somar(items.map(i => i._ganho || 0));
-      const totalHoras = somar(items.map(i => i._horas || 0));
-      const saldo = totalGanhos - totalGastos;
-      const totalRegistros = items.length || 1;
-      const areasAtivas = new Set(items.map(i => i._area)).size || 0;
-      const gastosPct = percentualRelativo(totalGastos, totalGanhos + totalGastos);
-      const ganhosPct = percentualRelativo(totalGanhos, totalGanhos + totalGastos);
-      const horasPct = clampNumber(Math.round((totalHoras / Math.max(totalRegistros * 3, 1)) * 100), 0, 100);
-      const areasPct = clampNumber(Math.round((areasAtivas / 10) * 100), 0, 100);
-
-      document.getElementById("overview").innerHTML = [
-        circleSummary("💸", "Reais gastos", formatarMoeda(totalGastos), gastosPct, "#dc2626", "Total detectado automaticamente em frases com gasto, pagamento ou compra."),
-        circleSummary("💰", "Reais ganhos", formatarMoeda(totalGanhos), ganhosPct, "#16a34a", "Total detectado automaticamente em frases com ganho, recebimento ou venda."),
-        circleSummary("⏱️", "Horas usadas", formatarHoras(totalHoras), horasPct, "#3b82f6", "Soma aproximada de tempo mencionado em horas ou minutos."),
-        circleSummary("🌐", "Saldo / áreas", formatarMoeda(saldo), areasPct, "#7c3aed", areasAtivas + " área(s) ativa(s) nesta leitura.")
-      ].join("");
-    }
-
-    function circleSummary(icon, title, value, percent, color, hint) {
-      return `
-        <div class="circleCard">
-          <div class="ring" style="--value:${percent};--color:${color}">
-            <div class="ringInner">
-              <div class="ringNumber">${icon}</div>
-              <div class="ringLabelMini">${percent}%</div>
-            </div>
+      <section class="card">
+        <h2>Novo registro</h2>
+        <form id="formRegistro">
+          <label>Título</label><input id="titulo" required placeholder="Ex.: fiz 1 hora de academia">
+          <div class="row">
+            <div><label>Tipo</label><select id="tipo"><option>Registro Manual</option><option>Mensagem WhatsApp</option><option>Tarefa</option><option>Evento</option><option>Ideia</option><option>Alerta</option><option>Documento</option><option>Outro</option></select></div>
+            <div><label>Categoria</label><select id="categoria"><option>Geral</option><option>Saúde</option><option>Jurídico</option><option>Finanças</option><option>Família</option><option>Trabalho</option><option>Projeto</option><option>Relacionamento</option><option>Corpo / Esporte</option><option>Emocional</option><option>Social</option><option>Casa / Rotina</option><option>Aprendizado</option><option>Lazer</option><option>Outro</option></select></div>
           </div>
-          <div class="circleInfo">
-            <div class="circleTitle">${escapeHtml(title)}</div>
-            <div class="circleValue">${escapeHtml(value)}</div>
-            <div class="circleHint">${escapeHtml(hint)}</div>
+          <div class="row">
+            <div><label>Prioridade</label><select id="prioridade"><option>Normal</option><option>Alta</option><option>Urgente</option><option>Baixa</option></select></div>
+            <div><label>Status</label><select id="status"><option>Aberto</option><option>Em andamento</option><option>Concluído</option><option>Arquivado</option><option>Cancelado</option></select></div>
           </div>
+          <div class="row">
+            <div><label>Data</label><input id="dataEvento" type="date"></div>
+            <div><label>Hora</label><input id="horaEvento" type="time"></div>
+          </div>
+          <label>Descrição</label><textarea id="descricao"></textarea>
+          <label>Tags</label><input id="tags" placeholder="whatsapp, treino, gasto...">
+          <div class="buttons">
+            <button class="green" type="submit" id="btnSalvar">Salvar</button>
+            <button class="secondary" type="button" onclick="limparFormulario()">Limpar</button>
+          </div>
+        </form>
+        <div id="saveFeedback" class="boxok hidden"></div>
+        <div id="saveError" class="boxerr hidden"></div>
+      </section>
+    </aside>
+
+    <section class="card">
+      <div class="top">
+        <h2>Painel inteligente</h2>
+        <div class="buttons" style="margin-top:0">
+          <button class="secondary" onclick="selecionarArea('')">Todas as áreas</button>
+          <button class="green" onclick="sincronizar()">Recarregar</button>
         </div>
-      `;
-    }
-
-    function renderDashboard(items) {
-      const dashboard = document.getElementById("dashboard");
-      const porArea = {};
-
-      items.forEach(item => {
-        const area = item._area || "Geral";
-        if (!porArea[area]) porArea[area] = [];
-        porArea[area].push(item);
-      });
-
-      const areas = Object.keys(porArea).sort((a, b) => porArea[b].length - porArea[a].length);
-
-      if (!areas.length) {
-        dashboard.innerHTML = `<div class="empty" style="grid-column:1/-1">Nenhuma área ativa ainda. Envie mensagens pelo WhatsApp ou cadastre registros.</div>`;
-        return;
-      }
-
-      dashboard.innerHTML = areas.map(area => cardArea(area, porArea[area])).join("");
-    }
-
-    function cardArea(area, items) {
-      const info = AREA_INFO[area] || AREA_INFO["Geral"];
-      const score = calcularScoreArea(items);
-      const status = statusArea(score);
-      const cls = score >= 75 ? "good" : score >= 50 ? "attention" : "risk";
-      const ult = items.slice().sort((a, b) => dataRegistro(b) - dataRegistro(a))[0];
-      const recentes = items.filter(i => diasDesde(dataRegistro(i)) <= 7).length;
-      const selecionada = areaSelecionada === area ? "selected" : "";
-      const gasto = somar(items.map(i => i._gasto || 0));
-      const ganho = somar(items.map(i => i._ganho || 0));
-      const horas = somar(items.map(i => i._horas || 0));
-
-      return `
-        <div class="lifeCard ${selecionada}" onclick="selecionarArea('${escapeAttr(area)}')">
-          <div class="lifeTop">
-            <div>
-              <div class="lifeIcon">${info.icon || "📌"}</div>
-              <h3 style="margin-top:10px">${escapeHtml(area)}</h3>
-            </div>
-            <div>
-              <div class="score">${score}</div>
-              <div class="scoreLabel">score</div>
-            </div>
-          </div>
-
-          <div class="meter"><div class="meterFill ${cls}" style="width:${score}%"></div></div>
-
-          <div class="lifeMeta">
-            ${items.length} registro(s) · ${recentes} nos últimos 7 dias
-            <br>
-            Status: ${escapeHtml(status)}
-          </div>
-
-          <div class="moneyBar">
-            <div class="miniStat">
-              <div class="miniLabel">Gastos</div>
-              <div class="miniValue">${escapeHtml(formatarMoeda(gasto))}</div>
-            </div>
-            <div class="miniStat">
-              <div class="miniLabel">Ganhos</div>
-              <div class="miniValue">${escapeHtml(formatarMoeda(ganho))}</div>
-            </div>
-            <div class="miniStat">
-              <div class="miniLabel">Horas</div>
-              <div class="miniValue">${escapeHtml(formatarHoras(horas))}</div>
-            </div>
-          </div>
-
-          <div class="lifeInsight">
-            Último sinal: ${escapeHtml(ult ? resumoTexto(ult.titulo || ult.descricao || "Registro sem título", 68) : "—")}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderLista(items) {
-      const lista = document.getElementById("lista");
-
-      let filtrados = [...items];
-
-      const busca = normalizarTexto(document.getElementById("busca").value);
-      const categoria = document.getElementById("filtroCategoria").value;
-      const status = document.getElementById("filtroStatus").value;
-      const ordenacao = document.getElementById("ordenacao").value;
-
-      if (areaSelecionada) {
-        filtrados = filtrados.filter(r => r._area === areaSelecionada);
-        document.getElementById("listaTitulo").textContent = "Registros — " + areaSelecionada;
-        document.getElementById("areaAtivaInfo").textContent = "Filtro visual ativo. Clique em “Todas as áreas” para remover.";
-      } else {
-        document.getElementById("listaTitulo").textContent = "Registros interpretados";
-        document.getElementById("areaAtivaInfo").textContent = "Clique em uma área para filtrar os registros abaixo.";
-      }
-
-      if (categoria) filtrados = filtrados.filter(r => String(r.categoria || "") === categoria);
-      if (status) filtrados = filtrados.filter(r => String(r.status || "") === status);
-
-      if (busca) {
-        filtrados = filtrados.filter(r => {
-          const texto = normalizarTexto([
-            r.id, r.titulo, r.descricao, r.tipo, r.categoria, r.status, r.prioridade,
-            r.tags, r.contato_nome, r.contato_numero, r._area
-          ].join(" "));
-          return texto.includes(busca);
-        });
-      }
-
-      filtrados.sort((a, b) => {
-        if (ordenacao === "antigo") return dataRegistro(a) - dataRegistro(b);
-        if (ordenacao === "prioridade") return pesoPrioridade(b.prioridade) - pesoPrioridade(a.prioridade);
-        if (ordenacao === "titulo") return String(a.titulo || "").localeCompare(String(b.titulo || ""));
-        return dataRegistro(b) - dataRegistro(a);
-      });
-
-      if (!filtrados.length) {
-        lista.innerHTML = `
-          <div class="empty">
-            Nenhum registro encontrado.
-            <br><br>
-            Clique em <strong>Sincronizar</strong> para buscar dados do Google Sheets,
-            ou cadastre/envie um novo registro.
-          </div>
-        `;
-        return;
-      }
-
-      lista.innerHTML = filtrados.map(cardRegistro).join("");
-    }
-
-    function cardRegistro(r) {
-      const prioridadeClass = normalizarTexto(r.prioridade || "normal");
-      const tags = toTagList(r.tags).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("");
-      const extras = [];
-      if (r._gasto > 0) extras.push(`<span class="tag">gasto: ${escapeHtml(formatarMoeda(r._gasto))}</span>`);
-      if (r._ganho > 0) extras.push(`<span class="tag">ganho: ${escapeHtml(formatarMoeda(r._ganho))}</span>`);
-      if (r._horas > 0) extras.push(`<span class="tag">horas: ${escapeHtml(formatarHoras(r._horas))}</span>`);
-
-      return `
-        <article class="record">
-          <div class="recordTop">
-            <div>
-              <div class="recordTitle">${escapeHtml(r.titulo || "Sem título")}</div>
-              <div class="recordMeta">
-                ${escapeHtml(r._area || "Geral")} · ${escapeHtml(r.tipo || "Registro")} · ${escapeHtml(r.categoria || "Geral")} · ${escapeHtml(r.status || "Aberto")}
-                <br>
-                ID: ${escapeHtml(r.id || "")}
-                <br>
-                Criado: ${formatarDataHora(r.data_criacao)} · Atualizado: ${formatarDataHora(r.data_atualizacao)}
-              </div>
-            </div>
-            <span class="priority ${prioridadeClass}">${escapeHtml(r.prioridade || "Normal")}</span>
-          </div>
-
-          ${r.descricao ? `<div class="recordText">${escapeHtml(r.descricao)}</div>` : ""}
-
-          ${(r.data_evento || r.hora_evento || r.contato_nome || r.contato_numero) ? `
-            <div class="recordMeta" style="margin-top:10px">
-              ${r.data_evento ? "Data do evento: " + escapeHtml(formatarDataSimples(r.data_evento)) + "<br>" : ""}
-              ${r.hora_evento ? "Hora: " + escapeHtml(r.hora_evento) + "<br>" : ""}
-              ${r.contato_nome ? "Contato: " + escapeHtml(r.contato_nome) + "<br>" : ""}
-              ${r.contato_numero ? "Telefone: " + escapeHtml(r.contato_numero) : ""}
-            </div>
-          ` : ""}
-
-          <div>
-            <span class="tag">área: ${escapeHtml(r._area || "Geral")}</span>
-            <span class="tag">sinal: ${escapeHtml(r._sentimento || "neutro")}</span>
-            ${extras.join("")}
-            ${tags}
-          </div>
-        </article>
-      `;
-    }
-
-    function analisarRegistro(r) {
-      const area = inferirArea(r);
-      const sentimento = inferirSentimento(r);
-      const financeiro = extrairFinanceiro(r);
-      const horas = extrairHoras(r);
-      return {
-        _area: area,
-        _sentimento: sentimento,
-        _gasto: financeiro.gasto,
-        _ganho: financeiro.ganho,
-        _horas: horas,
-        _scoreImpacto: scoreRegistro({ ...r, _sentimento: sentimento })
-      };
-    }
-
-    function inferirArea(r) {
-      const categoria = String(r.categoria || "").trim();
-      if (AREA_INFO[categoria]) return categoria;
-      if (categoria === "Sistema") return "Projetos";
-
-      if (categoria === "Geral" || !categoria) {
-        const text = normalizarTexto([r.titulo, r.descricao, r.tags, r.tipo].join(" "));
-        let best = "Geral";
-        let bestScore = 0;
-
-        Object.keys(AREA_INFO).forEach(area => {
-          const keywords = AREA_INFO[area].keywords || [];
-          const score = keywords.reduce((acc, k) => acc + (text.includes(normalizarTexto(k)) ? 1 : 0), 0);
-          if (score > bestScore) {
-            bestScore = score;
-            best = area;
-          }
-        });
-        return best;
-      }
-
-      if (categoria === "Projeto") return "Projetos";
-      return categoria || "Geral";
-    }
-
-    function inferirSentimento(r) {
-      const text = normalizarTexto([r.titulo, r.descricao, r.tags].join(" "));
-      const pos = POSITIVE_WORDS.some(w => text.includes(normalizarTexto(w)));
-      const neg = NEGATIVE_WORDS.some(w => text.includes(normalizarTexto(w)));
-
-      if (String(r.prioridade || "").toLowerCase() === "urgente") return "alerta";
-      if (neg && !pos) return "negativo";
-      if (pos && !neg) return "positivo";
-      if (pos && neg) return "misto";
-      return "neutro";
-    }
-
-    function extrairFinanceiro(r) {
-      const textoOriginal = [r.titulo, r.descricao, r.tags].filter(Boolean).join(" | ");
-      const texto = normalizarTexto(textoOriginal);
-
-      let gasto = 0;
-      let ganho = 0;
-
-      const regex = /r\$\s*([\d\.]+,\d{2}|[\d]+,\d{2}|[\d\.]+)/gi;
-      let match;
-
-      while ((match = regex.exec(textoOriginal)) !== null) {
-        const raw = match[1];
-        const valor = parseBrazilianMoney(raw);
-        if (!valor) continue;
-
-        const pos = match.index || 0;
-        const contexto = normalizarTexto(textoOriginal.slice(Math.max(0, pos - 40), pos + 60));
-
-        if (hasAny(contexto, ["recebi", "ganhei", "vendi", "lucro", "entrada", "entrou", "reembolso"])) {
-          ganho += valor;
-        } else if (hasAny(contexto, ["paguei", "gastei", "comprei", "custa", "custo", "saída", "saida", "despesa", "multa", "fatura", "boleto"])) {
-          gasto += valor;
-        } else {
-          if (hasAny(texto, ["recebi", "ganhei", "vendi", "lucro", "entrada"])) ganho += valor;
-          else gasto += valor;
-        }
-      }
-
-      return { gasto, ganho };
-    }
-
-    function extrairHoras(r) {
-      const texto = [r.titulo, r.descricao, r.tags].filter(Boolean).join(" ");
-      let total = 0;
-
-      const regexHoras = /(\d+(?:[.,]\d+)?)\s*(h|hora|horas)\b/gi;
-      const regexMin = /(\d+(?:[.,]\d+)?)\s*(min|minuto|minutos)\b/gi;
-      const regexHhMm = /(\d{1,2})h(\d{1,2})/gi;
-
-      let m;
-
-      while ((m = regexHhMm.exec(texto)) !== null) {
-        total += parseInt(m[1], 10) + (parseInt(m[2], 10) / 60);
-      }
-
-      while ((m = regexHoras.exec(texto)) !== null) {
-        total += parseFloat(String(m[1]).replace(",", "."));
-      }
-
-      while ((m = regexMin.exec(texto)) !== null) {
-        total += parseFloat(String(m[1]).replace(",", ".")) / 60;
-      }
-
-      return Number(total.toFixed(2));
-    }
-
-    function scoreRegistro(r) {
-      let score = 70;
-      const prioridade = String(r.prioridade || "Normal");
-      const status = normalizarTexto(r.status);
-      const sentimento = r._sentimento || inferirSentimento(r);
-
-      if (prioridade === "Urgente") score -= 28;
-      if (prioridade === "Alta") score -= 13;
-      if (prioridade === "Baixa") score += 4;
-
-      if (status === "concluido") score += 15;
-      if (status === "em andamento") score += 3;
-      if (status === "cancelado") score -= 12;
-
-      if (sentimento === "positivo") score += 10;
-      if (sentimento === "negativo") score -= 14;
-      if (sentimento === "alerta") score -= 20;
-      if (sentimento === "misto") score -= 4;
-
-      return clampNumber(score, 0, 100);
-    }
-
-    function calcularScoreArea(items) {
-      if (!items.length) return 0;
-      return Math.round(items.reduce((acc, item) => acc + scoreRegistro(item), 0) / items.length);
-    }
-
-    function statusArea(score) {
-      if (score >= 78) return "bom momento";
-      if (score >= 60) return "estável";
-      if (score >= 45) return "atenção";
-      return "alerta";
-    }
-
-    function dataRegistro(r) {
-      const d = r.data_atualizacao || r.data_criacao || r.data_evento || "";
-      const parsed = new Date(d);
-      const time = parsed.getTime();
-      return Number.isNaN(time) ? 0 : time;
-    }
-
-    function diasDesde(timestamp) {
-      if (!timestamp) return 9999;
-      return Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24));
-    }
-
-    function pesoPrioridade(p) {
-      return { "Urgente": 4, "Alta": 3, "Normal": 2, "Baixa": 1 }[p] || 0;
-    }
-
-    function somar(arr) {
-      return arr.reduce((acc, n) => acc + (Number(n) || 0), 0);
-    }
-
-    function percentualRelativo(valor, total) {
-      if (!total) return 0;
-      return clampNumber(Math.round((valor / total) * 100), 0, 100);
-    }
-
-    function parseBrazilianMoney(raw) {
-      if (!raw) return 0;
-      let s = String(raw).trim();
-
-      if (s.includes(",") && s.includes(".")) {
-        s = s.replace(/\./g, "").replace(",", ".");
-      } else if (s.includes(",")) {
-        s = s.replace(",", ".");
-      }
-
-      const n = parseFloat(s);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function hasAny(text, words) {
-      const t = normalizarTexto(text);
-      return words.some(w => t.includes(normalizarTexto(w)));
-    }
-
-    function toTagList(tagsValue) {
-      if (Array.isArray(tagsValue)) return tagsValue.filter(Boolean).map(t => String(t).trim()).filter(Boolean);
-      return String(tagsValue || "")
-        .split(",")
-        .map(t => t.trim())
-        .filter(Boolean);
-    }
-
-    function formatarMoeda(valor) {
-      return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    }
-
-    function formatarHoras(horas) {
-      const h = Number(horas || 0);
-      if (!h) return "0h";
-      const inteiras = Math.floor(h);
-      const mins = Math.round((h - inteiras) * 60);
-      if (!inteiras) return `${mins} min`;
-      if (!mins) return `${inteiras}h`;
-      return `${inteiras}h ${mins}min`;
-    }
-
-    function normalizarTexto(txt) {
-      return (txt || "")
-        .toString()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim();
-    }
-
-    function resumoTexto(txt, max) {
-      const s = String(txt || "").replace(/\s+/g, " ").trim();
-      return s.length <= max ? s : s.slice(0, max - 1) + "…";
-    }
-
-    function clampNumber(n, min, max) {
-      return Math.max(min, Math.min(max, n));
-    }
-
-    function escapeHtml(str) {
-      return (str || "")
-        .toString()
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function escapeAttr(str) {
-      return String(str || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-    }
-
-    function formatarDataHora(valor) {
-      if (!valor) return "—";
-      try {
-        const d = new Date(valor);
-        if (!Number.isNaN(d.getTime())) return d.toLocaleString("pt-BR");
-      } catch (e) {}
-      return String(valor);
-    }
-
-    function formatarDataSimples(valor) {
-      if (!valor) return "";
-      const s = String(valor);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-        const [a, m, d] = s.split("-");
-        return `${d}/${m}/${a}`;
-      }
-      return s;
-    }
-
-    function setPill(id, texto, tipo) {
-      const el = document.getElementById(id);
-      el.textContent = texto;
-      el.className = "pill";
-      if (tipo) el.classList.add(tipo);
-    }
-
-    function mostrarLoader(ativo) {
-      document.getElementById("loader").classList.toggle("show", !!ativo);
-    }
-
-    function limparMensagens() {
-      ["apiFeedback", "apiError", "saveFeedback", "saveError", "gptFeedback"].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.classList.add("hidden");
-        el.textContent = "";
-      });
-    }
-
-    function mostrarOk(id, msg) {
-      const el = document.getElementById(id);
-      el.textContent = msg;
-      el.classList.remove("hidden");
-    }
-
-    function mostrarErro(id, msg) {
-      const el = document.getElementById(id);
-      el.textContent = msg;
-      el.classList.remove("hidden");
-    }
-
-    function abrirApiDireta() {
-      try {
-        const url = montarUrl("ping");
-        window.open(url, "_blank");
-      } catch (e) {
-        alert(e.message);
-      }
-    }
-
-    function exportarJsonTela() {
-      const pacote = {
-        app: "Radar de Vida",
-        origem: "tela_html_painel_vida_v5",
-        exportado_em: new Date().toISOString(),
-        total: registros.length,
-        registros
-      };
-
-      baixarArquivo(
-        "radar-de-vida-registros-tela-" + new Date().toISOString().slice(0,10) + ".json",
-        JSON.stringify(pacote, null, 2),
-        "application/json"
-      );
-    }
-
-    async function importarJsonParaSheets(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      try {
-        const texto = await file.text();
-        const json = JSON.parse(texto);
-
-        let itens = [];
-        if (Array.isArray(json)) itens = json;
-        else if (Array.isArray(json.registros)) itens = json.registros;
-        else if (json.database && Array.isArray(json.database.registros)) itens = json.database.registros;
-
-        if (!itens.length) {
-          alert("Nenhum registro encontrado no JSON.");
-          return;
-        }
-
-        const api = normalizarApiUrl(getApiUrl());
-        if (!api) {
-          alert("Informe a URL da API antes de importar.");
-          return;
-        }
-
-        const confirma = confirm("Importar " + itens.length + " registros para o Google Sheets?");
-        if (!confirma) return;
-
-        await fetch(api, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "bulkCreate", data: itens })
-        });
-
-        alert("Importação enviada. A lista será recarregada para confirmação.");
-        setTimeout(() => sincronizar(), 2200);
-      } catch (erro) {
-        alert("Erro ao importar JSON: " + erro.message);
-      } finally {
-        event.target.value = "";
-      }
-    }
-
-    function baixarArquivo(nome, conteudo, tipo) {
-      const blob = new Blob([conteudo], { type: tipo || "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = nome;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-  </script>
+      </div>
+
+      <div id="overview" class="summary"></div>
+
+      <div class="top" style="margin-top:14px">
+        <h2>Áreas da vida</h2>
+        <div class="small" id="areaInfo">Clique em uma área para filtrar.</div>
+      </div>
+      <div id="areas" class="areas"></div>
+
+      <div class="top" style="margin-top:22px">
+        <h2 id="recordsTitle">Registros</h2>
+        <div class="small">Cada entrada pode ser analisada por GPT ou excluída da planilha.</div>
+      </div>
+
+      <div class="filters">
+        <input id="busca" placeholder="Buscar..." oninput="renderizar()">
+        <select id="filtroCategoria" onchange="renderizar()"><option value="">Todas categorias</option><option>Geral</option><option>Saúde</option><option>Jurídico</option><option>Finanças</option><option>Família</option><option>Trabalho</option><option>Projeto</option><option>Relacionamento</option><option>Corpo / Esporte</option><option>Emocional</option><option>Social</option><option>Casa / Rotina</option><option>Aprendizado</option><option>Lazer</option><option>Outro</option></select>
+        <select id="filtroStatus" onchange="renderizar()"><option value="">Todos status</option><option>Aberto</option><option>Em andamento</option><option>Concluído</option><option>Arquivado</option><option>Cancelado</option></select>
+        <select id="ordenacao" onchange="renderizar()"><option value="novo">Mais novos</option><option value="antigo">Mais antigos</option><option value="prioridade">Prioridade</option><option value="titulo">Título</option></select>
+      </div>
+      <div id="loader" class="loader">Carregando...</div>
+      <div id="lista"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const LS_API="radar_v6_api_url";
+const LS_BACKEND="radar_v6_backend_url";
+const LS_PROMPT="radar_v6_prompt";
+let registros=[];
+let analisesMemoria={};
+let areaSelecionada="";
+
+const AREA_INFO={
+ "Saúde":{icon:"🩺",keys:["saude","saúde","sono","dor","medico","médico","consulta","remedio","remédio","exame"]},
+ "Corpo / Esporte":{icon:"🏃",keys:["academia","treino","caminhada","corrida","exercicio","exercício","bicicleta","esporte"]},
+ "Finanças":{icon:"💰",keys:["r$","paguei","gastei","comprei","recebi","ganhei","vendi","pix","boleto","fatura"]},
+ "Trabalho":{icon:"💼",keys:["trabalho","cliente","reuniao","reunião","contrato","empresa","github","render"]},
+ "Jurídico":{icon:"⚖️",keys:["processo","petição","peticao","prazo","juiz","vara","pje","unimed","audiência","audiencia"]},
+ "Relacionamento":{icon:"❤️",keys:["relacionamento","namoro","amor","casal","thayna","thayná"]},
+ "Família":{icon:"🏠",keys:["familia","família","mae","mãe","pai","filho","filha","ielma"]},
+ "Projetos":{icon:"🚀",keys:["projeto","app","radar","api","webhook","sistema","piuta","piutá"]},
+ "Emocional":{icon:"🧠",keys:["ansioso","ansiedade","triste","feliz","estresse","paz","humor"]},
+ "Social":{icon:"🤝",keys:["amigo","amiga","grupo","evento","visita"]},
+ "Casa / Rotina":{icon:"🧹",keys:["casa","rotina","limpeza","organizar","agenda"]},
+ "Aprendizado":{icon:"📚",keys:["estudei","curso","aula","aprendi","livro"]},
+ "Lazer":{icon:"🌄",keys:["viagem","praia","trilha","cinema","musica","música"]},
+ "Geral":{icon:"📌",keys:[]}
+};
+
+document.addEventListener("DOMContentLoaded",()=>{
+ document.getElementById("apiUrl").value=localStorage.getItem(LS_API)||localStorage.getItem("radar_vida_api_url_v5_jsonp")||localStorage.getItem("radar_vida_api_url_v3_jsonp")||"";
+ document.getElementById("backendUrl").value=localStorage.getItem(LS_BACKEND)||location.origin;
+ document.getElementById("promptLocal").value=localStorage.getItem(LS_PROMPT)||"Classifique registros do Radar de Vida. Extraia área, subárea, polaridade, intensidade, score, gasto, ganho, horas, tags e ação sugerida.";
+ document.getElementById("formRegistro").addEventListener("submit",salvarRegistro);
+ if(getApiUrl()){testarApi(false).then(()=>sincronizar()).catch(()=>renderizar())}else renderizar();
+ testarBackend(false).catch(()=>{});
+});
+
+function getApiUrl(){return (document.getElementById("apiUrl").value||"").trim()}
+function getBackendUrl(){return (document.getElementById("backendUrl").value||"").trim().replace(/\/$/,"")}
+function normApi(u){if(!u)return"";u=u.trim();const q=u.indexOf("?");return q>-1?u.slice(0,q):u}
+function salvarConexoes(){
+ const api=normApi(getApiUrl()), backend=getBackendUrl();
+ if(!api.includes("script.google.com")||!api.includes("/exec"))return showErr("connError","URL do Apps Script inválida.");
+ if(!backend.startsWith("http"))return showErr("connError","URL do backend inválida.");
+ document.getElementById("apiUrl").value=api;
+ document.getElementById("backendUrl").value=backend;
+ localStorage.setItem(LS_API,api); localStorage.setItem(LS_BACKEND,backend);
+ showOk("connFeedback","Conexões salvas.");
+}
+function salvarPromptLocal(){localStorage.setItem(LS_PROMPT,document.getElementById("promptLocal").value||"");showOk("gptFeedback","Prompt local salvo.")}
+
+function jsonp(action,params={},timeout=15000){
+ return new Promise((resolve,reject)=>{
+  const base=normApi(getApiUrl()); if(!base)return reject(new Error("Informe a URL do Apps Script."));
+  const cb="__rv6_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+  const q=new URLSearchParams({action,...params,callback:cb,_:Date.now()+""});
+  const s=document.createElement("script"); s.src=base+"?"+q.toString();
+  const t=setTimeout(()=>{clean();reject(new Error("Tempo esgotado na API."))},timeout);
+  function clean(){clearTimeout(t);try{delete window[cb]}catch(e){window[cb]=undefined} if(s.parentNode)s.parentNode.removeChild(s)}
+  window[cb]=d=>{clean();resolve(d)}; s.onerror=()=>{clean();reject(new Error("Falha ao carregar JSONP."))};
+  document.body.appendChild(s);
+ })
+}
+async function testarApi(alerta=true){
+ try{salvarConexoes();const d=await jsonp("ping"); if(!d.ok)throw new Error(d.erro||"Erro na API."); setPill("pillApi","Sheets: conectado","ok"); if(alerta)alert("Sheets conectado."); return d}
+ catch(e){setPill("pillApi","Sheets: erro","err"); showErr("connError",e.message); throw e}
+}
+async function testarBackend(alerta=true){
+ try{const r=await fetch(getBackendUrl()+"/health"); const d=await r.json(); setPill("pillBackend",d.openaiConfigured?"GPT: conectado":"GPT: sem chave",""+(d.openaiConfigured?"ok":"warn")); if(alerta)alert(d.openaiConfigured?"Backend com OpenAI ativo.":"Backend ativo, mas OpenAI não configurada."); return d}
+ catch(e){setPill("pillBackend","Backend: erro","err"); if(alerta)alert(e.message); throw e}
+}
+async function sincronizar(){
+ try{showLoad(true);clearMsgs();const d=await jsonp("list",{limit:1000}); if(!d.ok)throw new Error(d.erro||"Erro ao listar."); registros=Array.isArray(d.registros)?d.registros:[]; setPill("pillTotal","Registros: "+registros.length,""); setPill("pillAtualizado","Atualizado: "+new Date().toLocaleString("pt-BR"),""); renderizar()}
+ catch(e){showErr("connError","Erro ao sincronizar: "+e.message); renderizar()} finally{showLoad(false)}
+}
+async function salvarRegistro(ev){
+ ev.preventDefault(); const api=normApi(getApiUrl()); if(!api)return alert("Informe a URL do Apps Script.");
+ const btn=document.getElementById("btnSalvar"); btn.disabled=true; btn.textContent="Salvando...";
+ try{
+  const data={origem:"manual_html_v6",tipo:val("tipo"),categoria:val("categoria"),titulo:val("titulo"),descricao:val("descricao"),data_evento:val("dataEvento"),hora_evento:val("horaEvento"),prioridade:val("prioridade"),status:val("status"),tags:parseTags(val("tags")),tem_midia:"Não",midia_ids:[]};
+  await fetch(api,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"create",data})});
+  showOk("saveFeedback","Registro enviado. Recarregando..."); limparFormulario(); setTimeout(sincronizar,1800);
+ }catch(e){showErr("saveError",e.message)} finally{btn.disabled=false;btn.textContent="Salvar"}
+}
+async function analisarTudoComGpt(){
+ if(!registros.length)return alert("Sincronize primeiro.");
+ try{
+  showLoad(true);
+  const payload={records:registros.map(compactRecord), prompt:document.getElementById("promptLocal").value||""};
+  const r=await fetch(getBackendUrl()+"/api/analyze-records",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const d=await r.json(); if(!d.ok)throw new Error(d.error||"Falha ao analisar.");
+  (d.analyses||[]).forEach(a=>{if(a.id)analisesMemoria[a.id]=a});
+  showOk("connFeedback","Análise GPT aplicada na tela: "+Object.keys(analisesMemoria).length+" registro(s).");
+  renderizar();
+ }catch(e){showErr("connError","Erro na análise GPT: "+e.message)} finally{showLoad(false)}
+}
+async function analisarRegistroGpt(id){
+ const rec=registros.find(r=>String(r.id)===String(id)); if(!rec)return;
+ try{
+  const r=await fetch(getBackendUrl()+"/api/analyze-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record:compactRecord(rec), prompt:document.getElementById("promptLocal").value||""})});
+  const d=await r.json(); if(!d.ok)throw new Error(d.error||"Falha ao analisar.");
+  analisesMemoria[id]={id,...d.analysis}; renderizar();
+ }catch(e){alert("Erro na análise GPT: "+e.message)}
+}
+async function excluirRegistro(id){
+ if(!confirm("Excluir este registro da planilha? Esta ação remove a linha do Google Sheets."))return;
+ try{
+  const r=await fetch(getBackendUrl()+"/api/delete-record",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+  const d=await r.json(); if(!d.ok)throw new Error(d.error||"Não foi possível excluir.");
+  delete analisesMemoria[id]; await sincronizar();
+ }catch(e){alert("Erro ao excluir: "+e.message)}
+}
+
+function compactRecord(r){return {id:r.id,titulo:r.titulo,descricao:r.descricao,categoria:r.categoria,tipo:r.tipo,prioridade:r.prioridade,status:r.status,tags:r.tags,data_criacao:r.data_criacao,data_evento:r.data_evento,hora_evento:r.hora_evento}}
+function analisarLocal(r){
+ const saved=analisesMemoria[r.id]||{};
+ const text=[r.titulo,r.descricao,r.tags].join(" ");
+ const area=saved.area_principal||r.area_principal||inferArea(r);
+ const fin=extractMoney(text);
+ const horas=Number(saved.horas_usadas ?? r.horas_usadas ?? extractHours(text) ?? 0);
+ return {
+  ...r,
+  _area:area,
+  _subarea:saved.subarea||r.subarea||"",
+  _polaridade:saved.polaridade||r.polaridade||inferSent(text,r),
+  _score:Number(saved.score_ia ?? r.score_ia ?? scoreLocal(r)),
+  _gasto:Number(saved.valor_gasto ?? r.valor_gasto ?? fin.gasto ?? 0),
+  _ganho:Number(saved.valor_ganho ?? r.valor_ganho ?? fin.ganho ?? 0),
+  _horas:horas,
+  _acao:saved.acao_sugerida||r.acao_sugerida||"",
+  _tagsIA:saved.tags||[]
+ }
+}
+function renderizar(){
+ const items=registros.map(analisarLocal);
+ renderOverview(items); renderAreas(items); renderLista(items);
+}
+function renderOverview(items){
+ const gasto=sum(items.map(i=>i._gasto)), ganho=sum(items.map(i=>i._ganho)), horas=sum(items.map(i=>i._horas)), media=items.length?Math.round(sum(items.map(i=>i._score))/items.length):0;
+ const total=gasto+ganho;
+ document.getElementById("overview").innerHTML=[
+  circle("💸","Reais gastos",money(gasto),pct(gasto,total),"#dc2626","Valores classificados como gasto."),
+  circle("💰","Reais ganhos",money(ganho),pct(ganho,total),"#16a34a","Valores classificados como ganho."),
+  circle("⏱️","Horas usadas",fmtHours(horas),Math.min(100,Math.round(horas*10)),"#2563eb","Tempo detectado nos registros."),
+  circle("🧠","Score IA/local",String(media),media,"#7c3aed","Média do estado geral interpretado.")
+ ].join("");
+}
+function circle(icon,title,value,percent,color,hint){return `<div class="circle"><div class="ring" style="--v:${percent};--c:${color}"><div class="ringIn">${icon}<div class="ringMini">${percent}%</div></div></div><div><div class="circleTitle">${esc(title)}</div><div class="circleValue">${esc(value)}</div><div class="circleHint">${esc(hint)}</div></div></div>`}
+function renderAreas(items){
+ const map={}; items.forEach(i=>(map[i._area]??=[]).push(i));
+ const areas=Object.keys(map).sort((a,b)=>map[b].length-map[a].length);
+ document.getElementById("areas").innerHTML=areas.length?areas.map(a=>areaCard(a,map[a])).join(""):`<div class="empty" style="grid-column:1/-1">Nenhuma área ativa.</div>`;
+}
+function areaCard(area,items){
+ const info=AREA_INFO[area]||AREA_INFO.Geral, score=Math.round(sum(items.map(i=>i._score))/items.length), cls=score>=75?"good":score>=50?"att":"risk";
+ const gasto=sum(items.map(i=>i._gasto)),ganho=sum(items.map(i=>i._ganho)),horas=sum(items.map(i=>i._horas));
+ return `<div class="area ${areaSelecionada===area?"selected":""}" onclick="selecionarArea('${attr(area)}')"><div class="areaTop"><div><div class="icon">${info.icon||"📌"}</div><h3 style="margin-top:10px">${esc(area)}</h3></div><div><div class="score">${score}</div><div class="scoreLabel">score</div></div></div><div class="meter"><div class="fill ${cls}" style="width:${score}%"></div></div><div class="meta">${items.length} registro(s)</div><div class="mini"><div><div class="miniLab">Gastos</div><div class="miniVal">${money(gasto)}</div></div><div><div class="miniLab">Ganhos</div><div class="miniVal">${money(ganho)}</div></div><div><div class="miniLab">Horas</div><div class="miniVal">${fmtHours(horas)}</div></div></div></div>`
+}
+function renderLista(items){
+ let f=[...items]; const busca=norm(val("busca")),cat=val("filtroCategoria"),st=val("filtroStatus"),ord=val("ordenacao");
+ if(areaSelecionada){f=f.filter(x=>x._area===areaSelecionada);document.getElementById("recordsTitle").textContent="Registros — "+areaSelecionada;document.getElementById("areaInfo").textContent="Filtro ativo."}else{document.getElementById("recordsTitle").textContent="Registros";document.getElementById("areaInfo").textContent="Clique em uma área para filtrar."}
+ if(cat)f=f.filter(x=>String(x.categoria||"")===cat); if(st)f=f.filter(x=>String(x.status||"")===st); if(busca)f=f.filter(x=>norm([x.titulo,x.descricao,x.tags,x._area,x._subarea].join(" ")).includes(busca));
+ f.sort((a,b)=>ord==="antigo"?dateVal(a)-dateVal(b):ord==="prioridade"?prio(b.prioridade)-prio(a.prioridade):ord==="titulo"?String(a.titulo||"").localeCompare(String(b.titulo||"")):dateVal(b)-dateVal(a));
+ document.getElementById("lista").innerHTML=f.length?f.map(recordCard).join(""):`<div class="empty">Nenhum registro encontrado.</div>`;
+}
+function recordCard(r){
+ const p=norm(r.prioridade||"normal");
+ const tags=[...(String(r.tags||"").split(",").map(x=>x.trim()).filter(Boolean)),...(Array.isArray(r._tagsIA)?r._tagsIA:[])];
+ return `<article class="record"><div class="recordTop"><div><div class="recordTitle">${esc(r.titulo||"Sem título")}</div><div class="meta">${esc(r._area)} ${r._subarea?"· "+esc(r._subarea):""} · ${esc(r.tipo||"Registro")} · ${esc(r.status||"Aberto")}<br>ID: ${esc(r.id||"")}<br>Criado: ${fmtDate(r.data_criacao)} · Atualizado: ${fmtDate(r.data_atualizacao)}</div></div><span class="prio ${p}">${esc(r.prioridade||"Normal")}</span></div>${r.descricao?`<div class="text">${esc(r.descricao)}</div>`:""}<div><span class="tag">score: ${esc(r._score)}</span><span class="tag">polaridade: ${esc(r._polaridade)}</span>${r._gasto?`<span class="tag">gasto: ${money(r._gasto)}</span>`:""}${r._ganho?`<span class="tag">ganho: ${money(r._ganho)}</span>`:""}${r._horas?`<span class="tag">horas: ${fmtHours(r._horas)}</span>`:""}${r._acao?`<span class="tag">ação: ${esc(r._acao)}</span>`:""}${tags.slice(0,8).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div><div class="recordActions"><button class="purple" onclick="analisarRegistroGpt('${attr(r.id)}')">Analisar com GPT</button><button class="red" onclick="excluirRegistro('${attr(r.id)}')">Excluir</button></div></article>`
+}
+
+function inferArea(r){const c=String(r.categoria||"").trim(); if(AREA_INFO[c])return c; if(c==="Projeto")return"Projetos"; const t=norm([r.titulo,r.descricao,r.tags].join(" ")); let best="Geral",bs=0; Object.keys(AREA_INFO).forEach(a=>{const sc=(AREA_INFO[a].keys||[]).reduce((acc,k)=>acc+(t.includes(norm(k))?1:0),0); if(sc>bs){bs=sc;best=a}});return best}
+function inferSent(text,r){const t=norm(text); if(String(r.prioridade||"").toLowerCase()==="urgente")return"alerta"; if(["bom","boa","feliz","funcionou","recebi","ganhei","consegui"].some(w=>t.includes(w)))return"positivo"; if(["erro","falha","dor","paguei","gastei","ruim","cansado"].some(w=>t.includes(w)))return"negativo"; return"neutro"}
+function scoreLocal(r){let s=70; const p=String(r.prioridade||"Normal"); if(p==="Urgente")s-=28;if(p==="Alta")s-=12;if(p==="Baixa")s+=4; const st=norm(r.status); if(st==="concluido")s+=15;if(st==="cancelado")s-=12; return Math.max(0,Math.min(100,s))}
+function extractMoney(text){let gasto=0,ganho=0; const re=/r\$\s*([\d\.]+,\d{2}|[\d]+,\d{2}|[\d\.]+)/gi; let m; while((m=re.exec(text))){const v=parseMoney(m[1]); const ctx=norm(text.slice(Math.max(0,m.index-50),m.index+70)); if(["recebi","ganhei","vendi","lucro","entrada"].some(w=>ctx.includes(w)))ganho+=v; else gasto+=v} return {gasto,ganho}}
+function extractHours(text){let total=0,m; const hh=/(\d{1,2})h(\d{1,2})/gi, h=/(\d+(?:[.,]\d+)?)\s*(h|hora|horas)\b/gi, min=/(\d+(?:[.,]\d+)?)\s*(min|minuto|minutos)\b/gi; while((m=hh.exec(text)))total+=parseInt(m[1])+parseInt(m[2])/60; while((m=h.exec(text)))total+=parseFloat(String(m[1]).replace(",",".")); while((m=min.exec(text)))total+=parseFloat(String(m[1]).replace(",","."))/60; return Number(total.toFixed(2))}
+function limparFormulario(){document.getElementById("formRegistro").reset()}function selecionarArea(a){areaSelecionada=a||"";renderizar()}
+function val(id){return(document.getElementById(id).value||"").trim()}function parseTags(t){return(t||"").split(",").map(x=>x.trim()).filter(Boolean)}
+function parseMoney(s){s=String(s).trim(); if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",","."); else if(s.includes(","))s=s.replace(",","."); const n=parseFloat(s); return Number.isFinite(n)?n:0}
+function sum(a){return a.reduce((x,y)=>x+(Number(y)||0),0)}function pct(v,t){return t?Math.max(0,Math.min(100,Math.round(v/t*100))):0}
+function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function fmtHours(h){h=Number(h||0); if(!h)return"0h"; const i=Math.floor(h),m=Math.round((h-i)*60); return i?(m?`${i}h ${m}min`:`${i}h`):`${m}min`}
+function norm(s){return(s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()}function esc(s){return(s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}function attr(s){return String(s||"").replaceAll("\\","\\\\").replaceAll("'","\\'")}function fmtDate(v){if(!v)return"—"; const d=new Date(v); return Number.isNaN(d.getTime())?String(v):d.toLocaleString("pt-BR")}function dateVal(r){const d=new Date(r.data_atualizacao||r.data_criacao||r.data_evento||"").getTime(); return Number.isNaN(d)?0:d}function prio(p){return{Urgente:4,Alta:3,Normal:2,Baixa:1}[p]||0}
+function setPill(id,text,t){const e=document.getElementById(id); e.textContent=text; e.className="pill"; if(t)e.classList.add(t)}function showOk(id,msg){const e=document.getElementById(id);e.textContent=msg;e.classList.remove("hidden")}function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.classList.remove("hidden")}function clearMsgs(){["connFeedback","connError","saveFeedback","saveError","gptFeedback"].forEach(id=>{const e=document.getElementById(id); if(e){e.classList.add("hidden");e.textContent=""}})}function showLoad(x){document.getElementById("loader").classList.toggle("show",!!x)}
+function abrirApiDireta(){try{window.open(normApi(getApiUrl())+"?action=ping","_blank")}catch(e){alert(e.message)}}
+</script>
 </body>
 </html>
