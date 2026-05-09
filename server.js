@@ -1,21 +1,42 @@
 /**
  * Radar de Vida v7 — server.js
- * Versão ES Module compatível com package.json contendo "type": "module"
+ * Render + Express + Google Docs Apps Script
  *
- * Backend Render / Node.js / Express
+ * Esta versão faz duas coisas:
+ * 1. Mostra o painel visual em /
+ *    - Para isso, coloque o arquivo index.html dentro da pasta public/
  *
- * Função:
- * - Receber mensagens do WhatsApp no endpoint /webhook/whatsapp
- * - Encaminhar a frase livre para o Apps Script v7
- * - O Apps Script salva no Google Docs, chama a OpenAI e devolve JSON semântico
+ * 2. Mantém a API funcionando:
+ *    - GET  /health
+ *    - GET  /test
+ *    - POST /webhook/whatsapp
+ *    - POST /api/manual-entry
+ *
+ * Variáveis de ambiente no Render:
+ * GOOGLE_DOCS_API_URL=https://script.google.com/macros/s/SEU_WEBAPP/exec
+ * SEND_WHATSAPP_CONFIRMATION=false
  */
 
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const app = express();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '2mb' }));
+
+/**
+ * Serve arquivos estáticos da pasta public.
+ * Coloque o painel visual em:
+ * public/index.html
+ */
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
 
 const PORT = process.env.PORT || 3000;
 
@@ -151,12 +172,25 @@ function buildWhatsappXmlResponse(result) {
   )}</Message></Response>`;
 }
 
+/**
+ * Página inicial.
+ * Se existir public/index.html, mostra o painel visual.
+ * Se não existir, mostra JSON de diagnóstico.
+ */
 app.get('/', (req, res) => {
-  res.json({
+  const indexPath = path.join(publicDir, 'index.html');
+
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+
+  return res.json({
     ok: true,
     app: 'Radar de Vida v7 — Render Bridge',
     status: 'online',
     now: nowIso(),
+    message: 'Backend online, mas public/index.html não foi encontrado. Crie a pasta public e coloque o index.html dentro dela.',
+    expectedFile: 'public/index.html',
     endpoints: {
       health: '/health',
       test: '/test',
@@ -177,7 +211,8 @@ app.get('/health', async (req, res) => {
     status: 'online',
     now: nowIso(),
     hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
-    sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION
+    sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
+    hasPublicIndex: fs.existsSync(path.join(publicDir, 'index.html'))
   };
 
   if (!GOOGLE_DOCS_API_URL) {
@@ -385,4 +420,5 @@ app.listen(PORT, () => {
   console.log(`Radar de Vida v7 — Render Bridge online na porta ${PORT}`);
   console.log('GOOGLE_DOCS_API_URL configurada:', Boolean(GOOGLE_DOCS_API_URL));
   console.log('SEND_WHATSAPP_CONFIRMATION:', SEND_WHATSAPP_CONFIRMATION);
+  console.log('public/index.html encontrado:', fs.existsSync(path.join(publicDir, 'index.html')));
 });
