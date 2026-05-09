@@ -1,21 +1,16 @@
 {
   "name": "radar-whatsapp-webhook",
   "version": "0.1.0",
-  "description": "Webhook local para integrar WhatsApp Cloud API ao Radar de Vida",
-  "main": "server.js",
+  "description": "Radar de Vida v7 - Render bridge + painel estático",
   "type": "module",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "helmet": "^8.0.0",
-    "morgan": "^1.10.0"
+    "start": "node server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.18.3"
   }
 }
