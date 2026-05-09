@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Radar de Vida v7.4 — Central de Insights</title>
+  <title>Radar de Vida v7.6 — Painel Mensal</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -26,9 +26,7 @@
       --radius: 22px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html {
       -webkit-text-size-adjust: 100%;
@@ -63,7 +61,8 @@
     .status-card,
     .panel,
     .metric,
-    .weird-card {
+    .weird-card,
+    .period-card {
       background: rgba(255,255,255,.92);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
@@ -194,9 +193,7 @@
       touch-action: manipulation;
     }
 
-    button:hover {
-      transform: translateY(-1px);
-    }
+    button:hover { transform: translateY(-1px); }
 
     button.secondary {
       background: white;
@@ -205,8 +202,79 @@
       box-shadow: none;
     }
 
-    button.danger {
-      background: #9b3024;
+    button.danger { background: #9b3024; }
+
+    .period-panel {
+      display: grid;
+      grid-template-columns: 1.1fr 2fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .period-card {
+      border-radius: var(--radius);
+      padding: 18px;
+      overflow: hidden;
+    }
+
+    .period-card h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .period-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .period-controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .compare-mini {
+      background: linear-gradient(180deg, #fff, var(--panel-soft));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      min-height: 96px;
+    }
+
+    .compare-mini small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .compare-mini strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .compare-mini span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
     }
 
     .grid-cards {
@@ -247,29 +315,12 @@
       line-height: 1.35;
     }
 
-    .metric.green {
-      background: linear-gradient(180deg, #ffffff, var(--green-soft));
-    }
-
-    .metric.blue {
-      background: linear-gradient(180deg, #ffffff, var(--blue-soft));
-    }
-
-    .metric.amber {
-      background: linear-gradient(180deg, #ffffff, var(--amber-soft));
-    }
-
-    .metric.red {
-      background: linear-gradient(180deg, #ffffff, var(--red-soft));
-    }
-
-    .metric.purple {
-      background: linear-gradient(180deg, #ffffff, var(--purple-soft));
-    }
-
-    .metric.cyan {
-      background: linear-gradient(180deg, #ffffff, var(--cyan-soft));
-    }
+    .metric.green { background: linear-gradient(180deg, #ffffff, var(--green-soft)); }
+    .metric.blue { background: linear-gradient(180deg, #ffffff, var(--blue-soft)); }
+    .metric.amber { background: linear-gradient(180deg, #ffffff, var(--amber-soft)); }
+    .metric.red { background: linear-gradient(180deg, #ffffff, var(--red-soft)); }
+    .metric.purple { background: linear-gradient(180deg, #ffffff, var(--purple-soft)); }
+    .metric.cyan { background: linear-gradient(180deg, #ffffff, var(--cyan-soft)); }
 
     .section-grid {
       display: grid;
@@ -305,6 +356,41 @@
       margin: 6px 0 0;
       font-size: 12px;
       line-height: 1.4;
+    }
+
+    .month-reading {
+      display: grid;
+      gap: 10px;
+    }
+
+    .reading-main {
+      background: linear-gradient(180deg, #ffffff, var(--green-soft));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .reading-points {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .reading-point {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .reading-point strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
     }
 
     .charts {
@@ -551,9 +637,7 @@
       z-index: 20;
     }
 
-    .loading.show {
-      display: block;
-    }
+    .loading.show { display: block; }
 
     .toast {
       position: fixed;
@@ -572,9 +656,7 @@
       line-height: 1.4;
     }
 
-    .toast.show {
-      display: block;
-    }
+    .toast.show { display: block; }
 
     .filters {
       display: flex;
@@ -605,7 +687,8 @@
 
     @media (max-width: 1080px) {
       .topbar,
-      .section-grid {
+      .section-grid,
+      .period-panel {
         grid-template-columns: 1fr;
       }
 
@@ -613,8 +696,13 @@
         grid-template-columns: repeat(3, 1fr);
       }
 
-      .weird-grid {
+      .weird-grid,
+      .compare-grid {
         grid-template-columns: repeat(2, 1fr);
+      }
+
+      .reading-points {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -630,14 +718,16 @@
         padding: 10px 10px 28px;
       }
 
-      .topbar {
+      .topbar,
+      .period-panel {
         gap: 10px;
         margin-bottom: 10px;
       }
 
       .hero,
       .status-card,
-      .panel {
+      .panel,
+      .period-card {
         border-radius: 18px;
         padding: 14px;
         box-shadow: 0 10px 28px rgba(30, 55, 40, 0.07);
@@ -679,6 +769,24 @@
         padding: 13px 14px;
         border-radius: 14px;
         font-size: 14px;
+      }
+
+      .period-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .compare-mini {
+        min-height: 88px;
+        padding: 11px;
+      }
+
+      .compare-mini strong {
+        font-size: 19px;
       }
 
       .status-card {
@@ -877,15 +985,12 @@
         padding-right: 8px;
       }
 
-      h1 {
-        font-size: 27px;
-      }
+      h1 { font-size: 27px; }
 
-      .subtitle {
-        font-size: 13px;
-      }
+      .subtitle { font-size: 13px; }
 
-      .grid-cards {
+      .grid-cards,
+      .compare-grid {
         grid-template-columns: 1fr 1fr;
       }
 
@@ -922,7 +1027,8 @@
     }
 
     @media (max-width: 360px) {
-      .grid-cards {
+      .grid-cards,
+      .compare-grid {
         grid-template-columns: 1fr;
       }
 
@@ -937,10 +1043,10 @@
   <div class="app">
     <header class="topbar">
       <section class="hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.4 — Central de Insights</div>
-        <h1>Transforme frases e fotos do WhatsApp em inteligência sobre sua vida.</h1>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.6 — Painel Mensal</div>
+        <h1>Transforme frases e fotos do WhatsApp em inteligência mensal sobre sua vida.</h1>
         <p class="subtitle">
-          O Radar interpreta registros livres, imagens, tempo, dinheiro, projetos e rotinas para revelar tendências pessoais.
+          O Radar agora trabalha por período: o mês atual fica em foco, os meses anteriores continuam preservados e ajudam a gerar comparação e contexto.
         </p>
 
         <div class="actions">
@@ -968,22 +1074,69 @@
           <strong id="lastUpdate">—</strong>
         </div>
         <p class="footer-note">
-          Os índices são leituras heurísticas: servem para provocar percepção estratégica, não para fechar diagnóstico.
+          Os dados continuam históricos; o painel apenas filtra e interpreta por mês.
         </p>
       </aside>
     </header>
+
+    <section class="period-panel">
+      <article class="period-card">
+        <h2>Período analisado</h2>
+        <p>Os cards, gráficos, entradas e insights principais respeitam o mês selecionado.</p>
+
+        <div class="period-controls">
+          <select id="monthSelector" class="select" onchange="onMonthChange()">
+            <option value="__loading__">Carregando meses...</option>
+          </select>
+          <button class="secondary" onclick="selectCurrentMonth()">Mês atual</button>
+        </div>
+
+        <p class="footer-note" id="periodHint">Aguardando dados...</p>
+      </article>
+
+      <article class="period-card">
+        <h2>Comparação automática</h2>
+        <p id="comparisonSubtitle">Comparando o período selecionado com o mês anterior disponível.</p>
+
+        <div class="compare-grid" style="margin-top:14px;">
+          <div class="compare-mini">
+            <small>Gastos</small>
+            <strong id="cmpSpent">—</strong>
+            <span id="cmpSpentHint">vs mês anterior</span>
+          </div>
+
+          <div class="compare-mini">
+            <small>Ganhos</small>
+            <strong id="cmpEarned">—</strong>
+            <span id="cmpEarnedHint">vs mês anterior</span>
+          </div>
+
+          <div class="compare-mini">
+            <small>Corpo</small>
+            <strong id="cmpSport">—</strong>
+            <span id="cmpSportHint">vs mês anterior</span>
+          </div>
+
+          <div class="compare-mini">
+            <small>Registros</small>
+            <strong id="cmpEntries">—</strong>
+            <span id="cmpEntriesHint">vs mês anterior</span>
+          </div>
+        </div>
+      </article>
+    </section>
 
     <section class="grid-cards">
       <article class="metric red">
         <small>Dinheiro gasto</small>
         <strong id="cardSpent">R$ 0,00</strong>
-        <span>Total detectado nas frases e registros.</span>
+        <span>Total no período selecionado.</span>
       </article>
 
       <article class="metric green">
         <small>Dinheiro ganho</small>
         <strong id="cardEarned">R$ 0,00</strong>
-        <span>Receitas, honorários, vendas ou entradas.</span>
+        <span>Receitas, proventos, honorários ou entradas.</span>
       </article>
 
       <article class="metric">
@@ -1011,6 +1164,19 @@
       </article>
     </section>
 
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
+          <h2>Leitura do mês</h2>
+          <p class="hint">Síntese automática do período selecionado, usando o histórico como contexto.</p>
+        </div>
+      </div>
+
+      <div id="monthReadingBox" class="month-reading">
+        <div class="empty">Carregando leitura mensal...</div>
+      </div>
+    </section>
+
     <section class="section-grid">
       <aside class="panel">
         <div class="panel-header">
@@ -1026,7 +1192,7 @@
         </div>
 
         <p class="footer-note">
-          A proposta central é simples: você escreve livremente; o sistema interpreta sem exigir formulário.
+          O registro entra no Google Docs; o painel decide em qual mês ele aparece.
         </p>
       </aside>
 
@@ -1034,7 +1200,7 @@
         <div class="panel-header">
           <div>
             <h2>Frases, fotos e inputs recentes</h2>
-            <p class="hint">Primeiro vem a vida narrada. Depois os insights.</p>
+            <p class="hint">Exibindo apenas o período selecionado, salvo na opção “Todos os registros”.</p>
           </div>
         </div>
 
@@ -1061,7 +1227,7 @@
       <div class="panel-header">
         <div>
           <h2>Laboratório de tendências incomuns</h2>
-          <p class="hint">Atrito, vitalidade, construção de ativo, vazamentos invisíveis e memória visual.</p>
+          <p class="hint">Atrito, vitalidade, construção de ativo, vazamentos invisíveis e memória visual no período.</p>
         </div>
       </div>
 
@@ -1100,7 +1266,7 @@
       <div class="panel-header">
         <div>
           <h2>Insights principais</h2>
-          <p class="hint">Interpretações geradas a partir das frases e fotos já registradas.</p>
+          <p class="hint">Interpretações geradas a partir das frases e fotos do período selecionado.</p>
         </div>
       </div>
 
@@ -1113,18 +1279,18 @@
       <div class="panel-header">
         <div>
           <h2>Tendências ao longo do tempo</h2>
-          <p class="hint">Gráficos convencionais e mapas menos óbvios.</p>
+          <p class="hint">No modo mensal, os gráficos detalham o mês. Em “Todos”, mostram a série histórica.</p>
         </div>
       </div>
 
       <div class="charts">
         <div class="chart-box full">
-          <div class="chart-title">Dinheiro por dia</div>
+          <div class="chart-title" id="moneyChartTitle">Dinheiro por dia</div>
           <canvas id="moneyChart"></canvas>
         </div>
 
         <div class="chart-box">
-          <div class="chart-title">Tempo por dia</div>
+          <div class="chart-title" id="timeChartTitle">Tempo por dia</div>
           <canvas id="timeChart"></canvas>
         </div>
 
@@ -1161,11 +1327,15 @@
 
   <script>
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
+    const ALL_PERIODS = '__all__';
 
     let currentDocId = '';
     let rawData = null;
-    let normalizedEntries = [];
+    let allEntries = [];
+    let viewEntries = [];
+    let selectedMonthKey = '';
     let charts = {};
+    let availableMonths = [];
 
     function jsonp(url) {
       return new Promise((resolve, reject) => {
@@ -1221,8 +1391,12 @@
           throw new Error((data && data.error) || 'Resposta inválida do Apps Script.');
         }
 
-        normalizedEntries = normalizeEntries(data.entries || []);
-        renderAll(data);
+        allEntries = normalizeEntries(data.entries || []);
+        availableMonths = buildAvailableMonths(allEntries);
+
+        setupMonthSelector();
+        applySelectedMonth();
+
         document.getElementById('statusText').textContent = 'Online';
         document.getElementById('lastUpdate').textContent = formatDateTime(new Date());
       } catch (err) {
@@ -1234,13 +1408,90 @@
       }
     }
 
-    function renderAll(data) {
-      renderCards(data);
+    function setupMonthSelector() {
+      const selector = document.getElementById('monthSelector');
+      const previousSelection = selector.value && selector.value !== '__loading__' ? selector.value : '';
+
+      const currentCalendarKey = getCurrentMonthKey();
+      const latestAvailableKey = availableMonths.length ? availableMonths[0].key : currentCalendarKey;
+
+      if (!selectedMonthKey) {
+        selectedMonthKey = availableMonths.some(m => m.key === currentCalendarKey)
+          ? currentCalendarKey
+          : latestAvailableKey;
+      }
+
+      if (previousSelection && previousSelection !== '__loading__') {
+        selectedMonthKey = previousSelection;
+      }
+
+      const options = [
+        `<option value="${ALL_PERIODS}">Todos os registros</option>`,
+        ...availableMonths.map(m => `<option value="${escapeAttr(m.key)}">${escapeHtml(m.label)} (${m.count})</option>`)
+      ];
+
+      selector.innerHTML = options.join('');
+      selector.value = selectedMonthKey || ALL_PERIODS;
+    }
+
+    function onMonthChange() {
+      selectedMonthKey = document.getElementById('monthSelector').value;
+      applySelectedMonth();
+    }
+
+    function selectCurrentMonth() {
+      const current = getCurrentMonthKey();
+
+      if (availableMonths.some(m => m.key === current)) {
+        selectedMonthKey = current;
+      } else if (availableMonths.length) {
+        selectedMonthKey = availableMonths[0].key;
+        toast('Não há registros no mês atual. Mostrando o mês mais recente com dados.');
+      } else {
+        selectedMonthKey = ALL_PERIODS;
+      }
+
+      document.getElementById('monthSelector').value = selectedMonthKey;
+      applySelectedMonth();
+    }
+
+    function applySelectedMonth() {
+      if (!selectedMonthKey) {
+        selectedMonthKey = availableMonths.length ? availableMonths[0].key : ALL_PERIODS;
+      }
+
+      viewEntries = selectedMonthKey === ALL_PERIODS
+        ? [...allEntries]
+        : allEntries.filter(e => e._month_key === selectedMonthKey);
+
+      renderAll();
+    }
+
+    function renderAll() {
+      renderPeriodHeader();
+      renderCards();
+      renderComparison();
+      renderMonthReading();
       renderCategoryFilter();
       renderEntries();
       renderStrangeLayer();
-      renderInsights(data);
-      renderCharts(data);
+      renderInsights();
+      renderCharts();
+    }
+
+    function renderPeriodHeader() {
+      const hint = document.getElementById('periodHint');
+
+      if (selectedMonthKey === ALL_PERIODS) {
+        hint.textContent = `Mostrando todos os ${allEntries.length} registros históricos preservados no Google Docs.`;
+        return;
+      }
+
+      const label = monthKeyToLabel(selectedMonthKey);
+      const previous = getPreviousMonthKey(selectedMonthKey);
+      const previousLabel = previous ? monthKeyToLabel(previous) : 'mês anterior';
+
+      hint.textContent = `Mostrando ${viewEntries.length} registro(s) de ${label}. Comparação automática com ${previousLabel}, quando houver dados.`;
     }
 
     function normalizeEntries(entries) {
@@ -1259,6 +1510,7 @@
         const frictionScore = computeFrictionScore(entry, spent, productive, sport);
         const assetScore = computeAssetScore(entry, invested, productive);
         const hour = extractHour(entry.hora_br, entry.data_iso);
+        const monthKey = getEntryMonthKey(entry);
 
         return {
           ...entry,
@@ -1268,6 +1520,7 @@
           _friction_score: frictionScore,
           _asset_score: assetScore,
           _hour: hour,
+          _month_key: monthKey,
           _all_text: text
         };
       });
@@ -1311,14 +1564,15 @@
         entry.insight_curto,
         entry.insight_profundo,
         ...(entry.categorias || []),
-        ...(entry.projetos_detectados || [])
+        ...(entry.projetos_detectados || []),
+        ...(entry.ativos_detectados || [])
       ].join(' ').toLowerCase();
 
       let score = 0;
       if (invested > 0) score += invested / 100;
       if (productive > 0) score += productive / 60;
 
-      if (/projeto|aplicativo|radar de vida|piutá|piuta|t&g|estudei|aprendi|curso|sítio|sitio|solar|instalação|instalacao|construindo|foto_analisada_automaticamente/.test(text)) {
+      if (/projeto|aplicativo|radar de vida|piutá|piuta|t&g|estudei|aprendi|curso|sítio|sitio|solar|instalação|instalacao|construindo|proventos|dividendos|jcp|foto_analisada_automaticamente/.test(text)) {
         score += 5;
       }
 
@@ -1344,7 +1598,7 @@
       if (impact.includes('positivo')) score += 1;
       if (impact.includes('negativo')) score -= 1;
 
-      if (/feliz|melhor|bem|animado|consegui|produtivo|livre|natureza|caminhei|corri|treino/.test(text)) {
+      if (/feliz|melhor|bem|animado|consegui|produtivo|livre|natureza|caminhei|corri|treino|provento|dividendo/.test(text)) {
         score += 1;
       }
 
@@ -1404,8 +1658,8 @@
       return sum;
     }
 
-    function renderCards(data) {
-      const entries = normalizedEntries;
+    function renderCards() {
+      const entries = viewEntries;
 
       const spent = sum(entries.map(e => e.dinheiro_gasto));
       const earned = sum(entries.map(e => e.dinheiro_ganho));
@@ -1423,14 +1677,173 @@
       document.getElementById('cardFriction').textContent = String(friction);
     }
 
+    function renderComparison() {
+      const current = summarizeEntries(viewEntries);
+      const previousKey = selectedMonthKey === ALL_PERIODS ? getPreviousMonthKey(getLatestMonthKey()) : getPreviousMonthKey(selectedMonthKey);
+      const previousEntries = previousKey ? allEntries.filter(e => e._month_key === previousKey) : [];
+      const previous = summarizeEntries(previousEntries);
+
+      const previousLabel = previousKey ? monthKeyToLabel(previousKey) : 'mês anterior';
+      document.getElementById('comparisonSubtitle').textContent =
+        selectedMonthKey === ALL_PERIODS
+          ? 'No modo histórico, a comparação usa o mês mais recente contra o mês anterior.'
+          : `Comparando ${monthKeyToLabel(selectedMonthKey)} com ${previousLabel}.`;
+
+      setComparison('cmpSpent', 'cmpSpentHint', current.spent, previous.spent, 'money');
+      setComparison('cmpEarned', 'cmpEarnedHint', current.earned, previous.earned, 'money');
+      setComparison('cmpSport', 'cmpSportHint', current.sport, previous.sport, 'minutes');
+      setComparison('cmpEntries', 'cmpEntriesHint', current.entries, previous.entries, 'number');
+    }
+
+    function setComparison(valueId, hintId, current, previous, type) {
+      const valueEl = document.getElementById(valueId);
+      const hintEl = document.getElementById(hintId);
+
+      if (!previous && previous !== 0) {
+        valueEl.textContent = '—';
+        hintEl.textContent = 'sem mês anterior';
+        return;
+      }
+
+      const delta = current - previous;
+      const sign = delta > 0 ? '+' : delta < 0 ? '−' : '';
+      const abs = Math.abs(delta);
+
+      if (type === 'money') {
+        valueEl.textContent = sign + money(abs).replace('R$', 'R$');
+      } else if (type === 'minutes') {
+        valueEl.textContent = sign + minutesHuman(abs);
+      } else {
+        valueEl.textContent = sign + String(abs);
+      }
+
+      if (previous === 0 && current > 0) {
+        hintEl.textContent = 'novo movimento no período';
+      } else if (previous === 0 && current === 0) {
+        hintEl.textContent = 'sem variação';
+      } else {
+        const pct = previous ? Math.round((delta / previous) * 100) : 0;
+        hintEl.textContent = `${pct > 0 ? '+' : ''}${pct}% vs mês anterior`;
+      }
+    }
+
+    function summarizeEntries(entries) {
+      return {
+        spent: sum(entries.map(e => e.dinheiro_gasto)),
+        earned: sum(entries.map(e => e.dinheiro_ganho)),
+        invested: sum(entries.map(e => e.dinheiro_investido)),
+        sport: sum(entries.map(e => e._sport_display_min)),
+        productive: sum(entries.map(e => e._productive_display_min)),
+        friction: sum(entries.map(e => e._friction_score)),
+        entries: entries.length,
+        visuals: entries.filter(isVisualEntry).length
+      };
+    }
+
+    function renderMonthReading() {
+      const box = document.getElementById('monthReadingBox');
+
+      if (!viewEntries.length) {
+        box.innerHTML = '<div class="empty">Não há registros no período selecionado.</div>';
+        return;
+      }
+
+      const label = selectedMonthKey === ALL_PERIODS ? 'histórico completo' : monthKeyToLabel(selectedMonthKey);
+      const current = summarizeEntries(viewEntries);
+      const previousKey = selectedMonthKey === ALL_PERIODS ? getPreviousMonthKey(getLatestMonthKey()) : getPreviousMonthKey(selectedMonthKey);
+      const previousEntries = previousKey ? allEntries.filter(e => e._month_key === previousKey) : [];
+      const previous = summarizeEntries(previousEntries);
+      const categories = groupNormalizedByCategory(viewEntries);
+      const dominant = categories[0];
+      const visuals = viewEntries.filter(isVisualEntry).length;
+      const assets = unique(viewEntries.flatMap(e => e.ativos_detectados || [])).filter(Boolean);
+      const balance = current.earned - current.spent - current.invested;
+
+      const main = buildMonthlyNarrative(label, current, previous, dominant, visuals, assets, balance);
+
+      const point1 = dominant
+        ? `A dimensão mais recorrente foi “${dominant.categoria}”, com ${dominant.ocorrencias} ocorrência(s).`
+        : 'Ainda não há categoria dominante clara.';
+
+      const point2 = assets.length
+        ? `Ativos detectados no período: ${assets.slice(0, 8).join(', ')}.`
+        : visuals
+          ? `Foram usados ${visuals} registro(s) visual(is), mas sem ativos/tickers detectados.`
+          : 'Não houve registro visual relevante no período.';
+
+      const point3 = current.sport > 0
+        ? `O corpo apareceu com ${minutesHuman(current.sport)} de atividade física registrada.`
+        : 'O corpo ainda apareceu pouco nos registros deste período.';
+
+      box.innerHTML = `
+        <div class="reading-main">${escapeHtml(main)}</div>
+        <div class="reading-points">
+          <div class="reading-point"><strong>Centro do mês</strong>${escapeHtml(point1)}</div>
+          <div class="reading-point"><strong>Dados visuais</strong>${escapeHtml(point2)}</div>
+          <div class="reading-point"><strong>Corpo e energia</strong>${escapeHtml(point3)}</div>
+        </div>
+      `;
+    }
+
+    function buildMonthlyNarrative(label, current, previous, dominant, visuals, assets, balance) {
+      const parts = [];
+
+      parts.push(`Em ${label}, o Radar registrou ${current.entries} entrada(s).`);
+
+      if (current.earned > 0 || current.spent > 0 || current.invested > 0) {
+        parts.push(`O período teve ${money(current.earned)} em ganhos, ${money(current.spent)} em gastos e ${money(current.invested)} em investimentos, resultando em saldo de ${money(balance)}.`);
+      }
+
+      if (previous.entries > 0) {
+        const spentDelta = current.spent - previous.spent;
+        const earnedDelta = current.earned - previous.earned;
+
+        if (spentDelta > 0) {
+          parts.push(`Os gastos ficaram acima do mês anterior em ${money(spentDelta)}.`);
+        } else if (spentDelta < 0) {
+          parts.push(`Os gastos ficaram abaixo do mês anterior em ${money(Math.abs(spentDelta))}.`);
+        }
+
+        if (earnedDelta > 0) {
+          parts.push(`Os ganhos cresceram ${money(earnedDelta)} em relação ao mês anterior.`);
+        } else if (earnedDelta < 0) {
+          parts.push(`Os ganhos diminuíram ${money(Math.abs(earnedDelta))} em relação ao mês anterior.`);
+        }
+      }
+
+      if (dominant) {
+        parts.push(`A narrativa dominante do período foi “${dominant.categoria}”.`);
+      }
+
+      if (visuals > 0) {
+        parts.push(`Os registros visuais tiveram papel importante: ${visuals} foto(s)/print(s) entraram na memória semântica.`);
+      }
+
+      if (assets.length) {
+        parts.push(`A camada financeira ganhou profundidade com ativos detectados como ${assets.slice(0, 5).join(', ')}.`);
+      }
+
+      if (current.productive > current.sport && current.productive > 0) {
+        parts.push('O mês parece mais mental/produtivo do que corporal.');
+      } else if (current.sport > current.productive && current.sport > 0) {
+        parts.push('O mês parece mais corporal/ativo do que burocrático ou produtivo.');
+      }
+
+      if (!parts.length) {
+        return 'Ainda não há massa suficiente para uma leitura mensal consistente.';
+      }
+
+      return parts.join(' ');
+    }
+
     function renderStrangeLayer() {
-      const entries = normalizedEntries;
+      const entries = viewEntries;
       const byCategory = groupNormalizedByCategory(entries);
       const dominant = byCategory[0];
 
       document.getElementById('weirdDominantDay').textContent = dominant ? dominant.categoria : '—';
       document.getElementById('weirdDominantDayHint').textContent = dominant
-        ? `Essa dimensão apareceu ${dominant.ocorrencias} vez(es). O app está vendo sua vida por esse eixo agora.`
+        ? `Essa dimensão apareceu ${dominant.ocorrencias} vez(es) no período selecionado.`
         : 'Ainda faltam entradas para detectar um tema dominante.';
 
       const leak = detectLeak(entries);
@@ -1449,7 +1862,7 @@
       const box = document.getElementById('strangeInsightsBox');
 
       if (!insights.length) {
-        box.innerHTML = '<div class="empty">Ainda faltam frases para gerar leituras incomuns.</div>';
+        box.innerHTML = '<div class="empty">Ainda faltam frases neste período para gerar leituras incomuns.</div>';
         return;
       }
 
@@ -1466,7 +1879,7 @@
         const total = sum(smallSpends.map(e => e.dinheiro_gasto));
         return {
           label: money(total),
-          hint: `${smallSpends.length} gastos pequenos detectados. Pode existir um vazamento de rotina, não um grande problema isolado.`
+          hint: `${smallSpends.length} gastos pequenos detectados no período. Pode existir um vazamento de rotina.`
         };
       }
 
@@ -1484,13 +1897,13 @@
       if (projectEntries.length) {
         return {
           label: Math.round(score),
-          hint: `${projectEntries.length} entrada(s) parecem construir ativo: projeto, estudo, instalação, tecnologia, sítio, foto relevante ou algo com retorno futuro.`
+          hint: `${projectEntries.length} entrada(s) parecem construir ativo: projeto, estudo, instalação, tecnologia, sítio, proventos ou algo com retorno futuro.`
         };
       }
 
       return {
         label: 'baixo',
-        hint: 'As frases ainda parecem mais operacionais do que construtoras de ativo.'
+        hint: 'As frases deste período ainda parecem mais operacionais do que construtoras de ativo.'
       };
     }
 
@@ -1500,7 +1913,7 @@
       if (!active.length) {
         return {
           label: 'sem dado',
-          hint: 'Ainda não há atividade física suficiente para cruzar corpo e realidade.'
+          hint: 'Ainda não há atividade física suficiente para cruzar corpo e realidade neste período.'
         };
       }
 
@@ -1510,7 +1923,7 @@
 
       return {
         label,
-        hint: `Nas entradas com movimento físico, o tom médio foi ${avgEmotionActive.toFixed(1)} contra ${avgEmotionAll.toFixed(1)} no conjunto.`
+        hint: `Nas entradas com movimento físico, o tom médio foi ${avgEmotionActive.toFixed(1)} contra ${avgEmotionAll.toFixed(1)} no período.`
       };
     }
 
@@ -1522,14 +1935,21 @@
       const productive = sum(entries.map(e => e._productive_display_min));
       const friction = sum(entries.map(e => e._friction_score));
       const asset = sum(entries.map(e => e._asset_score));
-      const visuals = entries.filter(e => e.visual_auto || e.tipo_input === 'foto' || /foto|visual/.test(e._all_text || ''));
+      const visuals = entries.filter(isVisualEntry);
+      const previousKey = selectedMonthKey === ALL_PERIODS ? getPreviousMonthKey(getLatestMonthKey()) : getPreviousMonthKey(selectedMonthKey);
+      const previousEntries = previousKey ? allEntries.filter(e => e._month_key === previousKey) : [];
+      const previousSummary = summarizeEntries(previousEntries);
 
       if (spent > 0 && earned === 0) {
-        insights.push('Seu Radar está captando uma fase de saída financeira sem entrada registrada. Isso pode ser real, ou pode indicar que você está esquecendo de narrar ganhos.');
+        insights.push('Neste período, o Radar captou saída financeira sem entrada registrada. Isso pode ser real ou pode indicar que ganhos não foram narrados.');
+      }
+
+      if (earned > 0 && spent === 0) {
+        insights.push('O período aparece como financeiramente limpo: houve entrada sem saída registrada. Verifique se isso é realidade ou lacuna de registro.');
       }
 
       if (asset > friction && asset > 4) {
-        insights.push('Há mais sinal de construção do que de atrito: mesmo com gastos, algumas frases e fotos indicam investimento em estrutura, projeto ou capacidade futura.');
+        insights.push('Há mais sinal de construção do que de atrito: mesmo com gastos, algumas frases e fotos indicam investimento em estrutura, projeto, carteira ou capacidade futura.');
       }
 
       if (friction > asset && friction > 6) {
@@ -1537,63 +1957,140 @@
       }
 
       if (sport > 0 && productive === 0) {
-        insights.push('Seu corpo apareceu mais que seu trabalho/projeto nos registros recentes. Isso pode ser descanso ativo, recuperação ou uma fase de reorganização física.');
+        insights.push('Seu corpo apareceu mais que seu trabalho/projeto neste período. Isso pode ser descanso ativo, recuperação ou uma fase de reorganização física.');
       }
 
       if (productive > 0 && sport === 0) {
-        insights.push('Há produção sem corpo. O app recomenda observar se a vida está ficando muito mental e pouco física.');
+        insights.push('Há produção sem corpo neste período. O app recomenda observar se a vida está ficando muito mental e pouco física.');
       }
 
       if (visuals.length >= 2) {
-        insights.push(`O Radar já incorporou ${visuals.length} registros visuais. Sua memória está deixando de ser só textual e começando a capturar evidências do mundo físico.`);
+        insights.push(`O Radar incorporou ${visuals.length} registros visuais no período. Sua memória está capturando evidências do mundo físico, não apenas frases.`);
+      }
+
+      if (previousSummary.entries > 0) {
+        if (earned > previousSummary.earned) {
+          insights.push('Em relação ao mês anterior, os ganhos subiram. Isso torna o período mais relevante para análise financeira comparativa.');
+        }
+
+        if (spent > previousSummary.spent) {
+          insights.push('Os gastos superaram o mês anterior. A diferença pode apontar crescimento de custo, investimento operacional ou acúmulo de eventos pontuais.');
+        }
+
+        if (sport > previousSummary.sport) {
+          insights.push('A atividade física superou o mês anterior, sinalizando melhora da presença corporal no período.');
+        }
       }
 
       const hourGroups = groupByHour(entries);
       const peak = hourGroups.sort((a,b) => b.count - a.count)[0];
 
       if (peak && peak.count >= 2) {
-        insights.push(`Seu horário narrativo mais ativo é por volta das ${peak.hour}h. Talvez esse seja o momento em que você mais percebe a própria vida.`);
+        insights.push(`Seu horário narrativo mais ativo neste período foi por volta das ${peak.hour}h. Talvez esse seja o momento em que você mais percebe a própria vida.`);
       }
 
       const recurring = groupNormalizedByCategory(entries).filter(c => c.ocorrencias >= 2).slice(0, 3);
 
       if (recurring.length) {
-        insights.push(`Padrões recorrentes detectados: ${recurring.map(r => r.categoria).join(', ')}. O app está começando a formar uma impressão de ciclo, não apenas de eventos soltos.`);
+        insights.push(`Padrões recorrentes no período: ${recurring.map(r => r.categoria).join(', ')}. O app está formando uma impressão de ciclo, não apenas de eventos soltos.`);
       }
 
-      const maintenance = entries.filter(e => /manutenção|manutencao|conserto|pagamento|paguei|instalação|instalacao|serviço|servico/.test(e._all_text));
+      const assets = unique(entries.flatMap(e => e.ativos_detectados || [])).filter(Boolean);
 
-      if (maintenance.length >= 2) {
-        insights.push('Várias frases parecem ligadas à infraestrutura da vida: consertar, pagar, instalar, manter. Isso é trabalho invisível que normalmente não aparece em planilhas.');
-      }
-
-      const places = unique(entries.flatMap(e => e.lugares_detectados || [])).filter(Boolean);
-
-      if (places.length >= 2) {
-        insights.push(`Lugares começaram a virar variável de análise: ${places.slice(0,4).join(', ')}. No futuro, o Radar pode cruzar local com gasto, humor e produtividade.`);
+      if (assets.length) {
+        insights.push(`O período contém ativos financeiros detectados: ${assets.slice(0, 8).join(', ')}. Isso permite futuramente cruzar renda passiva por mês.`);
       }
 
       return insights.slice(0, 8);
     }
 
-    function renderInsights(data) {
+    function renderInsights() {
       const box = document.getElementById('insightsBox');
+
+      const monthlyInsights = generateMonthlyInsights();
+      const entryInsights = viewEntries
+        .slice(0, 8)
+        .map(e => e.insight_curto || e.insight_profundo)
+        .filter(Boolean);
+
       const insights = unique([
-        ...(data.insights || []),
-        ...normalizedEntries.slice(0, 8).map(e => e.insight_curto || e.insight_profundo).filter(Boolean)
+        ...monthlyInsights,
+        ...entryInsights
       ]).slice(0, 12);
 
       if (!insights.length) {
-        box.innerHTML = '<div class="empty">Ainda não há insights suficientes.</div>';
+        box.innerHTML = '<div class="empty">Ainda não há insights suficientes no período selecionado.</div>';
         return;
       }
 
       box.innerHTML = insights.map(txt => `<div class="insight">${escapeHtml(txt)}</div>`).join('');
     }
 
-    function renderCharts(data) {
-      const byDate = groupNormalizedByDate(normalizedEntries);
-      const byCategory = groupNormalizedByCategory(normalizedEntries);
+    function generateMonthlyInsights() {
+      const insights = [];
+      const current = summarizeEntries(viewEntries);
+      const previousKey = selectedMonthKey === ALL_PERIODS ? getPreviousMonthKey(getLatestMonthKey()) : getPreviousMonthKey(selectedMonthKey);
+      const previousEntries = previousKey ? allEntries.filter(e => e._month_key === previousKey) : [];
+      const previous = summarizeEntries(previousEntries);
+
+      const balance = current.earned - current.spent - current.invested;
+
+      if (!viewEntries.length) return insights;
+
+      if (selectedMonthKey === ALL_PERIODS) {
+        insights.push('Você está no modo histórico completo. Os números representam todos os registros acumulados no Google Docs.');
+      } else {
+        insights.push(`Leitura de ${monthKeyToLabel(selectedMonthKey)}: ${viewEntries.length} registro(s) considerados neste período.`);
+      }
+
+      if (balance > 0) {
+        insights.push(`O período está com saldo financeiro positivo de ${money(balance)}.`);
+      } else if (balance < 0) {
+        insights.push(`O período está com saldo financeiro negativo de ${money(Math.abs(balance))}.`);
+      }
+
+      if (current.sport > 0) {
+        insights.push(`Foram registrados ${minutesHuman(current.sport)} de esporte/atividade física no período.`);
+      }
+
+      if (current.productive > 0) {
+        insights.push(`Foram registrados ${minutesHuman(current.productive)} de tempo produtivo no período.`);
+      }
+
+      if (current.visuals > 0) {
+        insights.push(`O período contém ${current.visuals} registro(s) visual(is), incluindo fotos, prints ou documentos interpretados pela IA.`);
+      }
+
+      if (previous.entries > 0 && selectedMonthKey !== ALL_PERIODS) {
+        const earnedDelta = current.earned - previous.earned;
+        const spentDelta = current.spent - previous.spent;
+
+        if (earnedDelta > 0) {
+          insights.push(`Os ganhos subiram ${money(earnedDelta)} em relação ao mês anterior.`);
+        }
+
+        if (spentDelta > 0) {
+          insights.push(`Os gastos subiram ${money(spentDelta)} em relação ao mês anterior.`);
+        } else if (spentDelta < 0) {
+          insights.push(`Os gastos caíram ${money(Math.abs(spentDelta))} em relação ao mês anterior.`);
+        }
+      }
+
+      return insights;
+    }
+
+    function renderCharts() {
+      const byDate = selectedMonthKey === ALL_PERIODS
+        ? groupNormalizedByMonth(allEntries)
+        : groupNormalizedByDate(viewEntries);
+
+      const byCategory = groupNormalizedByCategory(viewEntries);
+
+      document.getElementById('moneyChartTitle').textContent =
+        selectedMonthKey === ALL_PERIODS ? 'Dinheiro por mês' : 'Dinheiro por dia';
+
+      document.getElementById('timeChartTitle').textContent =
+        selectedMonthKey === ALL_PERIODS ? 'Tempo por mês' : 'Tempo por dia';
 
       const labels = byDate.map(r => r.data);
       const spent = byDate.map(r => r.dinheiro_gasto);
@@ -1639,7 +2136,7 @@
           resizeDelay: 150,
           plugins: {
             legend: {
-              position: window.innerWidth <= 720 ? 'bottom' : 'bottom',
+              position: 'bottom',
               labels: { boxWidth: 10, font: { size: window.innerWidth <= 720 ? 10 : 12 } }
             }
           }
@@ -1653,7 +2150,7 @@
     }
 
     function renderFrictionScatter() {
-      const points = normalizedEntries.map((e, idx) => ({
+      const points = viewEntries.map((e, idx) => ({
         x: toNumber(e.dinheiro_gasto) - toNumber(e.dinheiro_ganho),
         y: toNumber(e._productive_display_min),
         r: Math.max(5, Math.min(22, toNumber(e._friction_score) + 5)),
@@ -1663,9 +2160,7 @@
       renderChart('frictionScatterChart', {
         type: 'bubble',
         data: {
-          datasets: [
-            { label: 'Entradas', data: points }
-          ]
+          datasets: [{ label: 'Entradas', data: points }]
         },
         options: {
           responsive: true,
@@ -1698,7 +2193,7 @@
     }
 
     function renderLifeRadar() {
-      const dimensions = computeLifeDimensions(normalizedEntries);
+      const dimensions = computeLifeDimensions(viewEntries);
 
       renderChart('lifeRadarChart', {
         type: 'radar',
@@ -1718,9 +2213,7 @@
               ticks: { display: window.innerWidth > 430 }
             }
           },
-          plugins: {
-            legend: { display: false }
-          }
+          plugins: { legend: { display: false } }
         }
       });
     }
@@ -1728,7 +2221,7 @@
     function renderHourChart() {
       const rows = Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0 }));
 
-      normalizedEntries.forEach(e => {
+      viewEntries.forEach(e => {
         if (Number.isFinite(e._hour)) {
           rows[e._hour].count += 1;
         }
@@ -1745,9 +2238,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
             y: {
               beginAtZero: true,
@@ -1767,7 +2258,7 @@
     }
 
     function renderVitalityChart() {
-      const points = normalizedEntries.map((e, idx) => ({
+      const points = viewEntries.map((e, idx) => ({
         x: toNumber(e._sport_display_min),
         y: toNumber(e.dinheiro_ganho) - toNumber(e.dinheiro_gasto) - toNumber(e.dinheiro_investido),
         r: Math.max(5, Math.min(18, Math.abs(e._emotional_score) * 5 + 6)),
@@ -1777,9 +2268,7 @@
       renderChart('vitalityChart', {
         type: 'bubble',
         data: {
-          datasets: [
-            { label: 'Entradas', data: points }
-          ]
+          datasets: [{ label: 'Entradas', data: points }]
         },
         options: {
           responsive: true,
@@ -1828,11 +2317,11 @@
         d.dinheiro += toNumber(e.dinheiro_gasto) > 0 || toNumber(e.dinheiro_ganho) > 0 ? 1 : 0;
         d.corpo += e._sport_display_min > 0 || /caminh|corr|trein|roçando|gramado|bicic/.test(text) ? 1 : 0;
         d.trabalho += e._productive_display_min > 0 || /trabalh|cliente|jur[ií]dic|process|atendimento/.test(text) ? 1 : 0;
-        d.projetos += /projeto|radar|app|piutá|piuta|solar|sítio|sitio|instalação|instalacao/.test(text) ? 1 : 0;
+        d.projetos += /projeto|radar|app|piutá|piuta|solar|sítio|sitio|instalação|instalacao|provento|dividendo/.test(text) ? 1 : 0;
         d.casa += /casa|sítio|sitio|gramado|manutenção|manutencao|conserto|placas solares|piutá|piuta/.test(text) ? 1 : 0;
         d.relações += (e.pessoas_detectadas || []).length || /família|familia|conversei|cliente|ana|amigo/.test(text) ? 1 : 0;
         d.atrito += e._friction_score > 3 ? 1 : 0;
-        d.visual += e.visual_auto || e.tipo_input === 'foto' || /foto|visual/.test(text) ? 1 : 0;
+        d.visual += isVisualEntry(e) ? 1 : 0;
       });
 
       return d;
@@ -1840,7 +2329,6 @@
 
     function renderChart(id, config) {
       const canvas = document.getElementById(id);
-
       if (!canvas) return;
 
       if (charts[id]) {
@@ -1898,13 +2386,13 @@
       const current = select.value;
 
       const cats = unique(
-        normalizedEntries.flatMap(e => Array.isArray(e.categorias) ? e.categorias : [])
+        viewEntries.flatMap(e => Array.isArray(e.categorias) ? e.categorias : [])
       ).sort((a,b) => a.localeCompare(b));
 
       select.innerHTML = '<option value="">Todas as categorias</option>' +
         cats.map(cat => `<option value="${escapeAttr(cat)}">${escapeHtml(cat)}</option>`).join('');
 
-      select.value = current;
+      select.value = cats.includes(current) ? current : '';
     }
 
     function renderEntries() {
@@ -1913,7 +2401,7 @@
       const category = document.getElementById('categoryFilter').value;
       const limit = parseInt(document.getElementById('limitFilter').value, 10) || 10;
 
-      let entries = [...normalizedEntries];
+      let entries = [...viewEntries];
 
       if (search) {
         entries = entries.filter(e => {
@@ -1928,7 +2416,9 @@
             ...(e.categorias || []),
             ...(e.projetos_detectados || []),
             ...(e.pessoas_detectadas || []),
-            ...(e.lugares_detectados || [])
+            ...(e.lugares_detectados || []),
+            ...(e.ativos_detectados || []),
+            ...(e.instituicoes_detectadas || [])
           ].join(' ').toLowerCase();
 
           return hay.includes(search);
@@ -1942,7 +2432,7 @@
       entries = entries.slice(0, limit);
 
       if (!entries.length) {
-        box.innerHTML = '<div class="empty">Nenhuma entrada encontrada.</div>';
+        box.innerHTML = '<div class="empty">Nenhuma entrada encontrada neste período.</div>';
         return;
       }
 
@@ -1951,6 +2441,7 @@
           entry.visual_auto ? 'foto' : '',
           entry.tipo_principal,
           ...(entry.categorias || []).slice(0, 5),
+          ...(entry.ativos_detectados || []).slice(0, 3),
           entry.tom_emocional,
           entry.impacto_geral
         ].filter(Boolean);
@@ -1958,6 +2449,7 @@
         const numbers = [
           entry.dinheiro_gasto ? `Gasto: ${money(entry.dinheiro_gasto)}` : '',
           entry.dinheiro_ganho ? `Ganho: ${money(entry.dinheiro_ganho)}` : '',
+          entry.dinheiro_investido ? `Investido: ${money(entry.dinheiro_investido)}` : '',
           entry._sport_display_min ? `Esporte: ${minutesHuman(entry._sport_display_min)}` : '',
           entry._productive_display_min ? `Produtivo: ${minutesHuman(entry._productive_display_min)}` : '',
           entry._asset_score >= 4 ? `Ativo: ${entry._asset_score}` : '',
@@ -2047,7 +2539,7 @@
     }
 
     function copyEntry(id) {
-      const entry = normalizedEntries.find(e => e.id === id);
+      const entry = allEntries.find(e => e.id === id);
       if (!entry) return;
 
       const text = [
@@ -2108,6 +2600,37 @@
         .sort((a, b) => brDateToSortable(a.data).localeCompare(brDateToSortable(b.data)));
     }
 
+    function groupNormalizedByMonth(entries) {
+      const map = new Map();
+
+      entries.forEach(e => {
+        const key = e._month_key || 'sem-mes';
+
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            data: monthKeyToShortLabel(key),
+            dinheiro_gasto: 0,
+            dinheiro_ganho: 0,
+            dinheiro_investido: 0,
+            esporte_minutos: 0,
+            produtivo_minutos: 0,
+            entradas: 0
+          });
+        }
+
+        const row = map.get(key);
+        row.dinheiro_gasto += toNumber(e.dinheiro_gasto);
+        row.dinheiro_ganho += toNumber(e.dinheiro_ganho);
+        row.dinheiro_investido += toNumber(e.dinheiro_investido);
+        row.esporte_minutos += toNumber(e._sport_display_min);
+        row.produtivo_minutos += toNumber(e._productive_display_min);
+        row.entradas += 1;
+      });
+
+      return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key));
+    }
+
     function groupNormalizedByCategory(entries) {
       const map = new Map();
 
@@ -2143,6 +2666,101 @@
       return Array.from(map.values());
     }
 
+    function buildAvailableMonths(entries) {
+      const map = new Map();
+
+      entries.forEach(e => {
+        const key = e._month_key;
+        if (!key) return;
+
+        if (!map.has(key)) {
+          map.set(key, { key, label: monthKeyToLabel(key), count: 0 });
+        }
+
+        map.get(key).count += 1;
+      });
+
+      return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+    }
+
+    function getEntryMonthKey(entry) {
+      if (entry.data_iso) {
+        const d = new Date(entry.data_iso);
+        if (!isNaN(d.getTime())) {
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+      }
+
+      if (entry.data_br) {
+        const parts = String(entry.data_br).split('/');
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}`;
+        }
+      }
+
+      return '';
+    }
+
+    function getCurrentMonthKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function getLatestMonthKey() {
+      return availableMonths.length ? availableMonths[0].key : '';
+    }
+
+    function getPreviousMonthKey(monthKey) {
+      if (!monthKey || monthKey === ALL_PERIODS) return '';
+
+      const parts = monthKey.split('-');
+      if (parts.length !== 2) return '';
+
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+
+      if (!year || !month) return '';
+
+      const d = new Date(year, month - 2, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+      if (availableMonths.some(m => m.key === key)) {
+        return key;
+      }
+
+      const older = availableMonths
+        .map(m => m.key)
+        .filter(k => k < monthKey)
+        .sort()
+        .pop();
+
+      return older || '';
+    }
+
+    function monthKeyToLabel(key) {
+      if (!key || key === ALL_PERIODS) return 'Todos os registros';
+
+      const [year, month] = key.split('-').map(Number);
+      const d = new Date(year, month - 1, 1);
+
+      return d.toLocaleDateString('pt-BR', {
+        month: 'long',
+        year: 'numeric'
+      }).replace(/^./, c => c.toUpperCase());
+    }
+
+    function monthKeyToShortLabel(key) {
+      if (!key || key === ALL_PERIODS) return 'Todos';
+
+      const [year, month] = key.split('-').map(Number);
+      const d = new Date(year, month - 1, 1);
+
+      return d.toLocaleDateString('pt-BR', {
+        month: 'short',
+        year: '2-digit'
+      });
+    }
+
     function extractHour(horaBr, iso) {
       if (horaBr && String(horaBr).includes(':')) {
         const h = parseInt(String(horaBr).split(':')[0], 10);
@@ -2157,6 +2775,11 @@
       }
     }
 
+    function isVisualEntry(e) {
+      const text = e._all_text || '';
+      return e.visual_auto || e.tipo_input === 'foto' || /foto|visual|print/.test(text);
+    }
+
     function money(value) {
       return toNumber(value).toLocaleString('pt-BR', {
         style: 'currency',
@@ -2166,7 +2789,6 @@
 
     function minutesHuman(value) {
       const min = Math.round(toNumber(value));
-
       if (!min) return '0min';
 
       const h = Math.floor(min / 60);
@@ -2241,8 +2863,8 @@
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        if (rawData && normalizedEntries.length) {
-          renderCharts(rawData);
+        if (rawData && allEntries.length) {
+          renderCharts();
         }
       }, 300);
     });
