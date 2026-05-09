@@ -1,6 +1,6 @@
 /**
- * Radar de Vida v7.3 — server.js
- * Render + Express + Google Docs Apps Script + Radar Visual
+ * Radar de Vida v7.4 — server.js
+ * Render + Express + Google Docs Apps Script + Radar Visual Automático
  *
  * Mantém:
  * - Painel visual em /
@@ -10,24 +10,20 @@
  * - /api/manual-entry
  * - /webhook/whatsapp
  *
- * Novo:
- * - Detecta imagens recebidas pelo WhatsApp
- * - Tenta baixar a mídia de formatos comuns
- * - Analisa a imagem com OpenAI Vision
- * - Salva análise como pendência no Apps Script/Google Docs
- * - Permite aprovar/descartar via texto no WhatsApp:
- *   "aprovar", "aprovar foto", "1", "descartar", "2"
+ * Novo em v7.4:
+ * - Foto no WhatsApp é analisada automaticamente.
+ * - A análise visual é salva automaticamente no Radar.
+ * - Não exige mais aprovação manual via WhatsApp.
+ * - Ainda preserva internamente a lógica de pendência + aprovação automática,
+ *   usando o Código.gs unificado v7.3 já instalado.
  *
  * Variáveis no Render:
  * GOOGLE_DOCS_API_URL=https://script.google.com/macros/s/SEU_WEBAPP/exec
  * OPENAI_API_KEY=sua_chave_openai
  * OPENAI_VISION_MODEL=gpt-4.1-mini
+ * WHATSAPP_CLOUD_TOKEN=token da Meta/WhatsApp Cloud API
  * SEND_WHATSAPP_CONFIRMATION=true ou false
  * LOG_RAW_WHATSAPP_EMPTY=true
- *
- * Observação:
- * - Para Twilio, se SEND_WHATSAPP_CONFIRMATION=true, o retorno XML aparece no próprio WhatsApp.
- * - Para WhatsApp Cloud API, envio ativo de mensagem exige token/phone_number_id e pode ser adicionado depois.
  */
 
 import express from 'express';
@@ -51,6 +47,11 @@ const PORT = process.env.PORT || 3000;
 const GOOGLE_DOCS_API_URL = process.env.GOOGLE_DOCS_API_URL || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+
+const WHATSAPP_CLOUD_TOKEN =
+  process.env.WHATSAPP_CLOUD_TOKEN ||
+  process.env.WHATSAPP_TOKEN ||
+  '';
 
 const SEND_WHATSAPP_CONFIRMATION =
   String(process.env.SEND_WHATSAPP_CONFIRMATION || 'false').toLowerCase() === 'true';
@@ -335,13 +336,10 @@ function extractWhatsappMessage(req) {
   };
 }
 
-/**
- * Detecta imagem/mídia em formatos comuns.
- */
 function extractMediaFromKnownPaths(body) {
-  // Twilio.
   const twilioMediaUrl = cleanText(body.MediaUrl0);
   const twilioMediaType = cleanText(body.MediaContentType0);
+
   if (twilioMediaUrl) {
     return {
       media: {
@@ -354,9 +352,9 @@ function extractMediaFromKnownPaths(body) {
     };
   }
 
-  // WhatsApp Cloud API.
   const cloudImageId = cleanText(getByPath(body, 'entry[0].changes[0].value.messages[0].image.id'));
   const cloudImageMime = cleanText(getByPath(body, 'entry[0].changes[0].value.messages[0].image.mime_type'));
+
   if (cloudImageId) {
     return {
       media: {
@@ -370,7 +368,6 @@ function extractMediaFromKnownPaths(body) {
     };
   }
 
-  // URLs diretas.
   const directPaths = [
     'mediaUrl',
     'media.url',
@@ -402,7 +399,6 @@ function extractMediaFromKnownPaths(body) {
     }
   }
 
-  // Base64 direto.
   const base64Paths = [
     'image.base64',
     'imageBase64',
@@ -470,6 +466,7 @@ async function callAppsScript(payload) {
   const responseText = await response.text();
 
   let parsed;
+
   try {
     parsed = JSON.parse(responseText);
   } catch (err) {
@@ -526,8 +523,8 @@ async function approveLatestPendingInAppsScript({ senderKey, from, profileName, 
     senderKey,
     from,
     profileName,
-    source: 'whatsapp_visual_approval',
-    origem: 'whatsapp_visual_approval',
+    source: 'whatsapp_visual_auto_approval',
+    origem: 'whatsapp_visual_auto_approval',
     receivedAt: nowIso(),
     raw
   });
@@ -546,9 +543,6 @@ async function rejectLatestPendingInAppsScript({ senderKey, from, profileName, r
   });
 }
 
-/**
- * Baixa ou prepara imagem para OpenAI.
- */
 async function getImageDataUrl(media) {
   if (!media) throw new Error('Mídia inexistente.');
 
@@ -557,53 +551,59 @@ async function getImageDataUrl(media) {
     const clean = String(media.base64).includes(',')
       ? String(media.base64).split(',').pop()
       : String(media.base64);
+
     return `data:${mime};base64,${clean}`;
   }
 
   if (media.provider === 'whatsapp_cloud' && media.id) {
-    const token = process.env.WHATSAPP_CLOUD_TOKEN || process.env.WHATSAPP_TOKEN || '';
-    if (!token) {
+    if (!WHATSAPP_CLOUD_TOKEN) {
       throw new Error('Imagem da WhatsApp Cloud API exige WHATSAPP_CLOUD_TOKEN no Render.');
     }
 
-    const metaRes = await fetch(`https://graph.facebook.com/v19.0/${media.id}`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const metaRes = await fetch(`https://graph.facebook.com/v19.0/${media.id}?fields=url,mime_type,file_size,sha256`, {
+      headers: { Authorization: `Bearer ${WHATSAPP_CLOUD_TOKEN}` }
     });
 
     if (!metaRes.ok) {
-      throw new Error(`Falha ao buscar metadados da mídia WhatsApp Cloud: ${metaRes.status}`);
+      const errText = await metaRes.text();
+      throw new Error(`Falha ao buscar metadados da mídia WhatsApp Cloud: ${metaRes.status} — ${errText.slice(0, 500)}`);
     }
 
     const meta = await metaRes.json();
     const url = meta.url;
-    if (!url) throw new Error('WhatsApp Cloud não retornou URL de mídia.');
+
+    if (!url) {
+      throw new Error('WhatsApp Cloud não retornou URL de mídia.');
+    }
 
     const imgRes = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${WHATSAPP_CLOUD_TOKEN}` }
     });
 
     if (!imgRes.ok) {
-      throw new Error(`Falha ao baixar mídia WhatsApp Cloud: ${imgRes.status}`);
+      const errText = await imgRes.text();
+      throw new Error(`Falha ao baixar mídia WhatsApp Cloud: ${imgRes.status} — ${errText.slice(0, 500)}`);
     }
 
     const arrayBuffer = await imgRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const mime = meta.mime_type || media.mimeType || imgRes.headers.get('content-type') || 'image/jpeg';
+
     return `data:${mime};base64,${buffer.toString('base64')}`;
   }
 
   if (media.url) {
     const headers = {};
 
-    // Twilio MediaUrl normalmente exige autenticação básica se conta não permite mídia pública.
-    // Se necessário, configurar TWILIO_ACCOUNT_SID e TWILIO_AUTH_TOKEN.
     const twilioSid = process.env.TWILIO_ACCOUNT_SID || '';
     const twilioToken = process.env.TWILIO_AUTH_TOKEN || '';
+
     if (/twilio/i.test(media.url) && twilioSid && twilioToken) {
       headers.Authorization = 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
     }
 
     const res = await fetch(media.url, { headers });
+
     if (!res.ok) {
       throw new Error(`Falha ao baixar imagem por URL: HTTP ${res.status}`);
     }
@@ -611,6 +611,7 @@ async function getImageDataUrl(media) {
     const contentType = media.mimeType || res.headers.get('content-type') || 'image/jpeg';
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
     return `data:${contentType};base64,${buffer.toString('base64')}`;
   }
 
@@ -629,6 +630,7 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
     'Transforme a imagem em JSON útil para diário semântico, tendências e insights.',
     'Se houver recibo, tela, objeto, local, ferramenta, comida, natureza, trabalho, manutenção ou projeto, descreva com prudência.',
     'Não invente valores de dinheiro ou tempo se não estiverem claramente visíveis.',
+    'A imagem será salva automaticamente no diário semântico do usuário, então seja prudente, útil e objetivo.',
     'Responda SOMENTE com JSON válido, sem markdown.',
     '',
     'Campos obrigatórios:',
@@ -691,6 +693,7 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
 
   const parsed = JSON.parse(body);
   const outputText = extractOpenAIText(parsed);
+
   if (!outputText) {
     throw new Error('OpenAI Vision não retornou output_text.');
   }
@@ -705,6 +708,7 @@ function extractOpenAIText(response) {
 
   if (response.output && response.output.length) {
     const parts = [];
+
     response.output.forEach(item => {
       if (item.content && item.content.length) {
         item.content.forEach(c => {
@@ -713,6 +717,7 @@ function extractOpenAIText(response) {
         });
       }
     });
+
     if (parts.length) return parts.join('\n');
   }
 
@@ -737,7 +742,10 @@ function parsePossiblyWrappedJson(text) {
   } catch {}
 
   const firstBrace = withoutFence.indexOf('{');
-  if (firstBrace === -1) throw new Error('Nenhum JSON encontrado na resposta visual.');
+
+  if (firstBrace === -1) {
+    throw new Error('Nenhum JSON encontrado na resposta visual.');
+  }
 
   let depth = 0;
   let inString = false;
@@ -774,23 +782,47 @@ function parsePossiblyWrappedJson(text) {
   throw new Error('JSON visual incompleto.');
 }
 
-function buildVisualApprovalText(analysis, pendingId) {
-  const insight = analysis.insight_curto || analysis.descricao_visual || 'A foto foi analisada.';
-  const cats = Array.isArray(analysis.categorias) ? analysis.categorias.slice(0, 4).join(', ') : '';
-  const suggested = analysis.frase_sugerida_para_salvar || analysis.hipotese_de_contexto || '';
+function enhanceVisualAnalysisForAutoSave(analysis) {
+  const a = analysis || {};
+
+  const categorias = Array.isArray(a.categorias) ? [...a.categorias] : [];
+  categorias.push('foto');
+  categorias.push('registro visual');
+  categorias.push('foto_analisada_automaticamente');
+
+  const dimensoes = Array.isArray(a.dimensoes_afetadas) ? [...a.dimensoes_afetadas] : [];
+  dimensoes.push('memoria_visual');
+
+  return {
+    ...a,
+    categorias: Array.from(new Set(categorias.filter(Boolean))),
+    dimensoes_afetadas: Array.from(new Set(dimensoes.filter(Boolean))),
+    visual_auto: true,
+    precisa_revisao: true,
+    origem_visual: 'whatsapp_visual_auto',
+    insight_curto:
+      a.insight_curto ||
+      'Registro visual salvo automaticamente a partir de foto enviada pelo WhatsApp.',
+    frase_sugerida_para_salvar:
+      a.frase_sugerida_para_salvar ||
+      a.hipotese_de_contexto ||
+      a.descricao_visual ||
+      'Enviei uma foto ao Radar de Vida para registro visual automático.'
+  };
+}
+
+function buildAutoSaveConfirmationText(analysis, entryId) {
+  const insight = analysis.insight_curto || analysis.descricao_visual || 'Foto analisada e salva.';
+  const cats = Array.isArray(analysis.categorias) ? analysis.categorias.slice(0, 5).join(', ') : '';
 
   return [
-    '📷 Radar Visual analisou sua foto.',
+    '📷 Radar Visual salvou sua foto automaticamente.',
     '',
     `Insight: ${insight}`,
     cats ? `Categorias: ${cats}` : '',
-    suggested ? `Registro sugerido: ${suggested}` : '',
+    entryId ? `ID: ${entryId}` : '',
     '',
-    'Responder:',
-    '1 ou aprovar — salvar no Radar',
-    '2 ou descartar — não salvar',
-    '',
-    `ID: ${pendingId}`
+    'Se não gostar da leitura, você pode excluir depois pelo painel.'
   ].filter(Boolean).join('\n');
 }
 
@@ -821,11 +853,13 @@ function buildWhatsappXmlResponse(result) {
 app.get('/', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
 
-  if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
 
   return res.json({
     ok: true,
-    app: 'Radar de Vida v7.3 — Radar Visual',
+    app: 'Radar de Vida v7.4 — Radar Visual Automático',
     status: 'online',
     now: nowIso(),
     message: 'Backend online, mas public/index.html não foi encontrado.',
@@ -839,6 +873,7 @@ app.get('/', (req, res) => {
     config: {
       hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
       hasOpenAiApiKey: Boolean(OPENAI_API_KEY),
+      hasWhatsappCloudToken: Boolean(WHATSAPP_CLOUD_TOKEN),
       openaiVisionModel: OPENAI_VISION_MODEL,
       sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
       logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY
@@ -849,11 +884,12 @@ app.get('/', (req, res) => {
 app.get('/health', async (req, res) => {
   const base = {
     ok: true,
-    app: 'Radar de Vida v7.3 — Radar Visual',
+    app: 'Radar de Vida v7.4 — Radar Visual Automático',
     status: 'online',
     now: nowIso(),
     hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
     hasOpenAiApiKey: Boolean(OPENAI_API_KEY),
+    hasWhatsappCloudToken: Boolean(WHATSAPP_CLOUD_TOKEN),
     openaiVisionModel: OPENAI_VISION_MODEL,
     sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
     logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY,
@@ -863,7 +899,10 @@ app.get('/health', async (req, res) => {
   if (!GOOGLE_DOCS_API_URL) {
     return res.status(200).json({
       ...base,
-      appsScript: { ok: false, error: 'GOOGLE_DOCS_API_URL ainda não configurada.' }
+      appsScript: {
+        ok: false,
+        error: 'GOOGLE_DOCS_API_URL ainda não configurada.'
+      }
     });
   }
 
@@ -873,20 +912,36 @@ app.get('/health', async (req, res) => {
     const text = await response.text();
 
     let parsed;
-    try { parsed = JSON.parse(text); }
-    catch { parsed = { ok: false, error: 'Resposta health do Apps Script não era JSON.', rawResponse: text }; }
 
-    return res.status(200).json({ ...base, appsScript: parsed });
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = {
+        ok: false,
+        error: 'Resposta health do Apps Script não era JSON.',
+        rawResponse: text
+      };
+    }
+
+    return res.status(200).json({
+      ...base,
+      appsScript: parsed
+    });
   } catch (err) {
     return res.status(200).json({
       ...base,
-      appsScript: { ok: false, error: err.message }
+      appsScript: {
+        ok: false,
+        error: err.message
+      }
     });
   }
 });
 
 app.get('/test', async (req, res) => {
-  const text = cleanText(req.query.text) || 'Gastei 25 reais com café, caminhei 20 minutos e trabalhei 1 hora no Radar de Vida.';
+  const text =
+    cleanText(req.query.text) ||
+    'Gastei 25 reais com café, caminhei 20 minutos e trabalhei 1 hora no Radar de Vida.';
 
   try {
     const result = await sendTextToAppsScript({
@@ -894,19 +949,38 @@ app.get('/test', async (req, res) => {
       from: 'render_test',
       profileName: 'Teste Render',
       source: 'render_test_get',
-      raw: { query: req.query, ip: getClientIp(req) }
+      raw: {
+        query: req.query,
+        ip: getClientIp(req)
+      }
     });
 
-    return res.status(result.ok ? 200 : 500).json({ ok: Boolean(result.ok), sentText: text, result });
+    return res.status(result.ok ? 200 : 500).json({
+      ok: Boolean(result.ok),
+      sentText: text,
+      result
+    });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message, sentText: text });
+    return res.status(500).json({
+      ok: false,
+      error: err.message,
+      sentText: text
+    });
   }
 });
 
 app.post('/api/manual-entry', async (req, res) => {
-  const text = cleanText(req.body.text) || cleanText(req.body.message) || cleanText(req.body.frase);
+  const text =
+    cleanText(req.body.text) ||
+    cleanText(req.body.message) ||
+    cleanText(req.body.frase);
 
-  if (!text) return res.status(400).json({ ok: false, error: 'Campo text/message/frase vazio.' });
+  if (!text) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Campo text/message/frase vazio.'
+    });
+  }
 
   try {
     const result = await sendTextToAppsScript({
@@ -914,12 +988,21 @@ app.post('/api/manual-entry', async (req, res) => {
       from: cleanText(req.body.from) || 'manual_api',
       profileName: cleanText(req.body.profileName) || 'Manual API',
       source: 'render_manual_api',
-      raw: { body: req.body, ip: getClientIp(req) }
+      raw: {
+        body: req.body,
+        ip: getClientIp(req)
+      }
     });
 
-    return res.status(result.ok ? 200 : 500).json({ ok: Boolean(result.ok), result });
+    return res.status(result.ok ? 200 : 500).json({
+      ok: Boolean(result.ok),
+      result
+    });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
   }
 });
 
@@ -933,29 +1016,56 @@ app.post('/webhook/whatsapp', async (req, res) => {
     profileName: incoming.profileName,
     text: incoming.text,
     hasMedia: Boolean(incoming.media),
-    media: incoming.media ? { type: incoming.media.type, id: incoming.media.id, url: incoming.media.url ? '[url]' : '', mimeType: incoming.media.mimeType } : null,
+    media: incoming.media
+      ? {
+          type: incoming.media.type,
+          id: incoming.media.id,
+          url: incoming.media.url ? '[url]' : '',
+          mimeType: incoming.media.mimeType,
+          provider: incoming.media.provider || ''
+        }
+      : null,
     source: incoming.source
   });
 
-  // 1) Resposta de aprovação/descartar.
+  /**
+   * Mantemos aprovação/rejeição para compatibilidade com pendências antigas.
+   * Mas o fluxo novo de foto salva automaticamente.
+   */
   if (incoming.text && isApprovalText(incoming.text)) {
     try {
       const result = await approveLatestPendingInAppsScript({
         senderKey,
         from: incoming.from,
         profileName: incoming.profileName,
-        raw: { body: incoming.raw, source: incoming.source }
+        raw: {
+          body: incoming.raw,
+          source: incoming.source
+        }
       });
 
       const msg = result.ok
-        ? '✅ Foto aprovada e salva no Radar de Vida.'
-        : 'Não consegui aprovar a foto. Talvez não exista pendência para este número.';
+        ? '✅ Foto pendente aprovada e salva no Radar de Vida.'
+        : 'Não encontrei foto pendente para aprovar. As novas fotos agora são salvas automaticamente.';
 
-      if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
-      return res.status(200).json({ ok: Boolean(result.ok), action: 'approve_pending_media', result });
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
+      }
+
+      return res.status(200).json({
+        ok: Boolean(result.ok),
+        action: 'approve_pending_media',
+        result
+      });
     } catch (err) {
-      if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlMessage('Erro ao aprovar foto: ' + err.message));
-      return res.status(500).json({ ok: false, error: err.message });
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage('Erro ao aprovar foto: ' + err.message));
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: err.message
+      });
     }
   }
 
@@ -965,33 +1075,55 @@ app.post('/webhook/whatsapp', async (req, res) => {
         senderKey,
         from: incoming.from,
         profileName: incoming.profileName,
-        raw: { body: incoming.raw, source: incoming.source }
+        raw: {
+          body: incoming.raw,
+          source: incoming.source
+        }
       });
 
       const msg = result.ok
-        ? '🗑️ Foto descartada. Nada foi salvo no Radar.'
-        : 'Não consegui descartar a foto. Talvez não exista pendência para este número.';
+        ? '🗑️ Foto pendente descartada.'
+        : 'Não encontrei foto pendente para descartar. As novas fotos agora são salvas automaticamente; exclua pelo painel se necessário.';
 
-      if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
-      return res.status(200).json({ ok: Boolean(result.ok), action: 'reject_pending_media', result });
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
+      }
+
+      return res.status(200).json({
+        ok: Boolean(result.ok),
+        action: 'reject_pending_media',
+        result
+      });
     } catch (err) {
-      if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlMessage('Erro ao descartar foto: ' + err.message));
-      return res.status(500).json({ ok: false, error: err.message });
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage('Erro ao descartar foto: ' + err.message));
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: err.message
+      });
     }
   }
 
-  // 2) Nova imagem.
+  /**
+   * Fluxo novo v7.4:
+   * Foto analisada e salva automaticamente.
+   */
   if (incoming.media) {
     const pendingId = 'rdv_media_' + Date.now() + '_' + Math.random().toString(16).slice(2, 10);
 
     try {
       const imageDataUrl = await getImageDataUrl(incoming.media);
-      const analysis = await analyzeImageWithOpenAI({
+
+      const rawAnalysis = await analyzeImageWithOpenAI({
         imageDataUrl,
         caption: incoming.text,
         from: incoming.from,
         profileName: incoming.profileName
       });
+
+      const analysis = enhanceVisualAnalysisForAutoSave(rawAnalysis);
 
       const pendingResult = await createPendingMediaInAppsScript({
         pendingId,
@@ -1003,54 +1135,102 @@ app.post('/webhook/whatsapp', async (req, res) => {
           type: incoming.media.type || 'image',
           mimeType: incoming.media.mimeType || '',
           sourcePath: incoming.source.mediaPath || '',
-          provider: incoming.media.provider || ''
+          provider: incoming.media.provider || '',
+          autoSave: true
         },
         analysis,
-        raw: { body: incoming.raw, source: incoming.source }
+        raw: {
+          body: incoming.raw,
+          source: incoming.source,
+          autoSave: true
+        }
       });
 
-      const approvalText = buildVisualApprovalText(analysis, pendingId);
+      if (!pendingResult.ok) {
+        console.error('[RADAR_VISUAL_AUTO] Pendência não criada:', pendingResult);
 
-      console.log('[RADAR_VISUAL] Pendência criada:', {
-        ok: pendingResult.ok,
-        pendingId,
+        const msg = 'Recebi e analisei a foto, mas não consegui criar o registro no Google Docs.';
+
+        if (SEND_WHATSAPP_CONFIRMATION) {
+          return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
+        }
+
+        return res.status(200).json({
+          ok: false,
+          action: 'visual_auto_pending_failed',
+          pendingId,
+          result: pendingResult
+        });
+      }
+
+      const approveResult = await approveLatestPendingInAppsScript({
         senderKey,
-        error: pendingResult.error || null
+        from: incoming.from,
+        profileName: incoming.profileName,
+        raw: {
+          body: incoming.raw,
+          source: incoming.source,
+          autoApproved: true,
+          pendingId
+        }
       });
+
+      console.log('[RADAR_VISUAL_AUTO] Foto analisada e salva automaticamente:', {
+        pendingOk: pendingResult.ok,
+        approveOk: approveResult.ok,
+        pendingId,
+        entryId: approveResult.entryId || null,
+        senderKey,
+        error: approveResult.error || null
+      });
+
+      const confirmationText = buildAutoSaveConfirmationText(
+        analysis,
+        approveResult.entryId || ''
+      );
 
       if (SEND_WHATSAPP_CONFIRMATION) {
-        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(approvalText));
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(confirmationText));
       }
 
       return res.status(200).json({
-        ok: Boolean(pendingResult.ok),
-        action: 'visual_pending_created',
+        ok: Boolean(approveResult.ok),
+        action: 'visual_auto_saved',
         pendingId,
-        approvalText,
-        result: pendingResult
+        entryId: approveResult.entryId || '',
+        analysis,
+        pendingResult,
+        approveResult
       });
+
     } catch (err) {
-      console.error('[RADAR_VISUAL] Erro ao analisar imagem:', err);
+      console.error('[RADAR_VISUAL_AUTO] Erro ao analisar/salvar imagem:', err);
 
       const msg = 'Recebi a foto, mas ainda não consegui analisá-la. Erro: ' + err.message;
 
-      if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
+      }
 
       return res.status(200).json({
         ok: false,
-        action: 'visual_analysis_failed',
+        action: 'visual_auto_failed',
         pendingId,
         error: err.message,
-        hint: 'Verifique OPENAI_API_KEY, URLs de mídia, tokens do provedor ou autenticação da mídia.'
+        hint: 'Verifique OPENAI_API_KEY, WHATSAPP_CLOUD_TOKEN, URL da mídia ou permissões da Meta.'
       });
     }
   }
 
-  // 3) Texto comum.
+  /**
+   * Texto comum.
+   */
   if (!incoming.text) {
     console.warn('[WHATSAPP] Mensagem vazia ou formato não reconhecido.');
 
-    if (LOG_RAW_WHATSAPP_EMPTY) console.warn('[WHATSAPP_RAW_EMPTY]', safeJson(req.body));
+    if (LOG_RAW_WHATSAPP_EMPTY) {
+      console.warn('[WHATSAPP_RAW_EMPTY]', safeJson(req.body));
+    }
 
     const result = {
       ok: false,
@@ -1059,7 +1239,10 @@ app.post('/webhook/whatsapp', async (req, res) => {
       detectedSource: incoming.source
     };
 
-    if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlResponse(result));
+    if (SEND_WHATSAPP_CONFIRMATION) {
+      return res.status(200).type('text/xml').send(buildWhatsappXmlResponse(result));
+    }
+
     return res.status(200).json(result);
   }
 
@@ -1085,7 +1268,9 @@ app.post('/webhook/whatsapp', async (req, res) => {
       error: result.error || null
     });
 
-    if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlResponse(result));
+    if (SEND_WHATSAPP_CONFIRMATION) {
+      return res.status(200).type('text/xml').send(buildWhatsappXmlResponse(result));
+    }
 
     return res.status(200).json({
       ok: Boolean(result.ok),
@@ -1100,21 +1285,32 @@ app.post('/webhook/whatsapp', async (req, res) => {
   } catch (err) {
     console.error('[ERRO] Falha no webhook WhatsApp:', err);
 
-    const result = { ok: false, error: err.message };
+    const result = {
+      ok: false,
+      error: err.message
+    };
 
-    if (SEND_WHATSAPP_CONFIRMATION) return res.status(200).type('text/xml').send(buildWhatsappXmlResponse(result));
+    if (SEND_WHATSAPP_CONFIRMATION) {
+      return res.status(200).type('text/xml').send(buildWhatsappXmlResponse(result));
+    }
+
     return res.status(500).json(result);
   }
 });
 
 app.use((req, res) => {
-  res.status(404).json({ ok: false, error: 'Endpoint não encontrado.', path: req.path });
+  res.status(404).json({
+    ok: false,
+    error: 'Endpoint não encontrado.',
+    path: req.path
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`Radar de Vida v7.3 — Radar Visual online na porta ${PORT}`);
+  console.log(`Radar de Vida v7.4 — Radar Visual Automático online na porta ${PORT}`);
   console.log('GOOGLE_DOCS_API_URL configurada:', Boolean(GOOGLE_DOCS_API_URL));
   console.log('OPENAI_API_KEY configurada no Render:', Boolean(OPENAI_API_KEY));
+  console.log('WHATSAPP_CLOUD_TOKEN configurado no Render:', Boolean(WHATSAPP_CLOUD_TOKEN));
   console.log('OPENAI_VISION_MODEL:', OPENAI_VISION_MODEL);
   console.log('SEND_WHATSAPP_CONFIRMATION:', SEND_WHATSAPP_CONFIRMATION);
   console.log('LOG_RAW_WHATSAPP_EMPTY:', LOG_RAW_WHATSAPP_EMPTY);
