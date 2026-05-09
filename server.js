@@ -1,33 +1,16 @@
 /**
  * Radar de Vida v7 — server.js
+ * Versão ES Module compatível com package.json contendo "type": "module"
+ *
  * Backend Render / Node.js / Express
  *
  * Função:
  * - Receber mensagens do WhatsApp no endpoint /webhook/whatsapp
  * - Encaminhar a frase livre para o Apps Script v7
  * - O Apps Script salva no Google Docs, chama a OpenAI e devolve JSON semântico
- * - Opcionalmente responder uma confirmação simples para o WhatsApp
- *
- * Variáveis de ambiente no Render:
- *
- * GOOGLE_DOCS_API_URL=
- *   URL do Web App do Apps Script v7 terminada em /exec
- *
- * SEND_WHATSAPP_CONFIRMATION=false
- *   Use false enquanto estiver testando, para evitar erro de autenticação/retorno do WhatsApp.
- *
- * PORT=
- *   O Render define automaticamente. Não precisa configurar.
- *
- * Endpoints:
- * - GET  /
- * - GET  /health
- * - GET  /test
- * - POST /webhook/whatsapp
- * - POST /api/manual-entry
  */
 
-const express = require('express');
+import express from 'express';
 
 const app = express();
 
@@ -37,6 +20,7 @@ app.use(express.json({ limit: '2mb' }));
 const PORT = process.env.PORT || 3000;
 
 const GOOGLE_DOCS_API_URL = process.env.GOOGLE_DOCS_API_URL || '';
+
 const SEND_WHATSAPP_CONFIRMATION =
   String(process.env.SEND_WHATSAPP_CONFIRMATION || 'false').toLowerCase() === 'true';
 
@@ -49,31 +33,11 @@ function cleanText(value) {
 }
 
 function getClientIp(req) {
-  return (
-    req.headers['x-forwarded-for'] ||
-    req.socket?.remoteAddress ||
-    ''
-  );
+  return req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
 }
 
 function extractWhatsappMessage(req) {
   const body = req.body || {};
-
-  /**
-   * Formatos comuns:
-   * Twilio:
-   * - Body
-   * - From
-   * - To
-   * - ProfileName
-   *
-   * Outros webhooks:
-   * - text
-   * - message
-   * - body
-   * - from
-   * - sender
-   */
 
   const text =
     cleanText(body.Body) ||
@@ -143,6 +107,7 @@ async function sendToAppsScript({ text, from, profileName, source, raw }) {
   const responseText = await response.text();
 
   let parsed;
+
   try {
     parsed = JSON.parse(responseText);
   } catch (err) {
@@ -164,11 +129,16 @@ async function sendToAppsScript({ text, from, profileName, source, raw }) {
   return parsed;
 }
 
+function escapeXml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 function buildWhatsappXmlResponse(result) {
-  /**
-   * Compatível com Twilio Messaging Response.
-   * Só será usado se SEND_WHATSAPP_CONFIRMATION=true.
-   */
   const ok = result && result.ok;
   const id = result && result.id ? result.id : '';
 
@@ -179,15 +149,6 @@ function buildWhatsappXmlResponse(result) {
   return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(
     message
   )}</Message></Response>`;
-}
-
-function escapeXml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 app.get('/', (req, res) => {
@@ -235,6 +196,7 @@ app.get('/health', async (req, res) => {
     const text = await response.text();
 
     let parsed;
+
     try {
       parsed = JSON.parse(text);
     } catch (err) {
