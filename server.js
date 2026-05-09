@@ -1,21 +1,21 @@
 /**
- * Radar de Vida v7.4 — server.js
- * Render + Express + Google Docs Apps Script + Radar Visual Automático
+ * Radar de Vida v7.5 — server.js
+ * Render + Express + Google Docs Apps Script + Radar Visual Documental
  *
- * Mantém:
+ * Mantém tudo que já está funcionando:
  * - Painel visual em /
  * - Texto WhatsApp → Apps Script → Google Docs
+ * - Fotos WhatsApp → Meta Cloud API → OpenAI Vision → Apps Script → Google Docs
  * - /health
  * - /test
  * - /api/manual-entry
  * - /webhook/whatsapp
  *
- * Novo em v7.4:
- * - Foto no WhatsApp é analisada automaticamente.
- * - A análise visual é salva automaticamente no Radar.
- * - Não exige mais aprovação manual via WhatsApp.
- * - Ainda preserva internamente a lógica de pendência + aprovação automática,
- *   usando o Código.gs unificado v7.3 já instalado.
+ * Novo em v7.5:
+ * - Prompt visual/documental muito mais forte.
+ * - Melhor leitura de prints financeiros, recibos, extratos, comprovantes e apps de investimento.
+ * - Extração de datas, valores, tickers, nomes, eventos, proventos e somatórios.
+ * - Envio direto ao Apps Script usando action=create_visual_entry.
  *
  * Variáveis no Render:
  * GOOGLE_DOCS_API_URL=https://script.google.com/macros/s/SEU_WEBAPP/exec
@@ -37,7 +37,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
 
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
@@ -302,40 +302,6 @@ function deepFindTextCandidate(obj, depth = 0) {
   return '';
 }
 
-function extractWhatsappMessage(req) {
-  const body = req.body || {};
-
-  const textKnown = extractTextFromKnownPaths(body);
-  const fromKnown = extractFromFromKnownPaths(body);
-  const profileKnown = extractProfileNameFromKnownPaths(body);
-  const mediaKnown = extractMediaFromKnownPaths(body);
-
-  let text = textKnown.text;
-  let textSource = textKnown.sourcePath;
-
-  if (!text) {
-    const fallbackText = deepFindTextCandidate(body);
-    if (fallbackText) {
-      text = fallbackText;
-      textSource = 'deepFindTextCandidate';
-    }
-  }
-
-  return {
-    text,
-    from: fromKnown.from,
-    profileName: profileKnown.profileName,
-    media: mediaKnown.media,
-    source: {
-      textPath: textSource,
-      fromPath: fromKnown.sourcePath,
-      profileNamePath: profileKnown.sourcePath,
-      mediaPath: mediaKnown.sourcePath
-    },
-    raw: body
-  };
-}
-
 function extractMediaFromKnownPaths(body) {
   const twilioMediaUrl = cleanText(body.MediaUrl0);
   const twilioMediaType = cleanText(body.MediaContentType0);
@@ -430,18 +396,38 @@ function extractMediaFromKnownPaths(body) {
   };
 }
 
-function normalizeSenderKey(from) {
-  return cleanText(from).replace(/^whatsapp:/i, '').replace(/\D/g, '') || cleanText(from) || 'unknown_sender';
-}
+function extractWhatsappMessage(req) {
+  const body = req.body || {};
 
-function isApprovalText(text) {
-  const s = cleanText(text).toLowerCase();
-  return ['1', 'sim', 'ok', 'aprovar', 'aprovado', 'aprovar foto', 'salvar', 'salvar foto'].includes(s);
-}
+  const textKnown = extractTextFromKnownPaths(body);
+  const fromKnown = extractFromFromKnownPaths(body);
+  const profileKnown = extractProfileNameFromKnownPaths(body);
+  const mediaKnown = extractMediaFromKnownPaths(body);
 
-function isRejectionText(text) {
-  const s = cleanText(text).toLowerCase();
-  return ['2', 'não', 'nao', 'descartar', 'descarta', 'excluir', 'cancelar', 'rejeitar'].includes(s);
+  let text = textKnown.text;
+  let textSource = textKnown.sourcePath;
+
+  if (!text) {
+    const fallbackText = deepFindTextCandidate(body);
+    if (fallbackText) {
+      text = fallbackText;
+      textSource = 'deepFindTextCandidate';
+    }
+  }
+
+  return {
+    text,
+    from: fromKnown.from,
+    profileName: profileKnown.profileName,
+    media: mediaKnown.media,
+    source: {
+      textPath: textSource,
+      fromPath: fromKnown.sourcePath,
+      profileNamePath: profileKnown.sourcePath,
+      mediaPath: mediaKnown.sourcePath
+    },
+    raw: body
+  };
 }
 
 function requireGoogleDocsApiUrl() {
@@ -500,44 +486,16 @@ async function sendTextToAppsScript({ text, from, profileName, source, raw }) {
   });
 }
 
-async function createPendingMediaInAppsScript({ pendingId, senderKey, from, profileName, originalText, mediaInfo, analysis, raw }) {
+async function createVisualEntryInAppsScript({ from, profileName, originalText, mediaInfo, analysis, raw }) {
   return callAppsScript({
-    action: 'create_pending_media',
-    pendingId,
-    senderKey,
+    action: 'create_visual_entry',
     from,
     profileName,
     originalText,
     mediaInfo,
     analysis,
-    source: 'whatsapp_visual_pending',
-    origem: 'whatsapp_visual_pending',
-    receivedAt: nowIso(),
-    raw
-  });
-}
-
-async function approveLatestPendingInAppsScript({ senderKey, from, profileName, raw }) {
-  return callAppsScript({
-    action: 'approve_latest_pending_media',
-    senderKey,
-    from,
-    profileName,
-    source: 'whatsapp_visual_auto_approval',
-    origem: 'whatsapp_visual_auto_approval',
-    receivedAt: nowIso(),
-    raw
-  });
-}
-
-async function rejectLatestPendingInAppsScript({ senderKey, from, profileName, raw }) {
-  return callAppsScript({
-    action: 'reject_latest_pending_media',
-    senderKey,
-    from,
-    profileName,
-    source: 'whatsapp_visual_rejection',
-    origem: 'whatsapp_visual_rejection',
+    source: 'whatsapp_visual_auto',
+    origem: 'whatsapp_visual_auto',
     receivedAt: nowIso(),
     raw
   });
@@ -624,19 +582,83 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
   }
 
   const prompt = [
-    'Você é o motor visual do Radar de Vida.',
-    'Analise a imagem enviada pelo usuário como uma memória visual da vida real.',
-    'Não identifique pessoas. Não faça inferências sensíveis sobre identidade, saúde, religião, política ou intimidade.',
-    'Transforme a imagem em JSON útil para diário semântico, tendências e insights.',
-    'Se houver recibo, tela, objeto, local, ferramenta, comida, natureza, trabalho, manutenção ou projeto, descreva com prudência.',
-    'Não invente valores de dinheiro ou tempo se não estiverem claramente visíveis.',
-    'A imagem será salva automaticamente no diário semântico do usuário, então seja prudente, útil e objetivo.',
+    'Você é o motor visual e documental do Radar de Vida.',
+    '',
+    'Sua tarefa é analisar uma imagem enviada pelo WhatsApp e transformá-la em um JSON útil para um diário semântico pessoal.',
+    '',
+    'REGRA CENTRAL:',
+    'Antes de interpretar, leia a imagem como documento. Extraia dados visíveis com precisão.',
+    '',
+    'ETAPA 1 — LEITURA OBJETIVA:',
+    '- Identifique se a imagem é: recibo, nota fiscal, extrato, print financeiro, app de investimentos, tela bancária, comprovante, foto de objeto, foto de local, foto de atividade, comida, natureza, trabalho, manutenção ou outro.',
+    '- Extraia textos visíveis relevantes.',
+    '- Extraia datas visíveis.',
+    '- Extraia valores monetários visíveis.',
+    '- Extraia nomes de empresas, ativos, tickers, bancos, corretoras ou categorias.',
+    '- Se houver linhas repetidas, leia linha por linha.',
+    '',
+    'ETAPA 2 — NÚMEROS:',
+    '- Se a imagem mostrar dinheiro recebido, proventos, dividendos, JCP, reembolso, rendimento, salário, honorário, venda ou entrada, use dinheiro_ganho.',
+    '- Se mostrar dinheiro pago, compra, despesa, boleto, débito, saída, mercado, alimentação, manutenção ou custo, use dinheiro_gasto.',
+    '- Se mostrar aporte, compra de ativo, aplicação, investimento, CDB, Tesouro, FII, ação ou cripto comprado, use dinheiro_investido.',
+    '- Se houver múltiplos valores positivos de recebimento, some todos em dinheiro_ganho.',
+    '- Se houver múltiplos valores negativos ou pagamentos, some todos em dinheiro_gasto.',
+    '- Se houver valores de investimento/aporte, some em dinheiro_investido.',
+    '- Não invente valores que não estejam visíveis.',
+    '- Preserve centavos com ponto decimal no JSON. Exemplo: R$ 42,25 deve virar 42.25.',
+    '- Se uma linha estiver parcialmente cortada, descreva como parcial e não some valores invisíveis.',
+    '',
+    'ETAPA 3 — INVESTIMENTOS E PROVENTOS:',
+    'Quando a imagem for de proventos, dividendos, juros sobre capital próprio, reembolso, rendimentos, B3, corretora, banco, carteira ou app financeiro:',
+    '- Classifique como financeiro, investimentos, renda passiva e proventos.',
+    '- Extraia cada ativo/ticker visível.',
+    '- Extraia o nome da empresa quando visível.',
+    '- Extraia a instituição quando visível: banco, corretora, B3, Itaú, XP, Nu, Inter etc.',
+    '- Extraia o tipo de evento: dividendo, JCP, rendimento, reembolso, amortização, juros, pagamento etc.',
+    '- Extraia o valor de cada evento.',
+    '- Some todos os valores recebidos em dinheiro_ganho.',
+    '- O insight deve mencionar renda passiva, recorrência, diversificação, concentração ou reinvestimento conforme os dados visíveis.',
+    '',
+    'ETAPA 4 — RECIBOS, NOTAS E COMPROVANTES:',
+    'Quando a imagem for recibo, nota fiscal, tela de pagamento, comprovante ou extrato:',
+    '- Identifique estabelecimento, favorecido, pagador, data, valor total e categoria provável.',
+    '- Se houver total da compra, use dinheiro_gasto.',
+    '- Se houver comprovante de recebimento, use dinheiro_ganho.',
+    '- Se houver parcelamento, extraia número de parcelas, mas só some o valor visível pago/recebido se o contexto indicar.',
+    '',
+    'ETAPA 5 — TEMPO:',
+    '- Só estime tempo se a imagem ou legenda indicar claramente uma atividade com duração.',
+    '- Não atribua tempo produtivo, esporte ou estudo apenas porque a imagem parece importante.',
+    '- Se a imagem mostrar app de exercício, smartband, treino, corrida, passos, calorias ou frequência cardíaca, extraia os números visíveis e estime tempo apenas se houver duração visível.',
+    '',
+    'ETAPA 6 — INTERPRETAÇÃO:',
+    '- Depois dos dados objetivos, gere insight_curto e insight_profundo.',
+    '- Diferencie fato de hipótese.',
+    '- Seja útil, mas prudente.',
+    '- Não identifique pessoas.',
+    '- Não faça inferências sensíveis sobre identidade, saúde, religião, política ou intimidade.',
+    '',
+    'FORMATO:',
     'Responda SOMENTE com JSON válido, sem markdown.',
     '',
     'Campos obrigatórios:',
     '{',
     '  "tipo_input": "foto",',
+    '  "tipo_documento_visual": "print_financeiro|recibo|nota_fiscal|extrato|comprovante|app_investimentos|app_saude|objeto|local|atividade|outro",',
     '  "descricao_visual": "descrição objetiva e curta",',
+    '  "texto_lido": ["textos importantes visíveis na imagem"],',
+    '  "datas_detectadas": ["datas visíveis"],',
+    '  "valores_detectados": [',
+    '    { "descricao": "linha ou contexto", "valor": 0, "tipo": "ganho|gasto|investimento|neutro", "confianca": "alta|media|baixa" }',
+    '  ],',
+    '  "itens_detectados": [',
+    '    { "nome": "item, ativo, empresa ou evento", "ticker": "", "tipo_evento": "", "valor": 0, "categoria": "", "instituicao": "", "observacao": "" }',
+    '  ],',
+    '  "ativos_detectados": ["tickers ou ativos visíveis"],',
+    '  "instituicoes_detectadas": ["bancos, corretoras, apps ou instituições visíveis"],',
+    '  "metricas_detectadas": [',
+    '    { "nome": "ex.: passos, calorias, km, batimentos, rendimento", "valor": 0, "unidade": "", "confianca": "alta|media|baixa" }',
+    '  ],',
     '  "hipotese_de_contexto": "interpretação prudente do que isso pode representar",',
     '  "categorias": ["..."],',
     '  "projetos_detectados": ["..."],',
@@ -644,16 +666,28 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
     '  "dinheiro_gasto": 0,',
     '  "dinheiro_ganho": 0,',
     '  "dinheiro_investido": 0,',
+    '  "soma_valores_positivos": 0,',
+    '  "soma_valores_negativos": 0,',
     '  "tempo_estimado_minutos": 0,',
     '  "tom_emocional": "positivo|neutro|negativo|misto|indefinido",',
+    '  "energia_percebida": "alta|media|baixa|exaustao|recuperacao|indefinida",',
     '  "impacto_geral": "positivo|neutro|negativo|misto|indefinido",',
     '  "dimensoes_afetadas": ["..."],',
-    '  "insight_curto": "insight útil e surpreendente",',
-    '  "insight_profundo": "leitura mais estratégica",',
+    '  "insight_curto": "insight útil e específico baseado nos dados extraídos",',
+    '  "insight_profundo": "leitura estratégica mais ampla",',
     '  "sugestao_pratica": "próxima ação simples",',
     '  "confianca": "alta|media|baixa",',
-    '  "frase_sugerida_para_salvar": "frase em primeira pessoa resumindo a foto como registro de vida"',
+    '  "confianca_numerica": "alta|media|baixa",',
+    '  "observacoes_de_leitura": "limitações da leitura, cortes, incertezas ou dados parciais",',
+    '  "frase_sugerida_para_salvar": "frase em primeira pessoa resumindo o registro com números quando houver"',
     '}',
+    '',
+    'REGRAS DE QUALIDADE DO JSON:',
+    '- Todos os campos obrigatórios devem existir.',
+    '- Arrays podem ser vazios, mas devem existir.',
+    '- Campos numéricos devem ser números, não strings.',
+    '- Se não houver dado, use 0 para números e [] para listas.',
+    '- Não use vírgula decimal. Use ponto decimal.',
     '',
     'Legenda/texto enviado junto da imagem:',
     caption || '',
@@ -698,7 +732,144 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
     throw new Error('OpenAI Vision não retornou output_text.');
   }
 
-  return parsePossiblyWrappedJson(outputText);
+  const analysis = parsePossiblyWrappedJson(outputText);
+  return normalizeVisualAnalysisNumbers(analysis);
+}
+
+function normalizeVisualAnalysisNumbers(analysis) {
+  const a = analysis || {};
+
+  a.dinheiro_gasto = toNumber(a.dinheiro_gasto);
+  a.dinheiro_ganho = toNumber(a.dinheiro_ganho);
+  a.dinheiro_investido = toNumber(a.dinheiro_investido);
+  a.soma_valores_positivos = toNumber(a.soma_valores_positivos);
+  a.soma_valores_negativos = toNumber(a.soma_valores_negativos);
+  a.tempo_estimado_minutos = toNumber(a.tempo_estimado_minutos);
+
+  if (!Array.isArray(a.texto_lido)) a.texto_lido = [];
+  if (!Array.isArray(a.datas_detectadas)) a.datas_detectadas = [];
+  if (!Array.isArray(a.valores_detectados)) a.valores_detectados = [];
+  if (!Array.isArray(a.itens_detectados)) a.itens_detectados = [];
+  if (!Array.isArray(a.ativos_detectados)) a.ativos_detectados = [];
+  if (!Array.isArray(a.instituicoes_detectadas)) a.instituicoes_detectadas = [];
+  if (!Array.isArray(a.metricas_detectadas)) a.metricas_detectadas = [];
+  if (!Array.isArray(a.categorias)) a.categorias = [];
+  if (!Array.isArray(a.projetos_detectados)) a.projetos_detectados = [];
+  if (!Array.isArray(a.lugares_detectados)) a.lugares_detectados = [];
+  if (!Array.isArray(a.dimensoes_afetadas)) a.dimensoes_afetadas = [];
+
+  a.valores_detectados = a.valores_detectados.map(item => ({
+    descricao: cleanText(item.descricao),
+    valor: toNumber(item.valor),
+    tipo: cleanText(item.tipo) || 'neutro',
+    confianca: cleanText(item.confianca) || 'media'
+  }));
+
+  a.itens_detectados = a.itens_detectados.map(item => ({
+    nome: cleanText(item.nome),
+    ticker: cleanText(item.ticker),
+    tipo_evento: cleanText(item.tipo_evento),
+    valor: toNumber(item.valor),
+    categoria: cleanText(item.categoria),
+    instituicao: cleanText(item.instituicao),
+    observacao: cleanText(item.observacao)
+  }));
+
+  a.metricas_detectadas = a.metricas_detectadas.map(item => ({
+    nome: cleanText(item.nome),
+    valor: toNumber(item.valor),
+    unidade: cleanText(item.unidade),
+    confianca: cleanText(item.confianca) || 'media'
+  }));
+
+  return a;
+}
+
+function enhanceVisualAnalysisForAutoSave(analysis) {
+  const a = analysis || {};
+
+  const categorias = Array.isArray(a.categorias) ? [...a.categorias] : [];
+  categorias.push('foto');
+  categorias.push('registro visual');
+  categorias.push('foto_analisada_automaticamente');
+
+  if (
+    a.tipo_documento_visual === 'print_financeiro' ||
+    a.tipo_documento_visual === 'app_investimentos' ||
+    /provento|dividendo|jcp|rendimento|b3|corretora|investimento/i.test(
+      [
+        a.descricao_visual,
+        a.hipotese_de_contexto,
+        ...(a.texto_lido || []),
+        ...(a.categorias || [])
+      ].join(' ')
+    )
+  ) {
+    categorias.push('financeiro');
+    categorias.push('investimentos');
+  }
+
+  if ((a.ativos_detectados || []).length) {
+    categorias.push('ativos');
+    categorias.push('carteira');
+  }
+
+  const dimensoes = Array.isArray(a.dimensoes_afetadas) ? [...a.dimensoes_afetadas] : [];
+  dimensoes.push('memoria_visual');
+
+  if (a.dinheiro_ganho > 0 || a.dinheiro_gasto > 0 || a.dinheiro_investido > 0) {
+    dimensoes.push('dinheiro');
+  }
+
+  if ((a.ativos_detectados || []).length || (a.itens_detectados || []).some(i => i.ticker)) {
+    dimensoes.push('investimentos');
+  }
+
+  return {
+    ...a,
+    categorias: Array.from(new Set(categorias.filter(Boolean).map(String))),
+    dimensoes_afetadas: Array.from(new Set(dimensoes.filter(Boolean).map(String))),
+    visual_auto: true,
+    precisa_revisao: true,
+    origem_visual: 'whatsapp_visual_auto',
+    insight_curto:
+      a.insight_curto ||
+      'Registro visual salvo automaticamente a partir de foto enviada pelo WhatsApp.',
+    frase_sugerida_para_salvar:
+      a.frase_sugerida_para_salvar ||
+      buildFallbackVisualPhrase(a)
+  };
+}
+
+function buildFallbackVisualPhrase(a) {
+  if (a.dinheiro_ganho > 0 && (a.ativos_detectados || []).length) {
+    return `Recebi ${formatMoneyForText(a.dinheiro_ganho)} em proventos ou entradas financeiras relacionados a ${(a.ativos_detectados || []).join(', ')}.`;
+  }
+
+  if (a.dinheiro_ganho > 0) {
+    return `Registrei uma entrada financeira de ${formatMoneyForText(a.dinheiro_ganho)} a partir de uma imagem.`;
+  }
+
+  if (a.dinheiro_gasto > 0) {
+    return `Registrei uma despesa de ${formatMoneyForText(a.dinheiro_gasto)} a partir de uma imagem.`;
+  }
+
+  if (a.dinheiro_investido > 0) {
+    return `Registrei um investimento de ${formatMoneyForText(a.dinheiro_investido)} a partir de uma imagem.`;
+  }
+
+  return (
+    a.hipotese_de_contexto ||
+    a.descricao_visual ||
+    'Enviei uma foto ao Radar de Vida para registro visual automático.'
+  );
+}
+
+function formatMoneyForText(value) {
+  return toNumber(value).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
 }
 
 function extractOpenAIText(response) {
@@ -782,48 +953,19 @@ function parsePossiblyWrappedJson(text) {
   throw new Error('JSON visual incompleto.');
 }
 
-function enhanceVisualAnalysisForAutoSave(analysis) {
-  const a = analysis || {};
+function toNumber(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
 
-  const categorias = Array.isArray(a.categorias) ? [...a.categorias] : [];
-  categorias.push('foto');
-  categorias.push('registro visual');
-  categorias.push('foto_analisada_automaticamente');
+  const s = String(value || '')
+    .trim()
+    .replace(/\s/g, '')
+    .replace(/^R\$/i, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^\d.-]/g, '');
 
-  const dimensoes = Array.isArray(a.dimensoes_afetadas) ? [...a.dimensoes_afetadas] : [];
-  dimensoes.push('memoria_visual');
-
-  return {
-    ...a,
-    categorias: Array.from(new Set(categorias.filter(Boolean))),
-    dimensoes_afetadas: Array.from(new Set(dimensoes.filter(Boolean))),
-    visual_auto: true,
-    precisa_revisao: true,
-    origem_visual: 'whatsapp_visual_auto',
-    insight_curto:
-      a.insight_curto ||
-      'Registro visual salvo automaticamente a partir de foto enviada pelo WhatsApp.',
-    frase_sugerida_para_salvar:
-      a.frase_sugerida_para_salvar ||
-      a.hipotese_de_contexto ||
-      a.descricao_visual ||
-      'Enviei uma foto ao Radar de Vida para registro visual automático.'
-  };
-}
-
-function buildAutoSaveConfirmationText(analysis, entryId) {
-  const insight = analysis.insight_curto || analysis.descricao_visual || 'Foto analisada e salva.';
-  const cats = Array.isArray(analysis.categorias) ? analysis.categorias.slice(0, 5).join(', ') : '';
-
-  return [
-    '📷 Radar Visual salvou sua foto automaticamente.',
-    '',
-    `Insight: ${insight}`,
-    cats ? `Categorias: ${cats}` : '',
-    entryId ? `ID: ${entryId}` : '',
-    '',
-    'Se não gostar da leitura, você pode excluir depois pelo painel.'
-  ].filter(Boolean).join('\n');
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function escapeXml(value) {
@@ -850,6 +992,27 @@ function buildWhatsappXmlResponse(result) {
   return buildWhatsappXmlMessage(message);
 }
 
+function buildAutoSaveConfirmationText(analysis, entryId) {
+  const insight = analysis.insight_curto || analysis.descricao_visual || 'Foto analisada e salva.';
+  const cats = Array.isArray(analysis.categorias) ? analysis.categorias.slice(0, 6).join(', ') : '';
+
+  const moneyParts = [];
+  if (analysis.dinheiro_ganho > 0) moneyParts.push(`Ganho: ${formatMoneyForText(analysis.dinheiro_ganho)}`);
+  if (analysis.dinheiro_gasto > 0) moneyParts.push(`Gasto: ${formatMoneyForText(analysis.dinheiro_gasto)}`);
+  if (analysis.dinheiro_investido > 0) moneyParts.push(`Investido: ${formatMoneyForText(analysis.dinheiro_investido)}`);
+
+  return [
+    '📷 Radar Visual salvou sua foto automaticamente.',
+    '',
+    moneyParts.length ? moneyParts.join(' | ') : '',
+    `Insight: ${insight}`,
+    cats ? `Categorias: ${cats}` : '',
+    entryId ? `ID: ${entryId}` : '',
+    '',
+    'Se não gostar da leitura, você pode excluir depois pelo painel.'
+  ].filter(Boolean).join('\n');
+}
+
 app.get('/', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
 
@@ -859,7 +1022,7 @@ app.get('/', (req, res) => {
 
   return res.json({
     ok: true,
-    app: 'Radar de Vida v7.4 — Radar Visual Automático',
+    app: 'Radar de Vida v7.5 — Radar Visual Documental',
     status: 'online',
     now: nowIso(),
     message: 'Backend online, mas public/index.html não foi encontrado.',
@@ -884,7 +1047,7 @@ app.get('/', (req, res) => {
 app.get('/health', async (req, res) => {
   const base = {
     ok: true,
-    app: 'Radar de Vida v7.4 — Radar Visual Automático',
+    app: 'Radar de Vida v7.5 — Radar Visual Documental',
     status: 'online',
     now: nowIso(),
     hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
@@ -1008,7 +1171,6 @@ app.post('/api/manual-entry', async (req, res) => {
 
 app.post('/webhook/whatsapp', async (req, res) => {
   const incoming = extractWhatsappMessage(req);
-  const senderKey = normalizeSenderKey(incoming.from);
 
   console.log('[WHATSAPP] Mensagem recebida:', {
     at: nowIso(),
@@ -1029,90 +1191,10 @@ app.post('/webhook/whatsapp', async (req, res) => {
   });
 
   /**
-   * Mantemos aprovação/rejeição para compatibilidade com pendências antigas.
-   * Mas o fluxo novo de foto salva automaticamente.
-   */
-  if (incoming.text && isApprovalText(incoming.text)) {
-    try {
-      const result = await approveLatestPendingInAppsScript({
-        senderKey,
-        from: incoming.from,
-        profileName: incoming.profileName,
-        raw: {
-          body: incoming.raw,
-          source: incoming.source
-        }
-      });
-
-      const msg = result.ok
-        ? '✅ Foto pendente aprovada e salva no Radar de Vida.'
-        : 'Não encontrei foto pendente para aprovar. As novas fotos agora são salvas automaticamente.';
-
-      if (SEND_WHATSAPP_CONFIRMATION) {
-        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
-      }
-
-      return res.status(200).json({
-        ok: Boolean(result.ok),
-        action: 'approve_pending_media',
-        result
-      });
-    } catch (err) {
-      if (SEND_WHATSAPP_CONFIRMATION) {
-        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage('Erro ao aprovar foto: ' + err.message));
-      }
-
-      return res.status(500).json({
-        ok: false,
-        error: err.message
-      });
-    }
-  }
-
-  if (incoming.text && isRejectionText(incoming.text)) {
-    try {
-      const result = await rejectLatestPendingInAppsScript({
-        senderKey,
-        from: incoming.from,
-        profileName: incoming.profileName,
-        raw: {
-          body: incoming.raw,
-          source: incoming.source
-        }
-      });
-
-      const msg = result.ok
-        ? '🗑️ Foto pendente descartada.'
-        : 'Não encontrei foto pendente para descartar. As novas fotos agora são salvas automaticamente; exclua pelo painel se necessário.';
-
-      if (SEND_WHATSAPP_CONFIRMATION) {
-        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
-      }
-
-      return res.status(200).json({
-        ok: Boolean(result.ok),
-        action: 'reject_pending_media',
-        result
-      });
-    } catch (err) {
-      if (SEND_WHATSAPP_CONFIRMATION) {
-        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage('Erro ao descartar foto: ' + err.message));
-      }
-
-      return res.status(500).json({
-        ok: false,
-        error: err.message
-      });
-    }
-  }
-
-  /**
-   * Fluxo novo v7.4:
-   * Foto analisada e salva automaticamente.
+   * Fluxo visual v7.5:
+   * Foto analisada com prompt documental e salva diretamente pelo Apps Script.
    */
   if (incoming.media) {
-    const pendingId = 'rdv_media_' + Date.now() + '_' + Math.random().toString(16).slice(2, 10);
-
     try {
       const imageDataUrl = await getImageDataUrl(incoming.media);
 
@@ -1125,9 +1207,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
       const analysis = enhanceVisualAnalysisForAutoSave(rawAnalysis);
 
-      const pendingResult = await createPendingMediaInAppsScript({
-        pendingId,
-        senderKey,
+      const visualResult = await createVisualEntryInAppsScript({
         from: incoming.from,
         profileName: incoming.profileName,
         originalText: incoming.text,
@@ -1136,57 +1216,29 @@ app.post('/webhook/whatsapp', async (req, res) => {
           mimeType: incoming.media.mimeType || '',
           sourcePath: incoming.source.mediaPath || '',
           provider: incoming.media.provider || '',
-          autoSave: true
+          visualEngine: 'openai_vision_documental_v7_5'
         },
         analysis,
         raw: {
           body: incoming.raw,
           source: incoming.source,
-          autoSave: true
+          visualEngine: 'openai_vision_documental_v7_5'
         }
       });
 
-      if (!pendingResult.ok) {
-        console.error('[RADAR_VISUAL_AUTO] Pendência não criada:', pendingResult);
-
-        const msg = 'Recebi e analisei a foto, mas não consegui criar o registro no Google Docs.';
-
-        if (SEND_WHATSAPP_CONFIRMATION) {
-          return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
-        }
-
-        return res.status(200).json({
-          ok: false,
-          action: 'visual_auto_pending_failed',
-          pendingId,
-          result: pendingResult
-        });
-      }
-
-      const approveResult = await approveLatestPendingInAppsScript({
-        senderKey,
-        from: incoming.from,
-        profileName: incoming.profileName,
-        raw: {
-          body: incoming.raw,
-          source: incoming.source,
-          autoApproved: true,
-          pendingId
-        }
-      });
-
-      console.log('[RADAR_VISUAL_AUTO] Foto analisada e salva automaticamente:', {
-        pendingOk: pendingResult.ok,
-        approveOk: approveResult.ok,
-        pendingId,
-        entryId: approveResult.entryId || null,
-        senderKey,
-        error: approveResult.error || null
+      console.log('[RADAR_VISUAL_V7_5] Foto analisada e salva:', {
+        ok: visualResult.ok,
+        entryId: visualResult.entryId || visualResult.id || null,
+        dinheiro_ganho: analysis.dinheiro_ganho,
+        dinheiro_gasto: analysis.dinheiro_gasto,
+        dinheiro_investido: analysis.dinheiro_investido,
+        ativos: analysis.ativos_detectados || [],
+        error: visualResult.error || null
       });
 
       const confirmationText = buildAutoSaveConfirmationText(
         analysis,
-        approveResult.entryId || ''
+        visualResult.entryId || visualResult.id || ''
       );
 
       if (SEND_WHATSAPP_CONFIRMATION) {
@@ -1194,17 +1246,15 @@ app.post('/webhook/whatsapp', async (req, res) => {
       }
 
       return res.status(200).json({
-        ok: Boolean(approveResult.ok),
-        action: 'visual_auto_saved',
-        pendingId,
-        entryId: approveResult.entryId || '',
+        ok: Boolean(visualResult.ok),
+        action: 'visual_documental_saved',
+        entryId: visualResult.entryId || visualResult.id || '',
         analysis,
-        pendingResult,
-        approveResult
+        result: visualResult
       });
 
     } catch (err) {
-      console.error('[RADAR_VISUAL_AUTO] Erro ao analisar/salvar imagem:', err);
+      console.error('[RADAR_VISUAL_V7_5] Erro ao analisar/salvar imagem:', err);
 
       const msg = 'Recebi a foto, mas ainda não consegui analisá-la. Erro: ' + err.message;
 
@@ -1214,8 +1264,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
       return res.status(200).json({
         ok: false,
-        action: 'visual_auto_failed',
-        pendingId,
+        action: 'visual_documental_failed',
         error: err.message,
         hint: 'Verifique OPENAI_API_KEY, WHATSAPP_CLOUD_TOKEN, URL da mídia ou permissões da Meta.'
       });
@@ -1307,7 +1356,7 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Radar de Vida v7.4 — Radar Visual Automático online na porta ${PORT}`);
+  console.log(`Radar de Vida v7.5 — Radar Visual Documental online na porta ${PORT}`);
   console.log('GOOGLE_DOCS_API_URL configurada:', Boolean(GOOGLE_DOCS_API_URL));
   console.log('OPENAI_API_KEY configurada no Render:', Boolean(OPENAI_API_KEY));
   console.log('WHATSAPP_CLOUD_TOKEN configurado no Render:', Boolean(WHATSAPP_CLOUD_TOKEN));
