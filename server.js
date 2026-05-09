@@ -1,20 +1,27 @@
 /**
- * Radar de Vida v7 — server.js
- * Render + Express + Google Docs Apps Script
+ * Radar de Vida v7.2 — server.js
+ * Render + Express + Google Docs Apps Script + painel estático
  *
- * Esta versão faz duas coisas:
- * 1. Mostra o painel visual em /
- *    - Para isso, coloque o arquivo index.html dentro da pasta public/
+ * Esta versão:
+ * 1. Serve o painel visual em /
+ *    - arquivo esperado: public/index.html
  *
- * 2. Mantém a API funcionando:
+ * 2. Mantém a API:
  *    - GET  /health
  *    - GET  /test
  *    - POST /webhook/whatsapp
  *    - POST /api/manual-entry
  *
+ * 3. Melhora a leitura de mensagens reais do WhatsApp:
+ *    - Twilio: Body
+ *    - WhatsApp Cloud API: entry[0].changes[0].value.messages[0].text.body
+ *    - Z-API / Evolution / Baileys e formatos parecidos
+ *    - Payloads genéricos com text/message/body/frase/input
+ *
  * Variáveis de ambiente no Render:
  * GOOGLE_DOCS_API_URL=https://script.google.com/macros/s/SEU_WEBAPP/exec
  * SEND_WHATSAPP_CONFIRMATION=false
+ * LOG_RAW_WHATSAPP_EMPTY=true
  */
 
 import express from 'express';
@@ -28,13 +35,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '5mb' }));
 
-/**
- * Serve arquivos estáticos da pasta public.
- * Coloque o painel visual em:
- * public/index.html
- */
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
@@ -45,46 +47,335 @@ const GOOGLE_DOCS_API_URL = process.env.GOOGLE_DOCS_API_URL || '';
 const SEND_WHATSAPP_CONFIRMATION =
   String(process.env.SEND_WHATSAPP_CONFIRMATION || 'false').toLowerCase() === 'true';
 
+const LOG_RAW_WHATSAPP_EMPTY =
+  String(process.env.LOG_RAW_WHATSAPP_EMPTY || 'true').toLowerCase() === 'true';
+
 function nowIso() {
   return new Date().toISOString();
 }
 
 function cleanText(value) {
-  return String(value || '').trim();
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
 }
 
 function getClientIp(req) {
   return req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
 }
 
+function safeJson(value, maxLength = 6000) {
+  try {
+    const text = JSON.stringify(value, null, 2);
+    return text.length > maxLength ? text.slice(0, maxLength) + '... [TRUNCADO]' : text;
+  } catch (err) {
+    return '[Não foi possível serializar JSON]';
+  }
+}
+
+function getByPath(obj, pathExpression) {
+  try {
+    return pathExpression.split('.').reduce((acc, key) => {
+      if (acc === null || acc === undefined) return undefined;
+
+      if (key.endsWith(']')) {
+        const match = key.match(/^(.+)\[(\d+)\]$/);
+        if (!match) return acc[key];
+
+        const arrKey = match[1];
+        const index = Number(match[2]);
+
+        return acc[arrKey] && acc[arrKey][index];
+      }
+
+      return acc[key];
+    }, obj);
+  } catch (err) {
+    return undefined;
+  }
+}
+
+/**
+ * Busca texto em formatos conhecidos.
+ */
+function extractTextFromKnownPaths(body) {
+  const paths = [
+    // Twilio
+    'Body',
+    'body.Body',
+    'message.Body',
+
+    // Formatos simples
+    'text',
+    'body',
+    'message',
+    'input',
+    'frase',
+    'content',
+    'caption',
+
+    // Objetos comuns
+    'data.text',
+    'data.body',
+    'data.message',
+    'data.content',
+    'payload.text',
+    'payload.body',
+    'payload.message',
+    'event.text',
+    'event.body',
+    'event.message',
+
+    // WhatsApp Cloud API oficial
+    'entry[0].changes[0].value.messages[0].text.body',
+    'entry[0].changes[0].value.messages[0].button.text',
+    'entry[0].changes[0].value.messages[0].interactive.button_reply.title',
+    'entry[0].changes[0].value.messages[0].interactive.list_reply.title',
+    'entry[0].changes[0].value.messages[0].image.caption',
+    'entry[0].changes[0].value.messages[0].document.caption',
+
+    // Evolution API / Baileys / WPPConnect e similares
+    'data.message.conversation',
+    'data.message.extendedTextMessage.text',
+    'data.message.imageMessage.caption',
+    'data.message.videoMessage.caption',
+    'data.message.documentMessage.caption',
+    'data.message.buttonsResponseMessage.selectedButtonId',
+    'data.message.buttonsResponseMessage.selectedDisplayText',
+    'data.message.listResponseMessage.title',
+    'data.message.listResponseMessage.singleSelectReply.selectedRowId',
+
+    'message.conversation',
+    'message.extendedTextMessage.text',
+    'message.imageMessage.caption',
+    'message.videoMessage.caption',
+    'message.documentMessage.caption',
+
+    'messages[0].text.body',
+    'messages[0].body',
+    'messages[0].text',
+    'messages[0].message',
+    'messages[0].content',
+
+    // Z-API e variações
+    'text.message',
+    'text.body',
+    'message.text',
+    'message.body',
+    'msg.text',
+    'msg.body'
+  ];
+
+  for (const p of paths) {
+    const value = getByPath(body, p);
+    const text = cleanText(value);
+
+    if (text) {
+      return {
+        text,
+        sourcePath: p
+      };
+    }
+  }
+
+  return {
+    text: '',
+    sourcePath: ''
+  };
+}
+
+/**
+ * Busca remetente em formatos conhecidos.
+ */
+function extractFromFromKnownPaths(body) {
+  const paths = [
+    // Twilio
+    'From',
+    'from',
+    'sender',
+    'phone',
+    'remoteJid',
+    'waId',
+    'wa_id',
+
+    // WhatsApp Cloud API
+    'entry[0].changes[0].value.messages[0].from',
+    'entry[0].changes[0].value.contacts[0].wa_id',
+
+    // Evolution/Baileys
+    'data.key.remoteJid',
+    'data.sender',
+    'data.from',
+    'data.remoteJid',
+    'key.remoteJid',
+
+    // Arrays genéricos
+    'messages[0].from',
+    'messages[0].sender',
+    'messages[0].phone'
+  ];
+
+  for (const p of paths) {
+    const value = cleanText(getByPath(body, p));
+    if (value) {
+      return {
+        from: value,
+        sourcePath: p
+      };
+    }
+  }
+
+  return {
+    from: '',
+    sourcePath: ''
+  };
+}
+
+/**
+ * Busca nome/perfil em formatos conhecidos.
+ */
+function extractProfileNameFromKnownPaths(body) {
+  const paths = [
+    // Twilio
+    'ProfileName',
+    'profileName',
+    'name',
+    'pushName',
+    'notifyName',
+
+    // WhatsApp Cloud API
+    'entry[0].changes[0].value.contacts[0].profile.name',
+
+    // Evolution/Baileys
+    'data.pushName',
+    'data.senderName',
+    'data.name',
+    'contact.name',
+    'contacts[0].profile.name'
+  ];
+
+  for (const p of paths) {
+    const value = cleanText(getByPath(body, p));
+    if (value) {
+      return {
+        profileName: value,
+        sourcePath: p
+      };
+    }
+  }
+
+  return {
+    profileName: '',
+    sourcePath: ''
+  };
+}
+
+/**
+ * Tentativa final: varre recursivamente o payload procurando campos úteis.
+ * Evita usar textos técnicos como IDs, timestamps e URLs.
+ */
+function deepFindTextCandidate(obj, depth = 0) {
+  if (!obj || depth > 5) return '';
+
+  if (typeof obj === 'string') {
+    const s = obj.trim();
+
+    if (!s) return '';
+    if (s.length > 1000) return '';
+    if (/^https?:\/\//i.test(s)) return '';
+    if (/^\d{8,}$/.test(s)) return '';
+    if (/^[A-Za-z0-9_\-:.@+]{20,}$/.test(s)) return '';
+
+    const looksLikeHumanText =
+      s.includes(' ') ||
+      /[áàâãéêíóôõúç]/i.test(s) ||
+      /\b(gastei|ganhei|fiz|caminhei|corri|trabalhei|estudei|paguei|recebi|hoje|ontem)\b/i.test(s);
+
+    return looksLikeHumanText ? s : '';
+  }
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const found = deepFindTextCandidate(item, depth + 1);
+      if (found) return found;
+    }
+    return '';
+  }
+
+  if (typeof obj === 'object') {
+    const priorityKeys = [
+      'body',
+      'text',
+      'message',
+      'caption',
+      'content',
+      'conversation',
+      'title',
+      'selectedDisplayText'
+    ];
+
+    for (const key of priorityKeys) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const found = deepFindTextCandidate(obj[key], depth + 1);
+        if (found) return found;
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const lower = key.toLowerCase();
+
+      if (
+        lower.includes('id') ||
+        lower.includes('token') ||
+        lower.includes('secret') ||
+        lower.includes('timestamp') ||
+        lower.includes('url') ||
+        lower.includes('mime') ||
+        lower.includes('type')
+      ) {
+        continue;
+      }
+
+      const found = deepFindTextCandidate(obj[key], depth + 1);
+      if (found) return found;
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Extrator universal de mensagem.
+ */
 function extractWhatsappMessage(req) {
   const body = req.body || {};
 
-  const text =
-    cleanText(body.Body) ||
-    cleanText(body.body) ||
-    cleanText(body.text) ||
-    cleanText(body.message) ||
-    cleanText(body.input) ||
-    cleanText(body.frase);
+  const textKnown = extractTextFromKnownPaths(body);
+  const fromKnown = extractFromFromKnownPaths(body);
+  const profileKnown = extractProfileNameFromKnownPaths(body);
 
-  const from =
-    cleanText(body.From) ||
-    cleanText(body.from) ||
-    cleanText(body.sender) ||
-    cleanText(body.phone) ||
-    cleanText(body.remoteJid);
+  let text = textKnown.text;
+  let textSource = textKnown.sourcePath;
 
-  const profileName =
-    cleanText(body.ProfileName) ||
-    cleanText(body.profileName) ||
-    cleanText(body.name) ||
-    '';
+  if (!text) {
+    const fallbackText = deepFindTextCandidate(body);
+    if (fallbackText) {
+      text = fallbackText;
+      textSource = 'deepFindTextCandidate';
+    }
+  }
+
+  const from = fromKnown.from;
+  const profileName = profileKnown.profileName;
 
   return {
     text,
     from,
     profileName,
+    source: {
+      textPath: textSource,
+      fromPath: fromKnown.sourcePath,
+      profileNamePath: profileKnown.sourcePath
+    },
     raw: body
   };
 }
@@ -186,7 +477,7 @@ app.get('/', (req, res) => {
 
   return res.json({
     ok: true,
-    app: 'Radar de Vida v7 — Render Bridge',
+    app: 'Radar de Vida v7.2 — Render Bridge',
     status: 'online',
     now: nowIso(),
     message: 'Backend online, mas public/index.html não foi encontrado. Crie a pasta public e coloque o index.html dentro dela.',
@@ -199,7 +490,8 @@ app.get('/', (req, res) => {
     },
     config: {
       hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
-      sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION
+      sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
+      logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY
     }
   });
 });
@@ -207,11 +499,12 @@ app.get('/', (req, res) => {
 app.get('/health', async (req, res) => {
   const base = {
     ok: true,
-    app: 'Radar de Vida v7 — Render Bridge',
+    app: 'Radar de Vida v7.2 — Render Bridge',
     status: 'online',
     now: nowIso(),
     hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
     sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
+    logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY,
     hasPublicIndex: fs.existsSync(path.join(publicDir, 'index.html'))
   };
 
@@ -332,14 +625,22 @@ app.post('/webhook/whatsapp', async (req, res) => {
     at: nowIso(),
     from: incoming.from,
     profileName: incoming.profileName,
-    text: incoming.text
+    text: incoming.text,
+    source: incoming.source
   });
 
   if (!incoming.text) {
+    console.warn('[WHATSAPP] Mensagem vazia ou formato não reconhecido.');
+
+    if (LOG_RAW_WHATSAPP_EMPTY) {
+      console.warn('[WHATSAPP_RAW_EMPTY]', safeJson(req.body));
+    }
+
     const result = {
       ok: false,
       error: 'Mensagem vazia ou formato não reconhecido.',
-      receivedBody: req.body
+      hint: 'Verifique o log [WHATSAPP_RAW_EMPTY] no Render para identificar o formato real do payload.',
+      detectedSource: incoming.source
     };
 
     if (SEND_WHATSAPP_CONFIRMATION) {
@@ -360,6 +661,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
       source: 'whatsapp_render',
       raw: {
         body: incoming.raw,
+        source: incoming.source,
         headers: {
           'user-agent': req.headers['user-agent'],
           'x-forwarded-for': req.headers['x-forwarded-for']
@@ -385,7 +687,8 @@ app.post('/webhook/whatsapp', async (req, res) => {
       received: {
         from: incoming.from,
         profileName: incoming.profileName,
-        text: incoming.text
+        text: incoming.text,
+        source: incoming.source
       },
       result
     });
@@ -417,8 +720,9 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Radar de Vida v7 — Render Bridge online na porta ${PORT}`);
+  console.log(`Radar de Vida v7.2 — Render Bridge online na porta ${PORT}`);
   console.log('GOOGLE_DOCS_API_URL configurada:', Boolean(GOOGLE_DOCS_API_URL));
   console.log('SEND_WHATSAPP_CONFIRMATION:', SEND_WHATSAPP_CONFIRMATION);
+  console.log('LOG_RAW_WHATSAPP_EMPTY:', LOG_RAW_WHATSAPP_EMPTY);
   console.log('public/index.html encontrado:', fs.existsSync(path.join(publicDir, 'index.html')));
 });
