@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar de Vida v7.2 — Central de Insights</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Radar de Vida v7.4 — Central de Insights</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -26,7 +26,14 @@
       --radius: 22px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      scroll-behavior: smooth;
+    }
 
     body {
       margin: 0;
@@ -52,7 +59,11 @@
       margin-bottom: 18px;
     }
 
-    .hero, .status-card, .panel, .metric, .weird-card {
+    .hero,
+    .status-card,
+    .panel,
+    .metric,
+    .weird-card {
       background: rgba(255,255,255,.92);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
@@ -75,6 +86,7 @@
       height: 220px;
       border-radius: 50%;
       background: rgba(45, 122, 75, 0.13);
+      pointer-events: none;
     }
 
     .eyebrow {
@@ -89,6 +101,8 @@
       font-size: 12px;
       letter-spacing: .02em;
       margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
     }
 
     h1 {
@@ -96,6 +110,8 @@
       font-size: clamp(28px, 4vw, 48px);
       line-height: 1.02;
       letter-spacing: -0.04em;
+      position: relative;
+      z-index: 1;
     }
 
     .subtitle {
@@ -104,6 +120,8 @@
       color: var(--muted);
       font-size: 15px;
       line-height: 1.55;
+      position: relative;
+      z-index: 1;
     }
 
     .status-card {
@@ -126,7 +144,10 @@
       padding-bottom: 10px;
     }
 
-    .status-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .status-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
 
     .pill {
       display: inline-flex;
@@ -138,6 +159,7 @@
       font-weight: 800;
       color: var(--text);
       white-space: nowrap;
+      max-width: 100%;
     }
 
     .dot {
@@ -146,6 +168,7 @@
       background: var(--green);
       border-radius: 999px;
       display: inline-block;
+      flex: 0 0 auto;
     }
 
     .actions {
@@ -153,6 +176,8 @@
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 18px;
+      position: relative;
+      z-index: 1;
     }
 
     button {
@@ -166,11 +191,23 @@
       font-size: 13px;
       box-shadow: 0 12px 24px rgba(20, 35, 28, 0.14);
       transition: transform .15s ease, opacity .15s ease;
+      touch-action: manipulation;
     }
 
-    button:hover { transform: translateY(-1px); }
-    button.secondary { background: white; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
-    button.danger { background: #9b3024; }
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: #9b3024;
+    }
 
     .grid-cards {
       display: grid;
@@ -183,6 +220,7 @@
       border-radius: 20px;
       padding: 16px;
       min-height: 126px;
+      overflow: hidden;
     }
 
     .metric small {
@@ -198,6 +236,7 @@
       font-size: clamp(22px, 2.4vw, 34px);
       letter-spacing: -0.04em;
       line-height: 1.04;
+      word-break: break-word;
     }
 
     .metric span {
@@ -208,12 +247,29 @@
       line-height: 1.35;
     }
 
-    .metric.green { background: linear-gradient(180deg, #ffffff, var(--green-soft)); }
-    .metric.blue { background: linear-gradient(180deg, #ffffff, var(--blue-soft)); }
-    .metric.amber { background: linear-gradient(180deg, #ffffff, var(--amber-soft)); }
-    .metric.red { background: linear-gradient(180deg, #ffffff, var(--red-soft)); }
-    .metric.purple { background: linear-gradient(180deg, #ffffff, var(--purple-soft)); }
-    .metric.cyan { background: linear-gradient(180deg, #ffffff, var(--cyan-soft)); }
+    .metric.green {
+      background: linear-gradient(180deg, #ffffff, var(--green-soft));
+    }
+
+    .metric.blue {
+      background: linear-gradient(180deg, #ffffff, var(--blue-soft));
+    }
+
+    .metric.amber {
+      background: linear-gradient(180deg, #ffffff, var(--amber-soft));
+    }
+
+    .metric.red {
+      background: linear-gradient(180deg, #ffffff, var(--red-soft));
+    }
+
+    .metric.purple {
+      background: linear-gradient(180deg, #ffffff, var(--purple-soft));
+    }
+
+    .metric.cyan {
+      background: linear-gradient(180deg, #ffffff, var(--cyan-soft));
+    }
 
     .section-grid {
       display: grid;
@@ -227,6 +283,7 @@
       border-radius: var(--radius);
       padding: 18px;
       min-width: 0;
+      overflow: hidden;
     }
 
     .panel-header {
@@ -288,15 +345,22 @@
       display: block;
     }
 
-    .chart-box.full canvas { height: 275px !important; max-height: 275px !important; }
-    .chart-box.tall canvas { height: 325px !important; max-height: 325px !important; }
+    .chart-box.full canvas {
+      height: 275px !important;
+      max-height: 275px !important;
+    }
+
+    .chart-box.tall canvas {
+      height: 325px !important;
+      max-height: 325px !important;
+    }
 
     .chart-title {
       font-weight: 900;
       font-size: 13px;
       color: var(--muted);
       margin-bottom: 10px;
-      height: 18px;
+      min-height: 18px;
     }
 
     .weird-grid {
@@ -311,6 +375,7 @@
       padding: 14px;
       min-height: 120px;
       background: linear-gradient(180deg, #fff, rgba(240,244,241,.9));
+      overflow: hidden;
     }
 
     .weird-card small {
@@ -328,6 +393,7 @@
       font-size: 24px;
       letter-spacing: -0.03em;
       line-height: 1.05;
+      word-break: break-word;
     }
 
     .weird-card p {
@@ -337,7 +403,8 @@
       line-height: 1.35;
     }
 
-    .insights, .strange-insights {
+    .insights,
+    .strange-insights {
       display: grid;
       gap: 10px;
     }
@@ -356,7 +423,10 @@
       border-color: #ded4ff;
     }
 
-    .composer { display: grid; gap: 10px; }
+    .composer {
+      display: grid;
+      gap: 10px;
+    }
 
     textarea {
       width: 100%;
@@ -366,7 +436,7 @@
       border-radius: 18px;
       padding: 14px;
       font: inherit;
-      font-size: 14px;
+      font-size: 16px;
       outline: none;
       background: #fff;
       color: var(--text);
@@ -393,6 +463,7 @@
       padding: 14px;
       display: grid;
       gap: 10px;
+      overflow: hidden;
     }
 
     .entry-top {
@@ -406,12 +477,14 @@
       color: var(--muted);
       font-size: 12px;
       font-weight: 900;
+      line-height: 1.35;
     }
 
     .entry-text {
       font-size: 14px;
       line-height: 1.5;
       margin: 0;
+      word-break: break-word;
     }
 
     .tagline {
@@ -427,6 +500,8 @@
       background: var(--panel-soft);
       color: var(--muted);
       font-weight: 900;
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
 
     .entry-insight {
@@ -436,12 +511,14 @@
       border-radius: 14px;
       font-size: 13px;
       line-height: 1.45;
+      word-break: break-word;
     }
 
     .entry-actions {
       display: flex;
       gap: 8px;
       justify-content: flex-end;
+      flex-wrap: wrap;
     }
 
     .entry-actions button {
@@ -474,7 +551,9 @@
       z-index: 20;
     }
 
-    .loading.show { display: block; }
+    .loading.show {
+      display: block;
+    }
 
     .toast {
       position: fixed;
@@ -493,7 +572,9 @@
       line-height: 1.4;
     }
 
-    .toast.show { display: block; }
+    .toast.show {
+      display: block;
+    }
 
     .filters {
       display: flex;
@@ -502,14 +583,17 @@
       margin-bottom: 12px;
     }
 
-    .select, input[type="search"] {
+    .select,
+    input[type="search"] {
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 10px 12px;
       background: #fff;
       font: inherit;
+      font-size: 14px;
       color: var(--text);
       min-width: 160px;
+      max-width: 100%;
     }
 
     .footer-note {
@@ -520,34 +604,331 @@
     }
 
     @media (max-width: 1080px) {
-      .topbar, .section-grid { grid-template-columns: 1fr; }
-      .grid-cards { grid-template-columns: repeat(3, 1fr); }
-      .weird-grid { grid-template-columns: repeat(2, 1fr); }
+      .topbar,
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-cards {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .weird-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     @media (max-width: 720px) {
-      .app { width: min(100% - 18px, 1420px); padding-top: 10px; }
-      .hero, .status-card, .panel { border-radius: 18px; padding: 15px; }
-      .grid-cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .metric { min-height: 112px; padding: 13px; }
-      .charts { grid-template-columns: 1fr; }
-      .chart-box.full { grid-column: auto; }
-      .chart-box, .chart-box.full, .chart-box.tall {
-        height: 300px;
-        min-height: 300px;
-        max-height: 300px;
+      body {
+        background:
+          radial-gradient(circle at top left, rgba(45, 122, 75, 0.10), transparent 36%),
+          var(--bg);
       }
-      .chart-box canvas, .chart-box.full canvas, .chart-box.tall canvas {
-        height: 235px !important;
-        max-height: 235px !important;
+
+      .app {
+        width: 100%;
+        padding: 10px 10px 28px;
       }
-      .entry-top { flex-direction: column; }
-      .feed { max-height: none; overflow: visible; }
+
+      .topbar {
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .hero,
+      .status-card,
+      .panel {
+        border-radius: 18px;
+        padding: 14px;
+        box-shadow: 0 10px 28px rgba(30, 55, 40, 0.07);
+      }
+
+      .hero::after {
+        width: 150px;
+        height: 150px;
+        right: -70px;
+        top: -70px;
+      }
+
+      .eyebrow {
+        font-size: 11px;
+        padding: 6px 9px;
+        margin-bottom: 10px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.04;
+        letter-spacing: -0.035em;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      button {
+        width: 100%;
+        padding: 13px 14px;
+        border-radius: 14px;
+        font-size: 14px;
+      }
+
+      .status-card {
+        gap: 8px;
+      }
+
+      .status-row {
+        font-size: 12px;
+        gap: 8px;
+        padding-bottom: 8px;
+      }
+
+      .status-row strong {
+        text-align: right;
+        font-size: 12px;
+      }
+
+      .pill {
+        padding: 5px 8px;
+        font-size: 12px;
+      }
+
+      .grid-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 10px 0;
+      }
+
+      .metric {
+        min-height: 104px;
+        padding: 12px;
+        border-radius: 16px;
+        box-shadow: 0 10px 26px rgba(30, 55, 40, 0.06);
+      }
+
+      .metric small {
+        font-size: 11px;
+        margin-bottom: 7px;
+      }
+
+      .metric strong {
+        font-size: 22px;
+      }
+
+      .metric span {
+        font-size: 11px;
+        line-height: 1.25;
+        margin-top: 7px;
+      }
+
+      .section-grid {
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .panel {
+        margin-top: 10px;
+      }
+
+      .panel-header {
+        margin-bottom: 12px;
+        align-items: flex-start;
+      }
+
+      .panel h2 {
+        font-size: 16px;
+      }
+
+      .panel p.hint {
+        font-size: 12px;
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .select,
+      input[type="search"] {
+        width: 100%;
+        min-width: 0;
+        font-size: 16px;
+        padding: 12px;
+      }
+
+      textarea {
+        min-height: 108px;
+      }
+
+      .feed {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+        gap: 10px;
+      }
+
+      .entry {
+        border-radius: 16px;
+        padding: 12px;
+      }
+
+      .entry-top {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .entry .pill {
+        align-self: flex-start;
+      }
+
+      .entry-text {
+        font-size: 14px;
+      }
+
+      .entry-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .entry-actions button {
+        width: 100%;
+        font-size: 12px;
+        padding: 9px 8px;
+      }
+
+      .weird-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .weird-card {
+        min-height: auto;
+        border-radius: 16px;
+        padding: 12px;
+      }
+
+      .weird-card strong {
+        font-size: 22px;
+      }
+
+      .charts {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .chart-box,
+      .chart-box.full,
+      .chart-box.tall {
+        grid-column: auto;
+        height: 305px;
+        min-height: 305px;
+        max-height: 305px;
+        border-radius: 16px;
+        padding: 12px;
+      }
+
+      .chart-box canvas,
+      .chart-box.full canvas,
+      .chart-box.tall canvas {
+        height: 240px !important;
+        max-height: 240px !important;
+      }
+
+      .chart-title {
+        font-size: 12px;
+        line-height: 1.25;
+        min-height: 32px;
+        margin-bottom: 8px;
+      }
+
+      .insight {
+        font-size: 13px;
+        border-radius: 14px;
+        padding: 12px;
+      }
+
+      .loading {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        text-align: center;
+        border-radius: 14px;
+      }
+
+      .toast {
+        bottom: 10px;
+        width: calc(100% - 20px);
+        border-radius: 14px;
+      }
     }
 
     @media (max-width: 430px) {
-      .grid-cards, .weird-grid { grid-template-columns: 1fr; }
-      .actions button { width: 100%; }
+      .app {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .subtitle {
+        font-size: 13px;
+      }
+
+      .grid-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .metric {
+        min-height: 98px;
+      }
+
+      .metric strong {
+        font-size: 20px;
+      }
+
+      .metric span {
+        display: none;
+      }
+
+      .status-row {
+        align-items: flex-start;
+      }
+
+      .chart-box,
+      .chart-box.full,
+      .chart-box.tall {
+        height: 290px;
+        min-height: 290px;
+        max-height: 290px;
+      }
+
+      .chart-box canvas,
+      .chart-box.full canvas,
+      .chart-box.tall canvas {
+        height: 225px !important;
+        max-height: 225px !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .grid-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .metric span {
+        display: block;
+      }
     }
   </style>
 </head>
@@ -556,11 +937,10 @@
   <div class="app">
     <header class="topbar">
       <section class="hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.2 — Central de Insights</div>
-        <h1>Transforme frases do WhatsApp em inteligência sobre sua vida.</h1>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.4 — Central de Insights</div>
+        <h1>Transforme frases e fotos do WhatsApp em inteligência sobre sua vida.</h1>
         <p class="subtitle">
-          Agora o Radar não apenas soma gastos e minutos. Ele tenta detectar atrito, vitalidade, construção de ativos,
-          vazamento financeiro, retorno emocional e padrões invisíveis entre frases soltas.
+          O Radar interpreta registros livres, imagens, tempo, dinheiro, projetos e rotinas para revelar tendências pessoais.
         </p>
 
         <div class="actions">
@@ -581,14 +961,14 @@
         </div>
         <div class="status-row">
           <span>Entrada</span>
-          <strong>WhatsApp + frase livre</strong>
+          <strong>WhatsApp + fotos</strong>
         </div>
         <div class="status-row">
           <span>Última leitura</span>
           <strong id="lastUpdate">—</strong>
         </div>
         <p class="footer-note">
-          Os novos índices são heurísticos: servem para provocar leitura estratégica, não para fechar diagnóstico.
+          Os índices são leituras heurísticas: servem para provocar percepção estratégica, não para fechar diagnóstico.
         </p>
       </aside>
     </header>
@@ -597,7 +977,7 @@
       <article class="metric red">
         <small>Dinheiro gasto</small>
         <strong id="cardSpent">R$ 0,00</strong>
-        <span>Total detectado nas frases.</span>
+        <span>Total detectado nas frases e registros.</span>
       </article>
 
       <article class="metric green">
@@ -653,7 +1033,7 @@
       <main class="panel">
         <div class="panel-header">
           <div>
-            <h2>Frases e inputs recentes</h2>
+            <h2>Frases, fotos e inputs recentes</h2>
             <p class="hint">Primeiro vem a vida narrada. Depois os insights.</p>
           </div>
         </div>
@@ -681,13 +1061,13 @@
       <div class="panel-header">
         <div>
           <h2>Laboratório de tendências incomuns</h2>
-          <p class="hint">Leituras próprias do Radar: atrito, vitalidade, construção de ativo e vazamentos invisíveis.</p>
+          <p class="hint">Atrito, vitalidade, construção de ativo, vazamentos invisíveis e memória visual.</p>
         </div>
       </div>
 
       <div class="weird-grid">
         <article class="weird-card">
-          <small>Dia dominante</small>
+          <small>Dimensão dominante</small>
           <strong id="weirdDominantDay">—</strong>
           <p id="weirdDominantDayHint">O tema que mais aparece no período.</p>
         </article>
@@ -720,7 +1100,7 @@
       <div class="panel-header">
         <div>
           <h2>Insights principais</h2>
-          <p class="hint">Interpretações geradas a partir das frases já registradas.</p>
+          <p class="hint">Interpretações geradas a partir das frases e fotos já registradas.</p>
         </div>
       </div>
 
@@ -733,7 +1113,7 @@
       <div class="panel-header">
         <div>
           <h2>Tendências ao longo do tempo</h2>
-          <p class="hint">Agora com gráficos convencionais e mapas menos óbvios.</p>
+          <p class="hint">Gráficos convencionais e mapas menos óbvios.</p>
         </div>
       </div>
 
@@ -794,8 +1174,9 @@
         const sep = url.includes('?') ? '&' : '?';
 
         window[callbackName] = function(data) {
-          try { resolve(data); }
-          finally {
+          try {
+            resolve(data);
+          } finally {
             delete window[callbackName];
             script.remove();
           }
@@ -818,7 +1199,9 @@
       el.classList.add('show');
     }
 
-    function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+    function hideLoading() {
+      document.getElementById('loading').classList.remove('show');
+    }
 
     function toast(message) {
       const el = document.getElementById('toast');
@@ -866,11 +1249,12 @@
 
         const sport = inferred.esporte_minutos || saneMax(entry.esporte_minutos, entry.atividade_fisica_minutos);
         const productive = inferred.produtivo_minutos || saneProductive(entry);
-        const text = String(entry.entrada_original || '').toLowerCase();
 
+        const text = String(entry.entrada_original || '').toLowerCase();
         const spent = toNumber(entry.dinheiro_gasto);
         const earned = toNumber(entry.dinheiro_ganho);
         const invested = toNumber(entry.dinheiro_investido);
+
         const emotionalScore = getEmotionalScore(entry);
         const frictionScore = computeFrictionScore(entry, spent, productive, sport);
         const assetScore = computeAssetScore(entry, invested, productive);
@@ -900,10 +1284,23 @@
 
       let score = 0;
       score += spent / 100;
-      if (/problema|conserto|manutenção|manutencao|burocracia|paguei|gastei|perdi|atraso|cansado|ansioso|erro/.test(text)) score += 4;
-      if (/mercado|lanche|café|cafe|almoço|almoco|combustível|combustivel/.test(text)) score += 1.5;
-      if (productive > 0) score -= Math.min(productive / 60, 4);
-      if (sport > 0) score -= 1;
+
+      if (/problema|conserto|manutenção|manutencao|burocracia|paguei|gastei|perdi|atraso|cansado|ansioso|erro/.test(text)) {
+        score += 4;
+      }
+
+      if (/mercado|lanche|café|cafe|almoço|almoco|combustível|combustivel/.test(text)) {
+        score += 1.5;
+      }
+
+      if (productive > 0) {
+        score -= Math.min(productive / 60, 4);
+      }
+
+      if (sport > 0) {
+        score -= 1;
+      }
+
       return Math.max(0, Math.round(score * 10) / 10);
     }
 
@@ -920,8 +1317,15 @@
       let score = 0;
       if (invested > 0) score += invested / 100;
       if (productive > 0) score += productive / 60;
-      if (/projeto|aplicativo|radar de vida|piutá|piuta|t&g|estudei|aprendi|curso|sítio|sitio|solar|instalação|instalacao|construindo/.test(text)) score += 5;
-      if (/consumo|lanche|café|cafe|almoço|almoco/.test(text)) score -= 1;
+
+      if (/projeto|aplicativo|radar de vida|piutá|piuta|t&g|estudei|aprendi|curso|sítio|sitio|solar|instalação|instalacao|construindo|foto_analisada_automaticamente/.test(text)) {
+        score += 5;
+      }
+
+      if (/consumo|lanche|café|cafe|almoço|almoco/.test(text)) {
+        score -= 1;
+      }
+
       return Math.max(0, Math.round(score * 10) / 10);
     }
 
@@ -931,6 +1335,7 @@
       const text = String(entry.entrada_original || '').toLowerCase();
 
       let score = 0;
+
       if (tone.includes('muito_positivo')) score += 2;
       else if (tone.includes('positivo')) score += 1;
       else if (tone.includes('muito_negativo')) score -= 2;
@@ -939,8 +1344,13 @@
       if (impact.includes('positivo')) score += 1;
       if (impact.includes('negativo')) score -= 1;
 
-      if (/feliz|melhor|bem|animado|consegui|produtivo|livre|natureza|caminhei|corri|treino/.test(text)) score += 1;
-      if (/cansado|ansioso|triste|ruim|problema|perdi|estressado|exausto/.test(text)) score -= 1;
+      if (/feliz|melhor|bem|animado|consegui|produtivo|livre|natureza|caminhei|corri|treino/.test(text)) {
+        score += 1;
+      }
+
+      if (/cansado|ansioso|triste|ruim|problema|perdi|estressado|exausto/.test(text)) {
+        score -= 1;
+      }
 
       return Math.max(-3, Math.min(3, score));
     }
@@ -972,7 +1382,9 @@
       };
     }
 
-    function saneMax(...values) { return Math.max(...values.map(toNumber)); }
+    function saneMax(...values) {
+      return Math.max(...values.map(toNumber));
+    }
 
     function saneProductive(entry) {
       const values = [
@@ -985,7 +1397,10 @@
       const sum = values.reduce((a, b) => a + b, 0);
       const max = Math.max(...values);
 
-      if (max > 0 && sum >= max * 2) return max;
+      if (max > 0 && sum >= max * 2) {
+        return max;
+      }
+
       return sum;
     }
 
@@ -1069,7 +1484,7 @@
       if (projectEntries.length) {
         return {
           label: Math.round(score),
-          hint: `${projectEntries.length} entrada(s) parecem construir ativo: projeto, estudo, instalação, tecnologia, sítio ou algo com retorno futuro.`
+          hint: `${projectEntries.length} entrada(s) parecem construir ativo: projeto, estudo, instalação, tecnologia, sítio, foto relevante ou algo com retorno futuro.`
         };
       }
 
@@ -1081,8 +1496,12 @@
 
     function detectBodyReality(entries) {
       const active = entries.filter(e => e._sport_display_min > 0);
+
       if (!active.length) {
-        return { label: 'sem dado', hint: 'Ainda não há atividade física suficiente para cruzar corpo e realidade.' };
+        return {
+          label: 'sem dado',
+          hint: 'Ainda não há atividade física suficiente para cruzar corpo e realidade.'
+        };
       }
 
       const avgEmotionActive = average(active.map(e => e._emotional_score));
@@ -1103,13 +1522,14 @@
       const productive = sum(entries.map(e => e._productive_display_min));
       const friction = sum(entries.map(e => e._friction_score));
       const asset = sum(entries.map(e => e._asset_score));
+      const visuals = entries.filter(e => e.visual_auto || e.tipo_input === 'foto' || /foto|visual/.test(e._all_text || ''));
 
       if (spent > 0 && earned === 0) {
         insights.push('Seu Radar está captando uma fase de saída financeira sem entrada registrada. Isso pode ser real, ou pode indicar que você está esquecendo de narrar ganhos.');
       }
 
       if (asset > friction && asset > 4) {
-        insights.push('Há mais sinal de construção do que de atrito: mesmo com gastos, algumas frases indicam investimento em estrutura, projeto ou capacidade futura.');
+        insights.push('Há mais sinal de construção do que de atrito: mesmo com gastos, algumas frases e fotos indicam investimento em estrutura, projeto ou capacidade futura.');
       }
 
       if (friction > asset && friction > 6) {
@@ -1124,23 +1544,31 @@
         insights.push('Há produção sem corpo. O app recomenda observar se a vida está ficando muito mental e pouco física.');
       }
 
+      if (visuals.length >= 2) {
+        insights.push(`O Radar já incorporou ${visuals.length} registros visuais. Sua memória está deixando de ser só textual e começando a capturar evidências do mundo físico.`);
+      }
+
       const hourGroups = groupByHour(entries);
       const peak = hourGroups.sort((a,b) => b.count - a.count)[0];
+
       if (peak && peak.count >= 2) {
         insights.push(`Seu horário narrativo mais ativo é por volta das ${peak.hour}h. Talvez esse seja o momento em que você mais percebe a própria vida.`);
       }
 
       const recurring = groupNormalizedByCategory(entries).filter(c => c.ocorrencias >= 2).slice(0, 3);
+
       if (recurring.length) {
         insights.push(`Padrões recorrentes detectados: ${recurring.map(r => r.categoria).join(', ')}. O app está começando a formar uma impressão de ciclo, não apenas de eventos soltos.`);
       }
 
       const maintenance = entries.filter(e => /manutenção|manutencao|conserto|pagamento|paguei|instalação|instalacao|serviço|servico/.test(e._all_text));
+
       if (maintenance.length >= 2) {
         insights.push('Várias frases parecem ligadas à infraestrutura da vida: consertar, pagar, instalar, manter. Isso é trabalho invisível que normalmente não aparece em planilhas.');
       }
 
       const places = unique(entries.flatMap(e => e.lugares_detectados || [])).filter(Boolean);
+
       if (places.length >= 2) {
         insights.push(`Lugares começaram a virar variável de análise: ${places.slice(0,4).join(', ')}. No futuro, o Radar pode cruzar local com gasto, humor e produtividade.`);
       }
@@ -1175,13 +1603,25 @@
 
       renderChart('moneyChart', {
         type: 'bar',
-        data: { labels, datasets: [{ label: 'Gasto', data: spent }, { label: 'Ganho', data: earned }] },
+        data: {
+          labels,
+          datasets: [
+            { label: 'Gasto', data: spent },
+            { label: 'Ganho', data: earned }
+          ]
+        },
         options: baseChartOptions('R$')
       });
 
       renderChart('timeChart', {
         type: 'bar',
-        data: { labels, datasets: [{ label: 'Esporte/atividade', data: sport }, { label: 'Produtivo', data: productive }] },
+        data: {
+          labels,
+          datasets: [
+            { label: 'Esporte/atividade', data: sport },
+            { label: 'Produtivo', data: productive }
+          ]
+        },
         options: baseChartOptions('min')
       });
 
@@ -1189,9 +1629,21 @@
         type: 'doughnut',
         data: {
           labels: byCategory.slice(0, 8).map(r => r.categoria),
-          datasets: [{ label: 'Ocorrências', data: byCategory.slice(0, 8).map(r => r.ocorrencias) }]
+          datasets: [
+            { label: 'Ocorrências', data: byCategory.slice(0, 8).map(r => r.ocorrencias) }
+          ]
         },
-        options: { responsive: true, maintainAspectRatio: false, resizeDelay: 150, plugins: { legend: { position: 'bottom' } } }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 150,
+          plugins: {
+            legend: {
+              position: window.innerWidth <= 720 ? 'bottom' : 'bottom',
+              labels: { boxWidth: 10, font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            }
+          }
+        }
       });
 
       renderFrictionScatter();
@@ -1210,23 +1662,36 @@
 
       renderChart('frictionScatterChart', {
         type: 'bubble',
-        data: { datasets: [{ label: 'Entradas', data: points }] },
+        data: {
+          datasets: [
+            { label: 'Entradas', data: points }
+          ]
+        },
         options: {
-          ...baseChartOptions(''),
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 150,
           plugins: {
             legend: { display: false },
             tooltip: {
               callbacks: {
                 label: ctx => {
                   const p = ctx.raw;
-                  return `${p.label.slice(0, 90)} | impacto R$ ${p.x} | ${p.y}min produtivos`;
+                  return `${String(p.label).slice(0, 90)} | impacto R$ ${p.x} | ${p.y}min produtivos`;
                 }
               }
             }
           },
           scales: {
-            x: { title: { display: true, text: 'Impacto financeiro líquido da entrada' } },
-            y: { title: { display: true, text: 'Minutos produtivos' }, beginAtZero: true }
+            x: {
+              title: { display: window.innerWidth > 720, text: 'Impacto financeiro líquido da entrada' },
+              ticks: { font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            },
+            y: {
+              title: { display: window.innerWidth > 720, text: 'Minutos produtivos' },
+              beginAtZero: true,
+              ticks: { font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            }
           }
         }
       });
@@ -1239,34 +1704,64 @@
         type: 'radar',
         data: {
           labels: Object.keys(dimensions),
-          datasets: [{ label: 'Intensidade', data: Object.values(dimensions) }]
+          datasets: [
+            { label: 'Intensidade', data: Object.values(dimensions) }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: { r: { beginAtZero: true } },
-          plugins: { legend: { display: false } }
+          scales: {
+            r: {
+              beginAtZero: true,
+              pointLabels: { font: { size: window.innerWidth <= 720 ? 10 : 12 } },
+              ticks: { display: window.innerWidth > 430 }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
         }
       });
     }
 
     function renderHourChart() {
-      const rows = Array.from({length: 24}, (_, hour) => ({ hour, count: 0 }));
+      const rows = Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0 }));
+
       normalizedEntries.forEach(e => {
-        if (Number.isFinite(e._hour)) rows[e._hour].count += 1;
+        if (Number.isFinite(e._hour)) {
+          rows[e._hour].count += 1;
+        }
       });
 
       renderChart('hourChart', {
         type: 'bar',
         data: {
           labels: rows.map(r => String(r.hour).padStart(2, '0') + 'h'),
-          datasets: [{ label: 'Entradas', data: rows.map(r => r.count) }]
+          datasets: [
+            { label: 'Entradas', data: rows.map(r => r.count) }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            },
+            x: {
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: window.innerWidth <= 720 ? 8 : 12,
+                font: { size: window.innerWidth <= 720 ? 10 : 12 }
+              }
+            }
+          }
         }
       });
     }
@@ -1281,7 +1776,11 @@
 
       renderChart('vitalityChart', {
         type: 'bubble',
-        data: { datasets: [{ label: 'Entradas', data: points }] },
+        data: {
+          datasets: [
+            { label: 'Entradas', data: points }
+          ]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -1291,14 +1790,21 @@
               callbacks: {
                 label: ctx => {
                   const p = ctx.raw;
-                  return `${p.label.slice(0, 90)} | corpo ${p.x}min | saldo R$ ${p.y}`;
+                  return `${String(p.label).slice(0, 90)} | corpo ${p.x}min | saldo R$ ${p.y}`;
                 }
               }
             }
           },
           scales: {
-            x: { title: { display: true, text: 'Minutos de corpo / atividade' }, beginAtZero: true },
-            y: { title: { display: true, text: 'Saldo da entrada' } }
+            x: {
+              title: { display: window.innerWidth > 720, text: 'Minutos de corpo / atividade' },
+              beginAtZero: true,
+              ticks: { font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            },
+            y: {
+              title: { display: window.innerWidth > 720, text: 'Saldo da entrada' },
+              ticks: { font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            }
           }
         }
       });
@@ -1313,11 +1819,12 @@
         casa: 0,
         relações: 0,
         atrito: 0,
-        vitalidade: 0
+        visual: 0
       };
 
       entries.forEach(e => {
         const text = e._all_text || '';
+
         d.dinheiro += toNumber(e.dinheiro_gasto) > 0 || toNumber(e.dinheiro_ganho) > 0 ? 1 : 0;
         d.corpo += e._sport_display_min > 0 || /caminh|corr|trein|roçando|gramado|bicic/.test(text) ? 1 : 0;
         d.trabalho += e._productive_display_min > 0 || /trabalh|cliente|jur[ií]dic|process|atendimento/.test(text) ? 1 : 0;
@@ -1325,7 +1832,7 @@
         d.casa += /casa|sítio|sitio|gramado|manutenção|manutencao|conserto|placas solares|piutá|piuta/.test(text) ? 1 : 0;
         d.relações += (e.pessoas_detectadas || []).length || /família|familia|conversei|cliente|ana|amigo/.test(text) ? 1 : 0;
         d.atrito += e._friction_score > 3 ? 1 : 0;
-        d.vitalidade += e._emotional_score > 0 || e._sport_display_min > 0 ? 1 : 0;
+        d.visual += e.visual_auto || e.tipo_input === 'foto' || /foto|visual/.test(text) ? 1 : 0;
       });
 
       return d;
@@ -1333,10 +1840,14 @@
 
     function renderChart(id, config) {
       const canvas = document.getElementById(id);
+
+      if (!canvas) return;
+
       if (charts[id]) {
         charts[id].destroy();
         charts[id] = null;
       }
+
       charts[id] = new Chart(canvas, {
         ...config,
         options: {
@@ -1353,11 +1864,30 @@
         responsive: true,
         maintainAspectRatio: false,
         resizeDelay: 150,
-        plugins: { legend: { position: 'bottom' } },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 10,
+              font: { size: window.innerWidth <= 720 ? 10 : 12 }
+            }
+          }
+        },
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: value => suffix === 'R$' ? 'R$ ' + value : suffix === 'min' ? value + ' min' : value }
+            ticks: {
+              font: { size: window.innerWidth <= 720 ? 10 : 12 },
+              callback: value => suffix === 'R$' ? 'R$ ' + value : suffix === 'min' ? value + ' min' : value
+            }
+          },
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: window.innerWidth <= 720 ? 5 : 10,
+              font: { size: window.innerWidth <= 720 ? 10 : 12 }
+            }
           }
         }
       };
@@ -1366,7 +1896,10 @@
     function renderCategoryFilter() {
       const select = document.getElementById('categoryFilter');
       const current = select.value;
-      const cats = unique(normalizedEntries.flatMap(e => Array.isArray(e.categorias) ? e.categorias : [])).sort((a,b) => a.localeCompare(b));
+
+      const cats = unique(
+        normalizedEntries.flatMap(e => Array.isArray(e.categorias) ? e.categorias : [])
+      ).sort((a,b) => a.localeCompare(b));
 
       select.innerHTML = '<option value="">Todas as categorias</option>' +
         cats.map(cat => `<option value="${escapeAttr(cat)}">${escapeHtml(cat)}</option>`).join('');
@@ -1385,14 +1918,27 @@
       if (search) {
         entries = entries.filter(e => {
           const hay = [
-            e.entrada_original, e.resumo, e.insight_curto, e.insight_profundo, e.tipo_principal,
-            ...(e.categorias || []), ...(e.projetos_detectados || []), ...(e.pessoas_detectadas || [])
+            e.entrada_original,
+            e.resumo,
+            e.insight_curto,
+            e.insight_profundo,
+            e.tipo_principal,
+            e.visual_descricao,
+            e.visual_contexto,
+            ...(e.categorias || []),
+            ...(e.projetos_detectados || []),
+            ...(e.pessoas_detectadas || []),
+            ...(e.lugares_detectados || [])
           ].join(' ').toLowerCase();
+
           return hay.includes(search);
         });
       }
 
-      if (category) entries = entries.filter(e => (e.categorias || []).includes(category));
+      if (category) {
+        entries = entries.filter(e => (e.categorias || []).includes(category));
+      }
+
       entries = entries.slice(0, limit);
 
       if (!entries.length) {
@@ -1402,6 +1948,7 @@
 
       box.innerHTML = entries.map(entry => {
         const tags = [
+          entry.visual_auto ? 'foto' : '',
           entry.tipo_principal,
           ...(entry.categorias || []).slice(0, 5),
           entry.tom_emocional,
@@ -1450,6 +1997,7 @@
 
     async function sendManualEntry() {
       const text = document.getElementById('manualText').value.trim();
+
       if (!text) {
         toast('Escreva uma frase antes de registrar.');
         return;
@@ -1458,7 +2006,11 @@
       showLoading('Registrando frase...');
       try {
         const data = await jsonp(APPS_SCRIPT_URL + '?action=register&text=' + encodeURIComponent(text));
-        if (!data || !data.ok) throw new Error((data && data.error) || 'Falha ao registrar.');
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao registrar.');
+        }
+
         document.getElementById('manualText').value = '';
         toast('Frase registrada no Google Docs.');
         await loadData();
@@ -1472,13 +2024,18 @@
 
     async function deleteEntry(id) {
       if (!id) return;
+
       const ok = confirm('Deseja excluir esta entrada do painel? O registro não será apagado fisicamente do Google Docs; será apenas ocultado.');
       if (!ok) return;
 
       showLoading('Excluindo registro...');
       try {
         const data = await jsonp(APPS_SCRIPT_URL + '?action=delete&id=' + encodeURIComponent(id));
-        if (!data || !data.ok) throw new Error((data && data.error) || 'Falha ao excluir.');
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao excluir.');
+        }
+
         toast('Registro excluído do painel.');
         await loadData();
       } catch (err) {
@@ -1500,16 +2057,23 @@
         `Insight: ${entry.insight_curto || entry.insight_profundo || ''}`
       ].join('\n');
 
-      navigator.clipboard.writeText(text).then(() => toast('Entrada copiada.'));
+      navigator.clipboard.writeText(text).then(() => {
+        toast('Entrada copiada.');
+      }).catch(() => {
+        toast('Não foi possível copiar automaticamente.');
+      });
     }
 
-    function openDocsData() { window.open(APPS_SCRIPT_URL + '?action=data', '_blank'); }
+    function openDocsData() {
+      window.open(APPS_SCRIPT_URL + '?action=data', '_blank');
+    }
 
     function openDiaryDoc() {
       if (!currentDocId) {
         toast('ID do Google Docs ainda não carregado. Clique em Atualizar painel.');
         return;
       }
+
       window.open('https://docs.google.com/document/d/' + currentDocId + '/edit', '_blank');
     }
 
@@ -1518,6 +2082,7 @@
 
       entries.forEach(e => {
         const key = e.data_br || isoToBrDate(e.data_iso) || 'Sem data';
+
         if (!map.has(key)) {
           map.set(key, {
             data: key,
@@ -1539,7 +2104,8 @@
         row.entradas += 1;
       });
 
-      return Array.from(map.values()).sort((a, b) => brDateToSortable(a.data).localeCompare(brDateToSortable(b.data)));
+      return Array.from(map.values())
+        .sort((a, b) => brDateToSortable(a.data).localeCompare(brDateToSortable(b.data)));
     }
 
     function groupNormalizedByCategory(entries) {
@@ -1547,8 +2113,12 @@
 
       entries.forEach(e => {
         const cats = (e.categorias && e.categorias.length) ? e.categorias : [e.tipo_principal || 'outro'];
+
         cats.forEach(cat => {
-          if (!map.has(cat)) map.set(cat, { categoria: cat, ocorrencias: 0 });
+          if (!map.has(cat)) {
+            map.set(cat, { categoria: cat, ocorrencias: 0 });
+          }
+
           map.get(cat).ocorrencias += 1;
         });
       });
@@ -1558,12 +2128,18 @@
 
     function groupByHour(entries) {
       const map = new Map();
+
       entries.forEach(e => {
         const hour = Number.isFinite(e._hour) ? e._hour : -1;
         if (hour < 0) return;
-        if (!map.has(hour)) map.set(hour, { hour, count: 0 });
+
+        if (!map.has(hour)) {
+          map.set(hour, { hour, count: 0 });
+        }
+
         map.get(hour).count += 1;
       });
+
       return Array.from(map.values());
     }
 
@@ -1572,6 +2148,7 @@
         const h = parseInt(String(horaBr).split(':')[0], 10);
         return Number.isFinite(h) ? h : NaN;
       }
+
       try {
         const d = new Date(iso);
         return d.getHours();
@@ -1581,14 +2158,20 @@
     }
 
     function money(value) {
-      return toNumber(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      return toNumber(value).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
     }
 
     function minutesHuman(value) {
       const min = Math.round(toNumber(value));
+
       if (!min) return '0min';
+
       const h = Math.floor(min / 60);
       const m = min % 60;
+
       if (h && m) return `${h}h${String(m).padStart(2, '0')}min`;
       if (h) return `${h}h`;
       return `${m}min`;
@@ -1599,7 +2182,9 @@
       return Number.isFinite(n) ? n : 0;
     }
 
-    function sum(values) { return values.reduce((acc, v) => acc + toNumber(v), 0); }
+    function sum(values) {
+      return values.reduce((acc, v) => acc + toNumber(v), 0);
+    }
 
     function average(values) {
       const nums = values.map(toNumber).filter(Number.isFinite);
@@ -1607,7 +2192,9 @@
       return sum(nums) / nums.length;
     }
 
-    function unique(arr) { return Array.from(new Set(arr.filter(Boolean).map(String))); }
+    function unique(arr) {
+      return Array.from(new Set(arr.filter(Boolean).map(String)));
+    }
 
     function escapeHtml(value) {
       return String(value || '')
@@ -1618,23 +2205,47 @@
         .replace(/'/g, '&#039;');
     }
 
-    function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#096;'); }
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/`/g, '&#096;');
+    }
 
     function formatDateTime(date) {
-      return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
 
     function isoToBrDate(iso) {
       if (!iso) return '';
-      try { return new Date(iso).toLocaleDateString('pt-BR'); }
-      catch { return ''; }
+
+      try {
+        return new Date(iso).toLocaleDateString('pt-BR');
+      } catch {
+        return '';
+      }
     }
 
     function brDateToSortable(br) {
       const parts = String(br || '').split('/');
+
       if (parts.length !== 3) return br || '';
+
       return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
+
+    let resizeTimer = null;
+
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (rawData && normalizedEntries.length) {
+          renderCharts(rawData);
+        }
+      }, 300);
+    });
 
     window.addEventListener('load', loadData);
   </script>
