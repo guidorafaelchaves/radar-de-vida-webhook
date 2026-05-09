@@ -3,354 +3,1300 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar de Vida — v6 IA</title>
+  <title>Radar de Vida v7 — Diário Semântico</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    :root{
-      --bg:#f4f8fd; --card:#fff; --line:#dbe7f5; --text:#16324d; --muted:#6a829b;
-      --blue:#2563eb; --green:#16a34a; --red:#dc2626; --yellow:#d97706; --purple:#7c3aed;
-      --softBlue:#eaf2ff; --softGreen:#eaf8ef; --softRed:#fdeeee; --softYellow:#fff6e7;
-      --shadow:0 12px 35px rgba(31,66,114,.08);
+    :root {
+      --bg: #f5f7f5;
+      --panel: #ffffff;
+      --panel-soft: #f0f4f1;
+      --text: #18231d;
+      --muted: #6d7a72;
+      --line: #dfe7e1;
+      --green: #2d7a4b;
+      --green-soft: #e3f2e8;
+      --blue-soft: #e8eefc;
+      --amber-soft: #fff2d8;
+      --red-soft: #ffe8e5;
+      --shadow: 0 18px 45px rgba(30, 55, 40, 0.08);
+      --radius: 22px;
     }
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:
-      radial-gradient(circle at 0 0,rgba(37,99,235,.10),transparent 28%),
-      radial-gradient(circle at 100% 0,rgba(124,58,237,.08),transparent 25%),var(--bg)}
-    header{position:sticky;top:0;z-index:9;padding:18px 16px;background:rgba(244,248,253,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-    .wrap{max-width:1380px;margin:0 auto}
-    .head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
-    h1{margin:0;font-size:34px;letter-spacing:-.9px}.sub{margin-top:7px;max-width:930px;color:var(--muted);line-height:1.45;font-size:14px}
-    .status{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800}
-    .ok{background:var(--softGreen);color:#12632f;border-color:#bee7ca}.warn{background:var(--softYellow);color:#8a5406;border-color:#f1dfb4}.err{background:var(--softRed);color:#9f1d1d;border-color:#efcaca}
-    main{padding:22px 16px 70px}.grid{display:grid;grid-template-columns:420px 1fr;gap:18px}@media(max-width:1050px){.grid{grid-template-columns:1fr}}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}.card+.card{margin-top:16px}
-    h2{margin:0 0 12px;font-size:20px;letter-spacing:-.3px} h3{margin:0;font-size:16px}
-    label{display:block;margin:12px 0 6px;color:var(--muted);font-size:13px;font-weight:800}
-    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 13px;background:#fff;color:var(--text);font-size:14px;outline:none}
-    textarea{min-height:110px;resize:vertical;line-height:1.5}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:620px){.row{grid-template-columns:1fr}}
-    .buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}button{border:0;border-radius:14px;padding:11px 14px;background:var(--blue);color:white;font-weight:900;cursor:pointer}
-    button.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}button.green{background:var(--green)}button.red{background:var(--red)}button.purple{background:var(--purple)}button.yellow{background:var(--yellow)}
-    button:disabled{opacity:.55;cursor:not-allowed}.notice{background:#eef6ff;border:1px solid #cfe0f4;border-radius:16px;padding:13px;color:#315b84;line-height:1.45;font-size:13px}
-    .boxok,.boxerr{border-radius:16px;padding:12px;font-size:13px;line-height:1.45;margin-top:12px;white-space:pre-wrap}.boxok{background:var(--softGreen);color:#176239;border:1px solid #cde8d5}.boxerr{background:var(--softRed);color:#992222;border:1px solid #efcaca}.hidden{display:none!important}
-    .small{font-size:12px;line-height:1.5;color:var(--muted)}.loader{display:none;color:#275d92;font-weight:800;margin:12px 0}.loader.show{display:block}
-    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}@media(max-width:1150px){.summary{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.summary{grid-template-columns:1fr}}
-    .circle{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px;min-height:130px}
-    .ring{--v:60;--c:var(--blue);width:88px;height:88px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--v)*1%),#e8eef7 0);display:grid;place-items:center;position:relative;flex:0 0 auto}.ring:before{content:"";position:absolute;inset:10px;background:#fff;border-radius:50%;border:1px solid #edf3fb}.ringIn{position:relative;text-align:center;font-weight:900}.ringMini{font-size:10px;color:var(--muted)}
-    .circleTitle{font-weight:900}.circleValue{font-size:25px;font-weight:900;margin-top:4px}.circleHint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:5px}
-    .areas{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:1180px){.areas{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.areas{grid-template-columns:1fr 1fr}}@media(max-width:620px){.areas{grid-template-columns:1fr}}
-    .area{border:1px solid var(--line);border-radius:20px;background:#fff;padding:14px;cursor:pointer}.area.selected{border-color:#79aef5;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.areaTop{display:flex;justify-content:space-between;gap:8px}
-    .icon{width:38px;height:38px;border-radius:14px;background:var(--softBlue);display:grid;place-items:center;border:1px solid #d2e4fb}.score{font-size:30px;font-weight:900}.scoreLabel{font-size:11px;color:var(--muted);text-align:right}.meter{height:10px;background:#edf3fa;border-radius:999px;overflow:hidden;margin:12px 0}.fill{height:100%;background:var(--blue)}.fill.good{background:var(--green)}.fill.att{background:var(--yellow)}.fill.risk{background:var(--red)}
-    .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.mini>div{background:#f8fbff;border:1px solid #dce8f6;border-radius:13px;padding:8px}.miniLab{font-size:10px;color:var(--muted);font-weight:900}.miniVal{font-size:13px;font-weight:900;margin-top:3px}
-    .filters{display:grid;grid-template-columns:1.3fr .8fr .8fr .75fr;gap:10px;margin:16px 0 14px}@media(max-width:920px){.filters{grid-template-columns:1fr}}
-    .record{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px}.recordTop{display:flex;justify-content:space-between;gap:12px}.recordTitle{font-size:17px;font-weight:900}.meta{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px}.text{margin-top:10px;white-space:pre-wrap;line-height:1.55;color:#24486a}
-    .tag{display:inline-block;margin:9px 6px 0 0;padding:6px 10px;border-radius:999px;background:var(--softBlue);border:1px solid #d8e8fb;color:#2864a4;font-size:12px;font-weight:800}
-    .prio{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;background:#fff;border:1px solid var(--line);white-space:nowrap}.prio.urgente{background:var(--softRed);color:#a31d1d}.prio.alta{background:var(--softYellow);color:#9b5f03}.prio.baixa{background:var(--softGreen);color:#176239}
-    .recordActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.empty{background:#fff;border:1px dashed #ccdcec;border-radius:18px;padding:30px;text-align:center;color:var(--muted);line-height:1.55}
-    .top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}code{background:#eff5fd;padding:2px 6px;border-radius:7px;color:#326da8}
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(45, 122, 75, 0.12), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(80, 120, 220, 0.10), transparent 32%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      width: min(1420px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 42px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .hero {
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -80px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(45, 122, 75, 0.13);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .02em;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 12px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .status-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+
+    .status-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button, .button {
+      border: 0;
+      background: var(--text);
+      color: white;
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: 0 12px 24px rgba(20, 35, 28, 0.14);
+      transition: transform .15s ease, opacity .15s ease;
+    }
+
+    button:hover, .button:hover {
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: #9b3024;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      min-height: 126px;
+    }
+
+    .metric small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(22px, 2.4vw, 34px);
+      letter-spacing: -0.04em;
+      line-height: 1.04;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+
+    .metric.green {
+      background: linear-gradient(180deg, #ffffff, var(--green-soft));
+    }
+
+    .metric.blue {
+      background: linear-gradient(180deg, #ffffff, var(--blue-soft));
+    }
+
+    .metric.amber {
+      background: linear-gradient(180deg, #ffffff, var(--amber-soft));
+    }
+
+    .metric.red {
+      background: linear-gradient(180deg, #ffffff, var(--red-soft));
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1.35fr .85fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel h2 {
+      font-size: 17px;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .panel p.hint {
+      color: var(--muted);
+      margin: 6px 0 0;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .chart-box {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      min-height: 320px;
+    }
+
+    .chart-box.full {
+      grid-column: 1 / -1;
+    }
+
+    .chart-title {
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .insights {
+      display: grid;
+      gap: 10px;
+    }
+
+    .insight {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 13px;
+      font-size: 13px;
+      line-height: 1.48;
+    }
+
+    .composer {
+      display: grid;
+      gap: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 108px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea:focus {
+      border-color: rgba(45, 122, 75, .55);
+      box-shadow: 0 0 0 4px rgba(45, 122, 75, .10);
+    }
+
+    .feed {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .entry {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .entry-date {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .entry-text {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .entry-insight {
+      background: var(--green-soft);
+      color: #245337;
+      padding: 10px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .entry-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .entry-actions button {
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
+    .empty {
+      border: 1px dashed #bcc8c0;
+      border-radius: 18px;
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255,255,255,.55);
+    }
+
+    .loading {
+      position: fixed;
+      inset: auto 18px 18px auto;
+      background: var(--text);
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 16px;
+      box-shadow: 0 18px 35px rgba(20, 35, 28, .22);
+      font-size: 13px;
+      font-weight: 800;
+      display: none;
+      z-index: 20;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: min(560px, calc(100% - 28px));
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: none;
+      z-index: 30;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .select, input[type="search"] {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #fff;
+      font: inherit;
+      color: var(--text);
+      min-width: 160px;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 1080px) {
+      .topbar, .section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-cards {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        width: min(100% - 18px, 1420px);
+        padding-top: 10px;
+      }
+
+      .hero, .status-card, .panel {
+        border-radius: 18px;
+        padding: 15px;
+      }
+
+      .grid-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 112px;
+        padding: 13px;
+      }
+
+      .charts {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-box.full {
+        grid-column: auto;
+      }
+
+      .entry-top {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .grid-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .actions button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
+
 <body>
-<header>
-  <div class="wrap">
-    <div class="head">
-      <div>
-        <h1>Radar de Vida v6</h1>
-        <div class="sub">
-          Versão com tratamento real por ChatGPT no backend do Render, exclusão de registros e painel leve.
-          A estrutura principal permanece: WhatsApp → Render → Apps Script → Google Sheets → Painel.
-        </div>
-      </div>
-      <div class="buttons" style="margin-top:0">
-        <button class="secondary" onclick="abrirApiDireta()">Abrir API</button>
-        <button class="purple" onclick="analisarTudoComGpt()">Analisar tudo com GPT</button>
-        <button class="green" onclick="sincronizar()">Sincronizar</button>
-      </div>
-    </div>
-    <div class="status">
-      <div class="pill" id="pillApi">API: não testada</div>
-      <div class="pill" id="pillBackend">Backend GPT: não testado</div>
-      <div class="pill" id="pillTotal">Registros: 0</div>
-      <div class="pill" id="pillAtualizado">Atualizado: —</div>
-    </div>
-  </div>
-</header>
+  <div class="app">
+    <header class="topbar">
+      <section class="hero">
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7 — Diário Semântico</div>
+        <h1>Transforme frases do WhatsApp em inteligência sobre sua vida.</h1>
+        <p class="subtitle">
+          Esta versão usa o Google Docs como memória narrativa. Cada frase livre vira registro bruto,
+          análise JSON, números essenciais, gráficos e insights sobre dinheiro, tempo, saúde, projetos e tendências.
+        </p>
 
-<main>
-  <div class="wrap grid">
-    <aside>
-      <section class="card">
-        <h2>Conexões</h2>
-        <div class="notice">
-          O Google Sheets continua sendo lido pelo Apps Script. A IA e a exclusão passam pelo backend do Render.
+        <div class="actions">
+          <button onclick="loadData()">Atualizar painel</button>
+          <button class="secondary" onclick="openDocsData()">Abrir JSON de dados</button>
+          <button class="secondary" onclick="openDiaryDoc()">Abrir Google Docs</button>
         </div>
-        <label>URL da API Apps Script</label>
-        <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec">
-        <label>URL do Backend Render</label>
-        <input id="backendUrl" placeholder="https://radar-de-vida-webhook.onrender.com">
-        <div class="buttons">
-          <button class="green" onclick="salvarConexoes()">Salvar</button>
-          <button class="secondary" onclick="testarApi()">Testar Sheets</button>
-          <button class="secondary" onclick="testarBackend()">Testar Backend</button>
-        </div>
-        <div id="connFeedback" class="boxok hidden"></div>
-        <div id="connError" class="boxerr hidden"></div>
       </section>
 
-      <section class="card">
-        <h2>Configuração GPT</h2>
-        <div class="notice">
-          A chave da OpenAI deve ficar no Render como <code>OPENAI_API_KEY</code>. Este painel apenas testa e aciona a análise.
+      <aside class="status-card">
+        <div class="status-row">
+          <span>Status</span>
+          <span class="pill"><span class="dot"></span><span id="statusText">Conectando...</span></span>
         </div>
-        <label>Prompt operacional</label>
-        <textarea id="promptLocal" placeholder="Classifique áreas da vida, gastos, ganhos, horas, polaridade, intensidade e ação sugerida."></textarea>
-        <div class="buttons">
-          <button class="purple" onclick="salvarPromptLocal()">Salvar prompt local</button>
+        <div class="status-row">
+          <span>Fonte principal</span>
+          <strong>Google Docs</strong>
         </div>
-        <div id="gptFeedback" class="boxok hidden"></div>
-      </section>
-
-      <section class="card">
-        <h2>Novo registro</h2>
-        <form id="formRegistro">
-          <label>Título</label><input id="titulo" required placeholder="Ex.: fiz 1 hora de academia">
-          <div class="row">
-            <div><label>Tipo</label><select id="tipo"><option>Registro Manual</option><option>Mensagem WhatsApp</option><option>Tarefa</option><option>Evento</option><option>Ideia</option><option>Alerta</option><option>Documento</option><option>Outro</option></select></div>
-            <div><label>Categoria</label><select id="categoria"><option>Geral</option><option>Saúde</option><option>Jurídico</option><option>Finanças</option><option>Família</option><option>Trabalho</option><option>Projeto</option><option>Relacionamento</option><option>Corpo / Esporte</option><option>Emocional</option><option>Social</option><option>Casa / Rotina</option><option>Aprendizado</option><option>Lazer</option><option>Outro</option></select></div>
-          </div>
-          <div class="row">
-            <div><label>Prioridade</label><select id="prioridade"><option>Normal</option><option>Alta</option><option>Urgente</option><option>Baixa</option></select></div>
-            <div><label>Status</label><select id="status"><option>Aberto</option><option>Em andamento</option><option>Concluído</option><option>Arquivado</option><option>Cancelado</option></select></div>
-          </div>
-          <div class="row">
-            <div><label>Data</label><input id="dataEvento" type="date"></div>
-            <div><label>Hora</label><input id="horaEvento" type="time"></div>
-          </div>
-          <label>Descrição</label><textarea id="descricao"></textarea>
-          <label>Tags</label><input id="tags" placeholder="whatsapp, treino, gasto...">
-          <div class="buttons">
-            <button class="green" type="submit" id="btnSalvar">Salvar</button>
-            <button class="secondary" type="button" onclick="limparFormulario()">Limpar</button>
-          </div>
-        </form>
-        <div id="saveFeedback" class="boxok hidden"></div>
-        <div id="saveError" class="boxerr hidden"></div>
-      </section>
-    </aside>
-
-    <section class="card">
-      <div class="top">
-        <h2>Painel inteligente</h2>
-        <div class="buttons" style="margin-top:0">
-          <button class="secondary" onclick="selecionarArea('')">Todas as áreas</button>
-          <button class="green" onclick="sincronizar()">Recarregar</button>
+        <div class="status-row">
+          <span>Entrada</span>
+          <strong>WhatsApp + frase livre</strong>
         </div>
-      </div>
+        <div class="status-row">
+          <span>Última leitura</span>
+          <strong id="lastUpdate">—</strong>
+        </div>
+        <p class="footer-note">
+          O painel lê o endpoint <strong>action=data</strong> do Apps Script via JSONP, evitando bloqueio de CORS em hospedagem estática.
+        </p>
+      </aside>
+    </header>
 
-      <div id="overview" class="summary"></div>
+    <section class="grid-cards">
+      <article class="metric red">
+        <small>Dinheiro gasto</small>
+        <strong id="cardSpent">R$ 0,00</strong>
+        <span>Total detectado nas frases.</span>
+      </article>
 
-      <div class="top" style="margin-top:14px">
-        <h2>Áreas da vida</h2>
-        <div class="small" id="areaInfo">Clique em uma área para filtrar.</div>
-      </div>
-      <div id="areas" class="areas"></div>
+      <article class="metric green">
+        <small>Dinheiro ganho</small>
+        <strong id="cardEarned">R$ 0,00</strong>
+        <span>Receitas, honorários, vendas ou entradas.</span>
+      </article>
 
-      <div class="top" style="margin-top:22px">
-        <h2 id="recordsTitle">Registros</h2>
-        <div class="small">Cada entrada pode ser analisada por GPT ou excluída da planilha.</div>
+      <article class="metric">
+        <small>Saldo</small>
+        <strong id="cardBalance">R$ 0,00</strong>
+        <span>Ganhos menos gastos e investimentos.</span>
+      </article>
+
+      <article class="metric blue">
+        <small>Esporte / atividade</small>
+        <strong id="cardSport">0min</strong>
+        <span>Caminhada, treino, corrida, pedal e similares.</span>
+      </article>
+
+      <article class="metric amber">
+        <small>Tempo produtivo</small>
+        <strong id="cardProductive">0min</strong>
+        <span>Trabalho, estudo, projeto e burocracia.</span>
+      </article>
+
+      <article class="metric">
+        <small>Registros</small>
+        <strong id="cardEntries">0</strong>
+        <span>Entradas semânticas ativas no período.</span>
+      </article>
+    </section>
+
+    <section class="section-grid">
+      <main class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Tendências ao longo do tempo</h2>
+            <p class="hint">Gráficos gerados a partir dos JSONs salvos no Google Docs.</p>
+          </div>
+        </div>
+
+        <div class="charts">
+          <div class="chart-box full">
+            <div class="chart-title">Dinheiro por dia</div>
+            <canvas id="moneyChart"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-title">Tempo por dia</div>
+            <canvas id="timeChart"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-title">Categorias mais recorrentes</div>
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </main>
+
+      <aside class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Adicionar frase manual</h2>
+            <p class="hint">Útil para testar sem WhatsApp. O fluxo grava no mesmo Google Docs.</p>
+          </div>
+        </div>
+
+        <div class="composer">
+          <textarea id="manualText" placeholder="Ex.: Ganhei 300 reais com atendimento jurídico, caminhei 25 minutos e estudei 1 hora sobre IA."></textarea>
+          <button onclick="sendManualEntry()">Registrar frase</button>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:18px 0;">
+
+        <div class="panel-header">
+          <div>
+            <h2>Insights principais</h2>
+            <p class="hint">Leitura inicial do backend + interpretações salvas pela IA.</p>
+          </div>
+        </div>
+
+        <div id="insightsBox" class="insights">
+          <div class="empty">Carregando insights...</div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
+          <h2>Entradas recentes</h2>
+          <p class="hint">Frases originais, categorias, números e insights gerados.</p>
+        </div>
       </div>
 
       <div class="filters">
-        <input id="busca" placeholder="Buscar..." oninput="renderizar()">
-        <select id="filtroCategoria" onchange="renderizar()"><option value="">Todas categorias</option><option>Geral</option><option>Saúde</option><option>Jurídico</option><option>Finanças</option><option>Família</option><option>Trabalho</option><option>Projeto</option><option>Relacionamento</option><option>Corpo / Esporte</option><option>Emocional</option><option>Social</option><option>Casa / Rotina</option><option>Aprendizado</option><option>Lazer</option><option>Outro</option></select>
-        <select id="filtroStatus" onchange="renderizar()"><option value="">Todos status</option><option>Aberto</option><option>Em andamento</option><option>Concluído</option><option>Arquivado</option><option>Cancelado</option></select>
-        <select id="ordenacao" onchange="renderizar()"><option value="novo">Mais novos</option><option value="antigo">Mais antigos</option><option value="prioridade">Prioridade</option><option value="titulo">Título</option></select>
+        <input id="searchInput" type="search" placeholder="Buscar nas entradas..." oninput="renderEntries()" />
+        <select id="categoryFilter" class="select" onchange="renderEntries()">
+          <option value="">Todas as categorias</option>
+        </select>
+        <select id="limitFilter" class="select" onchange="renderEntries()">
+          <option value="10">Últimas 10</option>
+          <option value="25">Últimas 25</option>
+          <option value="50">Últimas 50</option>
+          <option value="9999">Todas</option>
+        </select>
       </div>
-      <div id="loader" class="loader">Carregando...</div>
-      <div id="lista"></div>
+
+      <div id="entriesBox" class="feed">
+        <div class="empty">Carregando entradas...</div>
+      </div>
     </section>
   </div>
-</main>
 
-<script>
-const LS_API="radar_v6_api_url";
-const LS_BACKEND="radar_v6_backend_url";
-const LS_PROMPT="radar_v6_prompt";
-let registros=[];
-let analisesMemoria={};
-let areaSelecionada="";
+  <div id="loading" class="loading">Carregando...</div>
+  <div id="toast" class="toast"></div>
 
-const AREA_INFO={
- "Saúde":{icon:"🩺",keys:["saude","saúde","sono","dor","medico","médico","consulta","remedio","remédio","exame"]},
- "Corpo / Esporte":{icon:"🏃",keys:["academia","treino","caminhada","corrida","exercicio","exercício","bicicleta","esporte"]},
- "Finanças":{icon:"💰",keys:["r$","paguei","gastei","comprei","recebi","ganhei","vendi","pix","boleto","fatura"]},
- "Trabalho":{icon:"💼",keys:["trabalho","cliente","reuniao","reunião","contrato","empresa","github","render"]},
- "Jurídico":{icon:"⚖️",keys:["processo","petição","peticao","prazo","juiz","vara","pje","unimed","audiência","audiencia"]},
- "Relacionamento":{icon:"❤️",keys:["relacionamento","namoro","amor","casal","thayna","thayná"]},
- "Família":{icon:"🏠",keys:["familia","família","mae","mãe","pai","filho","filha","ielma"]},
- "Projetos":{icon:"🚀",keys:["projeto","app","radar","api","webhook","sistema","piuta","piutá"]},
- "Emocional":{icon:"🧠",keys:["ansioso","ansiedade","triste","feliz","estresse","paz","humor"]},
- "Social":{icon:"🤝",keys:["amigo","amiga","grupo","evento","visita"]},
- "Casa / Rotina":{icon:"🧹",keys:["casa","rotina","limpeza","organizar","agenda"]},
- "Aprendizado":{icon:"📚",keys:["estudei","curso","aula","aprendi","livro"]},
- "Lazer":{icon:"🌄",keys:["viagem","praia","trilha","cinema","musica","música"]},
- "Geral":{icon:"📌",keys:[]}
-};
+  <script>
+    /**
+     * Radar de Vida v7 — index.html
+     *
+     * Configure aqui a URL do Apps Script Web App.
+     */
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
 
-document.addEventListener("DOMContentLoaded",()=>{
- document.getElementById("apiUrl").value=localStorage.getItem(LS_API)||localStorage.getItem("radar_vida_api_url_v5_jsonp")||localStorage.getItem("radar_vida_api_url_v3_jsonp")||"";
- document.getElementById("backendUrl").value=localStorage.getItem(LS_BACKEND)||location.origin;
- document.getElementById("promptLocal").value=localStorage.getItem(LS_PROMPT)||"Classifique registros do Radar de Vida. Extraia área, subárea, polaridade, intensidade, score, gasto, ganho, horas, tags e ação sugerida.";
- document.getElementById("formRegistro").addEventListener("submit",salvarRegistro);
- if(getApiUrl()){testarApi(false).then(()=>sincronizar()).catch(()=>renderizar())}else renderizar();
- testarBackend(false).catch(()=>{});
-});
+    /**
+     * Opcional: coloque aqui o ID do Google Docs para o botão "Abrir Google Docs".
+     * O ID atual também vem do endpoint action=data.
+     */
+    let currentDocId = '';
 
-function getApiUrl(){return (document.getElementById("apiUrl").value||"").trim()}
-function getBackendUrl(){return (document.getElementById("backendUrl").value||"").trim().replace(/\/$/,"")}
-function normApi(u){if(!u)return"";u=u.trim();const q=u.indexOf("?");return q>-1?u.slice(0,q):u}
-function salvarConexoes(){
- const api=normApi(getApiUrl()), backend=getBackendUrl();
- if(!api.includes("script.google.com")||!api.includes("/exec"))return showErr("connError","URL do Apps Script inválida.");
- if(!backend.startsWith("http"))return showErr("connError","URL do backend inválida.");
- document.getElementById("apiUrl").value=api;
- document.getElementById("backendUrl").value=backend;
- localStorage.setItem(LS_API,api); localStorage.setItem(LS_BACKEND,backend);
- showOk("connFeedback","Conexões salvas.");
-}
-function salvarPromptLocal(){localStorage.setItem(LS_PROMPT,document.getElementById("promptLocal").value||"");showOk("gptFeedback","Prompt local salvo.")}
+    let rawData = null;
+    let normalizedEntries = [];
+    let charts = {};
 
-function jsonp(action,params={},timeout=15000){
- return new Promise((resolve,reject)=>{
-  const base=normApi(getApiUrl()); if(!base)return reject(new Error("Informe a URL do Apps Script."));
-  const cb="__rv6_"+Date.now()+"_"+Math.random().toString(36).slice(2);
-  const q=new URLSearchParams({action,...params,callback:cb,_:Date.now()+""});
-  const s=document.createElement("script"); s.src=base+"?"+q.toString();
-  const t=setTimeout(()=>{clean();reject(new Error("Tempo esgotado na API."))},timeout);
-  function clean(){clearTimeout(t);try{delete window[cb]}catch(e){window[cb]=undefined} if(s.parentNode)s.parentNode.removeChild(s)}
-  window[cb]=d=>{clean();resolve(d)}; s.onerror=()=>{clean();reject(new Error("Falha ao carregar JSONP."))};
-  document.body.appendChild(s);
- })
-}
-async function testarApi(alerta=true){
- try{salvarConexoes();const d=await jsonp("ping"); if(!d.ok)throw new Error(d.erro||"Erro na API."); setPill("pillApi","Sheets: conectado","ok"); if(alerta)alert("Sheets conectado."); return d}
- catch(e){setPill("pillApi","Sheets: erro","err"); showErr("connError",e.message); throw e}
-}
-async function testarBackend(alerta=true){
- try{const r=await fetch(getBackendUrl()+"/health"); const d=await r.json(); setPill("pillBackend",d.openaiConfigured?"GPT: conectado":"GPT: sem chave",""+(d.openaiConfigured?"ok":"warn")); if(alerta)alert(d.openaiConfigured?"Backend com OpenAI ativo.":"Backend ativo, mas OpenAI não configurada."); return d}
- catch(e){setPill("pillBackend","Backend: erro","err"); if(alerta)alert(e.message); throw e}
-}
-async function sincronizar(){
- try{showLoad(true);clearMsgs();const d=await jsonp("list",{limit:1000}); if(!d.ok)throw new Error(d.erro||"Erro ao listar."); registros=Array.isArray(d.registros)?d.registros:[]; setPill("pillTotal","Registros: "+registros.length,""); setPill("pillAtualizado","Atualizado: "+new Date().toLocaleString("pt-BR"),""); renderizar()}
- catch(e){showErr("connError","Erro ao sincronizar: "+e.message); renderizar()} finally{showLoad(false)}
-}
-async function salvarRegistro(ev){
- ev.preventDefault(); const api=normApi(getApiUrl()); if(!api)return alert("Informe a URL do Apps Script.");
- const btn=document.getElementById("btnSalvar"); btn.disabled=true; btn.textContent="Salvando...";
- try{
-  const data={origem:"manual_html_v6",tipo:val("tipo"),categoria:val("categoria"),titulo:val("titulo"),descricao:val("descricao"),data_evento:val("dataEvento"),hora_evento:val("horaEvento"),prioridade:val("prioridade"),status:val("status"),tags:parseTags(val("tags")),tem_midia:"Não",midia_ids:[]};
-  await fetch(api,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"create",data})});
-  showOk("saveFeedback","Registro enviado. Recarregando..."); limparFormulario(); setTimeout(sincronizar,1800);
- }catch(e){showErr("saveError",e.message)} finally{btn.disabled=false;btn.textContent="Salvar"}
-}
-async function analisarTudoComGpt(){
- if(!registros.length)return alert("Sincronize primeiro.");
- try{
-  showLoad(true);
-  const payload={records:registros.map(compactRecord), prompt:document.getElementById("promptLocal").value||""};
-  const r=await fetch(getBackendUrl()+"/api/analyze-records",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  const d=await r.json(); if(!d.ok)throw new Error(d.error||"Falha ao analisar.");
-  (d.analyses||[]).forEach(a=>{if(a.id)analisesMemoria[a.id]=a});
-  showOk("connFeedback","Análise GPT aplicada na tela: "+Object.keys(analisesMemoria).length+" registro(s).");
-  renderizar();
- }catch(e){showErr("connError","Erro na análise GPT: "+e.message)} finally{showLoad(false)}
-}
-async function analisarRegistroGpt(id){
- const rec=registros.find(r=>String(r.id)===String(id)); if(!rec)return;
- try{
-  const r=await fetch(getBackendUrl()+"/api/analyze-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record:compactRecord(rec), prompt:document.getElementById("promptLocal").value||""})});
-  const d=await r.json(); if(!d.ok)throw new Error(d.error||"Falha ao analisar.");
-  analisesMemoria[id]={id,...d.analysis}; renderizar();
- }catch(e){alert("Erro na análise GPT: "+e.message)}
-}
-async function excluirRegistro(id){
- if(!confirm("Excluir este registro da planilha? Esta ação remove a linha do Google Sheets."))return;
- try{
-  const r=await fetch(getBackendUrl()+"/api/delete-record",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
-  const d=await r.json(); if(!d.ok)throw new Error(d.error||"Não foi possível excluir.");
-  delete analisesMemoria[id]; await sincronizar();
- }catch(e){alert("Erro ao excluir: "+e.message)}
-}
+    function jsonp(url) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'rdvCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
 
-function compactRecord(r){return {id:r.id,titulo:r.titulo,descricao:r.descricao,categoria:r.categoria,tipo:r.tipo,prioridade:r.prioridade,status:r.status,tags:r.tags,data_criacao:r.data_criacao,data_evento:r.data_evento,hora_evento:r.hora_evento}}
-function analisarLocal(r){
- const saved=analisesMemoria[r.id]||{};
- const text=[r.titulo,r.descricao,r.tags].join(" ");
- const area=saved.area_principal||r.area_principal||inferArea(r);
- const fin=extractMoney(text);
- const horas=Number(saved.horas_usadas ?? r.horas_usadas ?? extractHours(text) ?? 0);
- return {
-  ...r,
-  _area:area,
-  _subarea:saved.subarea||r.subarea||"",
-  _polaridade:saved.polaridade||r.polaridade||inferSent(text,r),
-  _score:Number(saved.score_ia ?? r.score_ia ?? scoreLocal(r)),
-  _gasto:Number(saved.valor_gasto ?? r.valor_gasto ?? fin.gasto ?? 0),
-  _ganho:Number(saved.valor_ganho ?? r.valor_ganho ?? fin.ganho ?? 0),
-  _horas:horas,
-  _acao:saved.acao_sugerida||r.acao_sugerida||"",
-  _tagsIA:saved.tags||[]
- }
-}
-function renderizar(){
- const items=registros.map(analisarLocal);
- renderOverview(items); renderAreas(items); renderLista(items);
-}
-function renderOverview(items){
- const gasto=sum(items.map(i=>i._gasto)), ganho=sum(items.map(i=>i._ganho)), horas=sum(items.map(i=>i._horas)), media=items.length?Math.round(sum(items.map(i=>i._score))/items.length):0;
- const total=gasto+ganho;
- document.getElementById("overview").innerHTML=[
-  circle("💸","Reais gastos",money(gasto),pct(gasto,total),"#dc2626","Valores classificados como gasto."),
-  circle("💰","Reais ganhos",money(ganho),pct(ganho,total),"#16a34a","Valores classificados como ganho."),
-  circle("⏱️","Horas usadas",fmtHours(horas),Math.min(100,Math.round(horas*10)),"#2563eb","Tempo detectado nos registros."),
-  circle("🧠","Score IA/local",String(media),media,"#7c3aed","Média do estado geral interpretado.")
- ].join("");
-}
-function circle(icon,title,value,percent,color,hint){return `<div class="circle"><div class="ring" style="--v:${percent};--c:${color}"><div class="ringIn">${icon}<div class="ringMini">${percent}%</div></div></div><div><div class="circleTitle">${esc(title)}</div><div class="circleValue">${esc(value)}</div><div class="circleHint">${esc(hint)}</div></div></div>`}
-function renderAreas(items){
- const map={}; items.forEach(i=>(map[i._area]??=[]).push(i));
- const areas=Object.keys(map).sort((a,b)=>map[b].length-map[a].length);
- document.getElementById("areas").innerHTML=areas.length?areas.map(a=>areaCard(a,map[a])).join(""):`<div class="empty" style="grid-column:1/-1">Nenhuma área ativa.</div>`;
-}
-function areaCard(area,items){
- const info=AREA_INFO[area]||AREA_INFO.Geral, score=Math.round(sum(items.map(i=>i._score))/items.length), cls=score>=75?"good":score>=50?"att":"risk";
- const gasto=sum(items.map(i=>i._gasto)),ganho=sum(items.map(i=>i._ganho)),horas=sum(items.map(i=>i._horas));
- return `<div class="area ${areaSelecionada===area?"selected":""}" onclick="selecionarArea('${attr(area)}')"><div class="areaTop"><div><div class="icon">${info.icon||"📌"}</div><h3 style="margin-top:10px">${esc(area)}</h3></div><div><div class="score">${score}</div><div class="scoreLabel">score</div></div></div><div class="meter"><div class="fill ${cls}" style="width:${score}%"></div></div><div class="meta">${items.length} registro(s)</div><div class="mini"><div><div class="miniLab">Gastos</div><div class="miniVal">${money(gasto)}</div></div><div><div class="miniLab">Ganhos</div><div class="miniVal">${money(ganho)}</div></div><div><div class="miniLab">Horas</div><div class="miniVal">${fmtHours(horas)}</div></div></div></div>`
-}
-function renderLista(items){
- let f=[...items]; const busca=norm(val("busca")),cat=val("filtroCategoria"),st=val("filtroStatus"),ord=val("ordenacao");
- if(areaSelecionada){f=f.filter(x=>x._area===areaSelecionada);document.getElementById("recordsTitle").textContent="Registros — "+areaSelecionada;document.getElementById("areaInfo").textContent="Filtro ativo."}else{document.getElementById("recordsTitle").textContent="Registros";document.getElementById("areaInfo").textContent="Clique em uma área para filtrar."}
- if(cat)f=f.filter(x=>String(x.categoria||"")===cat); if(st)f=f.filter(x=>String(x.status||"")===st); if(busca)f=f.filter(x=>norm([x.titulo,x.descricao,x.tags,x._area,x._subarea].join(" ")).includes(busca));
- f.sort((a,b)=>ord==="antigo"?dateVal(a)-dateVal(b):ord==="prioridade"?prio(b.prioridade)-prio(a.prioridade):ord==="titulo"?String(a.titulo||"").localeCompare(String(b.titulo||"")):dateVal(b)-dateVal(a));
- document.getElementById("lista").innerHTML=f.length?f.map(recordCard).join(""):`<div class="empty">Nenhum registro encontrado.</div>`;
-}
-function recordCard(r){
- const p=norm(r.prioridade||"normal");
- const tags=[...(String(r.tags||"").split(",").map(x=>x.trim()).filter(Boolean)),...(Array.isArray(r._tagsIA)?r._tagsIA:[])];
- return `<article class="record"><div class="recordTop"><div><div class="recordTitle">${esc(r.titulo||"Sem título")}</div><div class="meta">${esc(r._area)} ${r._subarea?"· "+esc(r._subarea):""} · ${esc(r.tipo||"Registro")} · ${esc(r.status||"Aberto")}<br>ID: ${esc(r.id||"")}<br>Criado: ${fmtDate(r.data_criacao)} · Atualizado: ${fmtDate(r.data_atualizacao)}</div></div><span class="prio ${p}">${esc(r.prioridade||"Normal")}</span></div>${r.descricao?`<div class="text">${esc(r.descricao)}</div>`:""}<div><span class="tag">score: ${esc(r._score)}</span><span class="tag">polaridade: ${esc(r._polaridade)}</span>${r._gasto?`<span class="tag">gasto: ${money(r._gasto)}</span>`:""}${r._ganho?`<span class="tag">ganho: ${money(r._ganho)}</span>`:""}${r._horas?`<span class="tag">horas: ${fmtHours(r._horas)}</span>`:""}${r._acao?`<span class="tag">ação: ${esc(r._acao)}</span>`:""}${tags.slice(0,8).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div><div class="recordActions"><button class="purple" onclick="analisarRegistroGpt('${attr(r.id)}')">Analisar com GPT</button><button class="red" onclick="excluirRegistro('${attr(r.id)}')">Excluir</button></div></article>`
-}
+        const script = document.createElement('script');
+        const sep = url.includes('?') ? '&' : '?';
 
-function inferArea(r){const c=String(r.categoria||"").trim(); if(AREA_INFO[c])return c; if(c==="Projeto")return"Projetos"; const t=norm([r.titulo,r.descricao,r.tags].join(" ")); let best="Geral",bs=0; Object.keys(AREA_INFO).forEach(a=>{const sc=(AREA_INFO[a].keys||[]).reduce((acc,k)=>acc+(t.includes(norm(k))?1:0),0); if(sc>bs){bs=sc;best=a}});return best}
-function inferSent(text,r){const t=norm(text); if(String(r.prioridade||"").toLowerCase()==="urgente")return"alerta"; if(["bom","boa","feliz","funcionou","recebi","ganhei","consegui"].some(w=>t.includes(w)))return"positivo"; if(["erro","falha","dor","paguei","gastei","ruim","cansado"].some(w=>t.includes(w)))return"negativo"; return"neutro"}
-function scoreLocal(r){let s=70; const p=String(r.prioridade||"Normal"); if(p==="Urgente")s-=28;if(p==="Alta")s-=12;if(p==="Baixa")s+=4; const st=norm(r.status); if(st==="concluido")s+=15;if(st==="cancelado")s-=12; return Math.max(0,Math.min(100,s))}
-function extractMoney(text){let gasto=0,ganho=0; const re=/r\$\s*([\d\.]+,\d{2}|[\d]+,\d{2}|[\d\.]+)/gi; let m; while((m=re.exec(text))){const v=parseMoney(m[1]); const ctx=norm(text.slice(Math.max(0,m.index-50),m.index+70)); if(["recebi","ganhei","vendi","lucro","entrada"].some(w=>ctx.includes(w)))ganho+=v; else gasto+=v} return {gasto,ganho}}
-function extractHours(text){let total=0,m; const hh=/(\d{1,2})h(\d{1,2})/gi, h=/(\d+(?:[.,]\d+)?)\s*(h|hora|horas)\b/gi, min=/(\d+(?:[.,]\d+)?)\s*(min|minuto|minutos)\b/gi; while((m=hh.exec(text)))total+=parseInt(m[1])+parseInt(m[2])/60; while((m=h.exec(text)))total+=parseFloat(String(m[1]).replace(",",".")); while((m=min.exec(text)))total+=parseFloat(String(m[1]).replace(",","."))/60; return Number(total.toFixed(2))}
-function limparFormulario(){document.getElementById("formRegistro").reset()}function selecionarArea(a){areaSelecionada=a||"";renderizar()}
-function val(id){return(document.getElementById(id).value||"").trim()}function parseTags(t){return(t||"").split(",").map(x=>x.trim()).filter(Boolean)}
-function parseMoney(s){s=String(s).trim(); if(s.includes(",")&&s.includes("."))s=s.replace(/\./g,"").replace(",","."); else if(s.includes(","))s=s.replace(",","."); const n=parseFloat(s); return Number.isFinite(n)?n:0}
-function sum(a){return a.reduce((x,y)=>x+(Number(y)||0),0)}function pct(v,t){return t?Math.max(0,Math.min(100,Math.round(v/t*100))):0}
-function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function fmtHours(h){h=Number(h||0); if(!h)return"0h"; const i=Math.floor(h),m=Math.round((h-i)*60); return i?(m?`${i}h ${m}min`:`${i}h`):`${m}min`}
-function norm(s){return(s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()}function esc(s){return(s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}function attr(s){return String(s||"").replaceAll("\\","\\\\").replaceAll("'","\\'")}function fmtDate(v){if(!v)return"—"; const d=new Date(v); return Number.isNaN(d.getTime())?String(v):d.toLocaleString("pt-BR")}function dateVal(r){const d=new Date(r.data_atualizacao||r.data_criacao||r.data_evento||"").getTime(); return Number.isNaN(d)?0:d}function prio(p){return{Urgente:4,Alta:3,Normal:2,Baixa:1}[p]||0}
-function setPill(id,text,t){const e=document.getElementById(id); e.textContent=text; e.className="pill"; if(t)e.classList.add(t)}function showOk(id,msg){const e=document.getElementById(id);e.textContent=msg;e.classList.remove("hidden")}function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.classList.remove("hidden")}function clearMsgs(){["connFeedback","connError","saveFeedback","saveError","gptFeedback"].forEach(id=>{const e=document.getElementById(id); if(e){e.classList.add("hidden");e.textContent=""}})}function showLoad(x){document.getElementById("loader").classList.toggle("show",!!x)}
-function abrirApiDireta(){try{window.open(normApi(getApiUrl())+"?action=ping","_blank")}catch(e){alert(e.message)}}
-</script>
+        window[callbackName] = function(data) {
+          try {
+            resolve(data);
+          } finally {
+            delete window[callbackName];
+            script.remove();
+          }
+        };
+
+        script.onerror = function() {
+          delete window[callbackName];
+          script.remove();
+          reject(new Error('Falha ao carregar JSONP.'));
+        };
+
+        script.src = url + sep + 'callback=' + callbackName;
+        document.body.appendChild(script);
+      });
+    }
+
+    function showLoading(message = 'Carregando...') {
+      const el = document.getElementById('loading');
+      el.textContent = message;
+      el.classList.add('show');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').classList.remove('show');
+    }
+
+    function toast(message) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 4200);
+    }
+
+    async function loadData() {
+      showLoading('Lendo Google Docs...');
+      try {
+        const data = await jsonp(APPS_SCRIPT_URL + '?action=data');
+        rawData = data;
+        currentDocId = data.docId || currentDocId;
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Resposta inválida do Apps Script.');
+        }
+
+        normalizedEntries = normalizeEntries(data.entries || []);
+        renderAll(data);
+        document.getElementById('statusText').textContent = 'Online';
+        document.getElementById('lastUpdate').textContent = formatDateTime(new Date());
+      } catch (err) {
+        console.error(err);
+        document.getElementById('statusText').textContent = 'Erro';
+        toast('Erro ao carregar dados: ' + err.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function renderAll(data) {
+      renderCards(data);
+      renderCharts(data);
+      renderInsights(data);
+      renderCategoryFilter();
+      renderEntries();
+    }
+
+    function normalizeEntries(entries) {
+      return entries.map(entry => {
+        const inferred = inferTimesFromText(entry.entrada_original || '');
+
+        const sport =
+          inferred.esporte_minutos ||
+          saneMax(entry.esporte_minutos, entry.atividade_fisica_minutos);
+
+        const productive =
+          inferred.produtivo_minutos ||
+          saneProductive(entry);
+
+        return {
+          ...entry,
+          _sport_display_min: sport,
+          _productive_display_min: productive
+        };
+      });
+    }
+
+    /**
+     * Normalização visual temporária:
+     * A IA pode repetir o tempo total em várias categorias.
+     * Este painel tenta inferir melhor os minutos pela frase original até ajustarmos o Código.gs v7.1.
+     */
+    function inferTimesFromText(text) {
+      const s = String(text || '').toLowerCase();
+      let esporte = 0;
+      let produtivo = 0;
+
+      const durationRegex = /(.{0,40}?)(\d+(?:[,.]\d+)?)\s*(h|hora|horas|min|minuto|minutos)(.{0,40})/g;
+      let m;
+
+      while ((m = durationRegex.exec(s)) !== null) {
+        const context = (m[1] + ' ' + m[4]).toLowerCase();
+        const value = parseFloat(String(m[2]).replace(',', '.')) || 0;
+        const unit = m[3];
+        const minutes = unit.startsWith('h') || unit.startsWith('hora') ? value * 60 : value;
+
+        if (/caminh|corr|trein|academ|pedal|bike|bicic|futebol|natação|natacao|exerc|esporte/.test(context)) {
+          esporte += minutes;
+        } else if (/trabalh|estud|projeto|program|c[oó]dig|cliente|process|petiç|petic|atendimento|jur[ií]dic|burocr/.test(context)) {
+          produtivo += minutes;
+        }
+      }
+
+      return {
+        esporte_minutos: Math.round(esporte),
+        produtivo_minutos: Math.round(produtivo)
+      };
+    }
+
+    function saneMax(...values) {
+      return Math.max(...values.map(toNumber));
+    }
+
+    function saneProductive(entry) {
+      const values = [
+        toNumber(entry.trabalho_minutos),
+        toNumber(entry.estudo_minutos),
+        toNumber(entry.projeto_minutos),
+        toNumber(entry.burocracia_minutos)
+      ];
+
+      const sum = values.reduce((a, b) => a + b, 0);
+      const max = Math.max(...values);
+
+      if (max > 0 && sum >= max * 2) {
+        return max;
+      }
+
+      return sum;
+    }
+
+    function renderCards(data) {
+      const entries = normalizedEntries;
+
+      const spent = sum(entries.map(e => e.dinheiro_gasto));
+      const earned = sum(entries.map(e => e.dinheiro_ganho));
+      const invested = sum(entries.map(e => e.dinheiro_investido));
+      const balance = earned - spent - invested;
+      const sport = sum(entries.map(e => e._sport_display_min));
+      const productive = sum(entries.map(e => e._productive_display_min));
+
+      document.getElementById('cardSpent').textContent = money(spent);
+      document.getElementById('cardEarned').textContent = money(earned);
+      document.getElementById('cardBalance').textContent = money(balance);
+      document.getElementById('cardSport').textContent = minutesHuman(sport);
+      document.getElementById('cardProductive').textContent = minutesHuman(productive);
+      document.getElementById('cardEntries').textContent = String(entries.length);
+    }
+
+    function renderCharts(data) {
+      const byDate = groupNormalizedByDate(normalizedEntries);
+      const byCategory = groupNormalizedByCategory(normalizedEntries);
+
+      const labels = byDate.map(r => r.data);
+      const spent = byDate.map(r => r.dinheiro_gasto);
+      const earned = byDate.map(r => r.dinheiro_ganho);
+      const sport = byDate.map(r => r.esporte_minutos);
+      const productive = byDate.map(r => r.produtivo_minutos);
+
+      renderChart('moneyChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Gasto', data: spent },
+            { label: 'Ganho', data: earned }
+          ]
+        },
+        options: baseChartOptions('R$')
+      });
+
+      renderChart('timeChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Esporte/atividade', data: sport },
+            { label: 'Produtivo', data: productive }
+          ]
+        },
+        options: baseChartOptions('min')
+      });
+
+      renderChart('categoryChart', {
+        type: 'doughnut',
+        data: {
+          labels: byCategory.slice(0, 8).map(r => r.categoria),
+          datasets: [
+            { label: 'Ocorrências', data: byCategory.slice(0, 8).map(r => r.ocorrencias) }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    function renderChart(id, config) {
+      const ctx = document.getElementById(id);
+
+      if (charts[id]) {
+        charts[id].destroy();
+      }
+
+      charts[id] = new Chart(ctx, {
+        ...config,
+        options: {
+          ...config.options,
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    function baseChartOptions(suffix) {
+      return {
+        plugins: {
+          legend: { position: 'bottom' }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => suffix === 'R$' ? 'R$ ' + value : value + ' min'
+            }
+          }
+        }
+      };
+    }
+
+    function renderInsights(data) {
+      const box = document.getElementById('insightsBox');
+      const insights = unique([
+        ...(data.insights || []),
+        ...normalizedEntries.slice(0, 6).map(e => e.insight_curto || e.insight_profundo).filter(Boolean)
+      ]).slice(0, 9);
+
+      if (!insights.length) {
+        box.innerHTML = '<div class="empty">Ainda não há insights suficientes.</div>';
+        return;
+      }
+
+      box.innerHTML = insights.map(txt => `
+        <div class="insight">${escapeHtml(txt)}</div>
+      `).join('');
+    }
+
+    function renderCategoryFilter() {
+      const select = document.getElementById('categoryFilter');
+      const current = select.value;
+
+      const cats = unique(
+        normalizedEntries.flatMap(e => Array.isArray(e.categorias) ? e.categorias : [])
+      ).sort((a,b) => a.localeCompare(b));
+
+      select.innerHTML = '<option value="">Todas as categorias</option>' +
+        cats.map(cat => `<option value="${escapeAttr(cat)}">${escapeHtml(cat)}</option>`).join('');
+
+      select.value = current;
+    }
+
+    function renderEntries() {
+      const box = document.getElementById('entriesBox');
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const category = document.getElementById('categoryFilter').value;
+      const limit = parseInt(document.getElementById('limitFilter').value, 10) || 10;
+
+      let entries = [...normalizedEntries];
+
+      if (search) {
+        entries = entries.filter(e => {
+          const hay = [
+            e.entrada_original,
+            e.resumo,
+            e.insight_curto,
+            e.insight_profundo,
+            e.tipo_principal,
+            ...(e.categorias || []),
+            ...(e.projetos_detectados || []),
+            ...(e.pessoas_detectadas || [])
+          ].join(' ').toLowerCase();
+
+          return hay.includes(search);
+        });
+      }
+
+      if (category) {
+        entries = entries.filter(e => (e.categorias || []).includes(category));
+      }
+
+      entries = entries.slice(0, limit);
+
+      if (!entries.length) {
+        box.innerHTML = '<div class="empty">Nenhuma entrada encontrada.</div>';
+        return;
+      }
+
+      box.innerHTML = entries.map(entry => {
+        const tags = [
+          entry.tipo_principal,
+          ...(entry.categorias || []).slice(0, 5),
+          entry.tom_emocional,
+          entry.impacto_geral
+        ].filter(Boolean);
+
+        const numbers = [
+          entry.dinheiro_gasto ? `Gasto: ${money(entry.dinheiro_gasto)}` : '',
+          entry.dinheiro_ganho ? `Ganho: ${money(entry.dinheiro_ganho)}` : '',
+          entry._sport_display_min ? `Esporte: ${minutesHuman(entry._sport_display_min)}` : '',
+          entry._productive_display_min ? `Produtivo: ${minutesHuman(entry._productive_display_min)}` : ''
+        ].filter(Boolean);
+
+        return `
+          <article class="entry">
+            <div class="entry-top">
+              <div>
+                <div class="entry-date">${escapeHtml(entry.data_br || '')} ${escapeHtml(entry.hora_br || '')} · ${escapeHtml(entry.origem || '')}</div>
+                <p class="entry-text">${escapeHtml(entry.entrada_original || '')}</p>
+              </div>
+              <span class="pill">${escapeHtml(entry.confianca || '—')}</span>
+            </div>
+
+            <div class="tagline">
+              ${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+            </div>
+
+            ${numbers.length ? `
+              <div class="tagline">
+                ${numbers.map(n => `<span class="tag">${escapeHtml(n)}</span>`).join('')}
+              </div>
+            ` : ''}
+
+            ${entry.insight_curto ? `<div class="entry-insight">${escapeHtml(entry.insight_curto)}</div>` : ''}
+
+            <div class="entry-actions">
+              <button class="secondary" onclick="copyEntry('${escapeAttr(entry.id)}')">Copiar</button>
+              <button class="danger" onclick="deleteEntry('${escapeAttr(entry.id)}')">Excluir</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function sendManualEntry() {
+      const text = document.getElementById('manualText').value.trim();
+
+      if (!text) {
+        toast('Escreva uma frase antes de registrar.');
+        return;
+      }
+
+      showLoading('Registrando frase...');
+      try {
+        const data = await jsonp(APPS_SCRIPT_URL + '?action=register&text=' + encodeURIComponent(text));
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao registrar.');
+        }
+
+        document.getElementById('manualText').value = '';
+        toast('Frase registrada no Google Docs.');
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        toast('Erro ao registrar: ' + err.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function deleteEntry(id) {
+      if (!id) return;
+
+      const ok = confirm('Deseja excluir esta entrada do painel? O registro não será apagado fisicamente do Google Docs; será apenas ocultado.');
+      if (!ok) return;
+
+      showLoading('Excluindo registro...');
+      try {
+        const data = await jsonp(APPS_SCRIPT_URL + '?action=delete&id=' + encodeURIComponent(id));
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao excluir.');
+        }
+
+        toast('Registro excluído do painel.');
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        toast('Erro ao excluir: ' + err.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function copyEntry(id) {
+      const entry = normalizedEntries.find(e => e.id === id);
+      if (!entry) return;
+
+      const text = [
+        `ID: ${entry.id}`,
+        `Data: ${entry.data_br} ${entry.hora_br}`,
+        `Entrada: ${entry.entrada_original}`,
+        `Insight: ${entry.insight_curto || entry.insight_profundo || ''}`
+      ].join('\n');
+
+      navigator.clipboard.writeText(text).then(() => {
+        toast('Entrada copiada.');
+      });
+    }
+
+    function openDocsData() {
+      window.open(APPS_SCRIPT_URL + '?action=data', '_blank');
+    }
+
+    function openDiaryDoc() {
+      if (!currentDocId) {
+        toast('ID do Google Docs ainda não carregado. Clique em Atualizar painel.');
+        return;
+      }
+
+      window.open('https://docs.google.com/document/d/' + currentDocId + '/edit', '_blank');
+    }
+
+    function groupNormalizedByDate(entries) {
+      const map = new Map();
+
+      entries.forEach(e => {
+        const key = e.data_br || isoToBrDate(e.data_iso) || 'Sem data';
+
+        if (!map.has(key)) {
+          map.set(key, {
+            data: key,
+            dinheiro_gasto: 0,
+            dinheiro_ganho: 0,
+            dinheiro_investido: 0,
+            esporte_minutos: 0,
+            produtivo_minutos: 0,
+            entradas: 0
+          });
+        }
+
+        const row = map.get(key);
+        row.dinheiro_gasto += toNumber(e.dinheiro_gasto);
+        row.dinheiro_ganho += toNumber(e.dinheiro_ganho);
+        row.dinheiro_investido += toNumber(e.dinheiro_investido);
+        row.esporte_minutos += toNumber(e._sport_display_min);
+        row.produtivo_minutos += toNumber(e._productive_display_min);
+        row.entradas += 1;
+      });
+
+      return Array.from(map.values())
+        .sort((a, b) => brDateToSortable(a.data).localeCompare(brDateToSortable(b.data)));
+    }
+
+    function groupNormalizedByCategory(entries) {
+      const map = new Map();
+
+      entries.forEach(e => {
+        const cats = (e.categorias && e.categorias.length) ? e.categorias : [e.tipo_principal || 'outro'];
+
+        cats.forEach(cat => {
+          if (!map.has(cat)) {
+            map.set(cat, {
+              categoria: cat,
+              ocorrencias: 0
+            });
+          }
+
+          map.get(cat).ocorrencias += 1;
+        });
+      });
+
+      return Array.from(map.values()).sort((a, b) => b.ocorrencias - a.ocorrencias);
+    }
+
+    function money(value) {
+      return toNumber(value).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+    }
+
+    function minutesHuman(value) {
+      const min = Math.round(toNumber(value));
+
+      if (!min) return '0min';
+
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+
+      if (h && m) return `${h}h${String(m).padStart(2, '0')}min`;
+      if (h) return `${h}h`;
+      return `${m}min`;
+    }
+
+    function toNumber(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function sum(values) {
+      return values.reduce((acc, v) => acc + toNumber(v), 0);
+    }
+
+    function unique(arr) {
+      return Array.from(new Set(arr.filter(Boolean).map(String)));
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/`/g, '&#096;');
+    }
+
+    function formatDateTime(date) {
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function isoToBrDate(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleDateString('pt-BR');
+      } catch {
+        return '';
+      }
+    }
+
+    function brDateToSortable(br) {
+      const parts = String(br || '').split('/');
+      if (parts.length !== 3) return br || '';
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
+    window.addEventListener('load', loadData);
+  </script>
 </body>
 </html>
