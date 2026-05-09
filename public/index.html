@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Radar de Vida v7 — Diário Semântico</title>
+  <title>Radar de Vida v7.1 — Diário Semântico</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -249,9 +249,14 @@
 
     .section-grid {
       display: grid;
-      grid-template-columns: 1.35fr .85fr;
+      grid-template-columns: .9fr 1.35fr;
       gap: 16px;
       margin-top: 16px;
+      align-items: start;
+    }
+
+    .section-grid.reverse {
+      grid-template-columns: 1fr 1fr;
     }
 
     .panel {
@@ -295,11 +300,30 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 14px;
+      height: 320px;
       min-height: 320px;
+      max-height: 320px;
+      overflow: hidden;
+      position: relative;
     }
 
     .chart-box.full {
       grid-column: 1 / -1;
+      height: 340px;
+      min-height: 340px;
+      max-height: 340px;
+    }
+
+    .chart-box canvas {
+      width: 100% !important;
+      height: 255px !important;
+      max-height: 255px !important;
+      display: block;
+    }
+
+    .chart-box.full canvas {
+      height: 275px !important;
+      max-height: 275px !important;
     }
 
     .chart-title {
@@ -307,6 +331,7 @@
       font-size: 13px;
       color: var(--muted);
       margin-bottom: 10px;
+      height: 18px;
     }
 
     .insights {
@@ -330,7 +355,7 @@
 
     textarea {
       width: 100%;
-      min-height: 108px;
+      min-height: 118px;
       resize: vertical;
       border: 1px solid var(--line);
       border-radius: 18px;
@@ -351,6 +376,9 @@
       display: grid;
       gap: 12px;
       margin-top: 12px;
+      max-height: 720px;
+      overflow: auto;
+      padding-right: 4px;
     }
 
     .entry {
@@ -491,7 +519,7 @@
     }
 
     @media (max-width: 1080px) {
-      .topbar, .section-grid {
+      .topbar, .section-grid, .section-grid.reverse {
         grid-template-columns: 1fr;
       }
 
@@ -529,8 +557,26 @@
         grid-column: auto;
       }
 
+      .chart-box,
+      .chart-box.full {
+        height: 300px;
+        min-height: 300px;
+        max-height: 300px;
+      }
+
+      .chart-box canvas,
+      .chart-box.full canvas {
+        height: 235px !important;
+        max-height: 235px !important;
+      }
+
       .entry-top {
         flex-direction: column;
+      }
+
+      .feed {
+        max-height: none;
+        overflow: visible;
       }
     }
 
@@ -550,11 +596,11 @@
   <div class="app">
     <header class="topbar">
       <section class="hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7 — Diário Semântico</div>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.1 — Diário Semântico</div>
         <h1>Transforme frases do WhatsApp em inteligência sobre sua vida.</h1>
         <p class="subtitle">
           Esta versão usa o Google Docs como memória narrativa. Cada frase livre vira registro bruto,
-          análise JSON, números essenciais, gráficos e insights sobre dinheiro, tempo, saúde, projetos e tendências.
+          análise JSON, números essenciais, entradas recentes, insights e tendências ao longo do tempo.
         </p>
 
         <div class="actions">
@@ -626,32 +672,6 @@
     </section>
 
     <section class="section-grid">
-      <main class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Tendências ao longo do tempo</h2>
-            <p class="hint">Gráficos gerados a partir dos JSONs salvos no Google Docs.</p>
-          </div>
-        </div>
-
-        <div class="charts">
-          <div class="chart-box full">
-            <div class="chart-title">Dinheiro por dia</div>
-            <canvas id="moneyChart"></canvas>
-          </div>
-
-          <div class="chart-box">
-            <div class="chart-title">Tempo por dia</div>
-            <canvas id="timeChart"></canvas>
-          </div>
-
-          <div class="chart-box">
-            <div class="chart-title">Categorias mais recorrentes</div>
-            <canvas id="categoryChart"></canvas>
-          </div>
-        </div>
-      </main>
-
       <aside class="panel">
         <div class="panel-header">
           <div>
@@ -665,44 +685,74 @@
           <button onclick="sendManualEntry()">Registrar frase</button>
         </div>
 
-        <hr style="border:0;border-top:1px solid var(--line);margin:18px 0;">
+        <p class="footer-note">
+          A proposta central é simples: você escreve livremente; o sistema interpreta sem exigir formulário.
+        </p>
+      </aside>
 
+      <main class="panel">
         <div class="panel-header">
           <div>
-            <h2>Insights principais</h2>
-            <p class="hint">Leitura inicial do backend + interpretações salvas pela IA.</p>
+            <h2>Frases e inputs recentes</h2>
+            <p class="hint">Primeiro vem a vida narrada. Depois os insights.</p>
           </div>
         </div>
 
-        <div id="insightsBox" class="insights">
-          <div class="empty">Carregando insights...</div>
+        <div class="filters">
+          <input id="searchInput" type="search" placeholder="Buscar nas entradas..." oninput="renderEntries()" />
+          <select id="categoryFilter" class="select" onchange="renderEntries()">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select id="limitFilter" class="select" onchange="renderEntries()">
+            <option value="10">Últimas 10</option>
+            <option value="25">Últimas 25</option>
+            <option value="50">Últimas 50</option>
+            <option value="9999">Todas</option>
+          </select>
         </div>
-      </aside>
+
+        <div id="entriesBox" class="feed">
+          <div class="empty">Carregando entradas...</div>
+        </div>
+      </main>
     </section>
 
     <section class="panel" style="margin-top:16px;">
       <div class="panel-header">
         <div>
-          <h2>Entradas recentes</h2>
-          <p class="hint">Frases originais, categorias, números e insights gerados.</p>
+          <h2>Insights principais</h2>
+          <p class="hint">Interpretações geradas a partir das frases já registradas.</p>
         </div>
       </div>
 
-      <div class="filters">
-        <input id="searchInput" type="search" placeholder="Buscar nas entradas..." oninput="renderEntries()" />
-        <select id="categoryFilter" class="select" onchange="renderEntries()">
-          <option value="">Todas as categorias</option>
-        </select>
-        <select id="limitFilter" class="select" onchange="renderEntries()">
-          <option value="10">Últimas 10</option>
-          <option value="25">Últimas 25</option>
-          <option value="50">Últimas 50</option>
-          <option value="9999">Todas</option>
-        </select>
+      <div id="insightsBox" class="insights">
+        <div class="empty">Carregando insights...</div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
+          <h2>Tendências ao longo do tempo</h2>
+          <p class="hint">Gráficos com altura fixa, sem crescimento infinito da tela.</p>
+        </div>
       </div>
 
-      <div id="entriesBox" class="feed">
-        <div class="empty">Carregando entradas...</div>
+      <div class="charts">
+        <div class="chart-box full">
+          <div class="chart-title">Dinheiro por dia</div>
+          <canvas id="moneyChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Tempo por dia</div>
+          <canvas id="timeChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Categorias mais recorrentes</div>
+          <canvas id="categoryChart"></canvas>
+        </div>
       </div>
     </section>
   </div>
@@ -712,18 +762,11 @@
 
   <script>
     /**
-     * Radar de Vida v7 — index.html
-     *
-     * Configure aqui a URL do Apps Script Web App.
+     * Radar de Vida v7.1 — index.html
      */
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
 
-    /**
-     * Opcional: coloque aqui o ID do Google Docs para o botão "Abrir Google Docs".
-     * O ID atual também vem do endpoint action=data.
-     */
     let currentDocId = '';
-
     let rawData = null;
     let normalizedEntries = [];
     let charts = {};
@@ -798,10 +841,10 @@
 
     function renderAll(data) {
       renderCards(data);
-      renderCharts(data);
-      renderInsights(data);
       renderCategoryFilter();
       renderEntries();
+      renderInsights(data);
+      renderCharts(data);
     }
 
     function normalizeEntries(entries) {
@@ -824,11 +867,6 @@
       });
     }
 
-    /**
-     * Normalização visual temporária:
-     * A IA pode repetir o tempo total em várias categorias.
-     * Este painel tenta inferir melhor os minutos pela frase original até ajustarmos o Código.gs v7.1.
-     */
     function inferTimesFromText(text) {
       const s = String(text || '').toLowerCase();
       let esporte = 0;
@@ -941,6 +979,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          resizeDelay: 150,
           plugins: {
             legend: { position: 'bottom' }
           }
@@ -949,24 +988,29 @@
     }
 
     function renderChart(id, config) {
-      const ctx = document.getElementById(id);
+      const canvas = document.getElementById(id);
 
       if (charts[id]) {
         charts[id].destroy();
+        charts[id] = null;
       }
 
-      charts[id] = new Chart(ctx, {
+      charts[id] = new Chart(canvas, {
         ...config,
         options: {
           ...config.options,
           responsive: true,
-          maintainAspectRatio: false
+          maintainAspectRatio: false,
+          resizeDelay: 150
         }
       });
     }
 
     function baseChartOptions(suffix) {
       return {
+        responsive: true,
+        maintainAspectRatio: false,
+        resizeDelay: 150,
         plugins: {
           legend: { position: 'bottom' }
         },
@@ -985,8 +1029,8 @@
       const box = document.getElementById('insightsBox');
       const insights = unique([
         ...(data.insights || []),
-        ...normalizedEntries.slice(0, 6).map(e => e.insight_curto || e.insight_profundo).filter(Boolean)
-      ]).slice(0, 9);
+        ...normalizedEntries.slice(0, 8).map(e => e.insight_curto || e.insight_profundo).filter(Boolean)
+      ]).slice(0, 12);
 
       if (!insights.length) {
         box.innerHTML = '<div class="empty">Ainda não há insights suficientes.</div>';
