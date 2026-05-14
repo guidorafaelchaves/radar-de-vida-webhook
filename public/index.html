@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Radar de Vida v7.7 — Painel Mensal com Datas e Antiduplicidade</title>
+  <title>Radar de Vida v7.8 — Motor Visual Contextual</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -713,6 +713,160 @@
       font-weight: 950;
     }
 
+
+
+    .visual-lab {
+      margin-top: 16px;
+      border: 1px solid #cfe0d5;
+      background: linear-gradient(180deg, #ffffff, #f2faf5);
+      border-radius: 18px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .visual-lab h3 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    .visual-lab p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .visual-lab textarea {
+      min-height: 126px;
+      font-size: 14px;
+      border-radius: 16px;
+    }
+
+    .visual-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .visual-preview {
+      display: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow: hidden;
+    }
+
+    .visual-preview.show { display: grid; gap: 10px; }
+
+    .visual-preview pre {
+      margin: 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: #111b16;
+      color: #e8fff0;
+      overflow: auto;
+      max-height: 280px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .visual-entry-box {
+      border: 1px solid #cfe0d5;
+      background: linear-gradient(180deg, #fff, #f6fbf8);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .visual-entry-box strong {
+      font-size: 13px;
+      letter-spacing: -0.01em;
+    }
+
+    .visual-evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .visual-evidence-item {
+      background: rgba(255,255,255,.8);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 9px;
+      min-width: 0;
+    }
+
+    .visual-evidence-item small {
+      display: block;
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 4px;
+      font-size: 10px;
+    }
+
+    .visual-evidence-item span {
+      display: block;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .visual-confidence {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      overflow: hidden;
+    }
+
+    .visual-confidence > i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #e5aa30, var(--green));
+      border-radius: inherit;
+    }
+
+    .visual-badge {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: #22406f;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .visual-badge.warn {
+      background: var(--amber-soft);
+      color: #704600;
+    }
+
+    .visual-badge.ok {
+      background: var(--green-soft);
+      color: #245337;
+    }
+
+    .visual-json-toggle {
+      color: var(--muted);
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+      width: fit-content;
+      font-weight: 800;
+    }
+
     .empty {
       border: 1px dashed #bcc8c0;
       border-radius: 18px;
@@ -1168,10 +1322,10 @@
   <div class="app">
     <header class="topbar">
       <section class="hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.7 — Painel Mensal com Datas e Antiduplicidade</div>
-        <h1>Transforme frases e fotos do WhatsApp em inteligência mensal sobre sua vida.</h1>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.8 — Motor Visual Contextual</div>
+        <h1>Transforme frases, prints e fotos do WhatsApp em inteligência mensal sobre sua vida.</h1>
         <p class="subtitle">
-          O Radar agora trabalha por período: o mês atual fica em foco, os meses anteriores continuam preservados e ajudam a gerar comparação e contexto.
+          O Radar agora trabalha por período e inclui um motor visual: prints podem virar evidência, rascunho JSON e entrada contextual sem perder a memória mensal.
         </p>
 
         <div class="actions">
@@ -1319,6 +1473,27 @@
         <p class="footer-note">
           O registro entra no Google Docs; o painel decide em qual mês ele aparece.
         </p>
+
+        <div class="visual-lab">
+          <h3>Motor visual contextual</h3>
+          <p>Use quando o WhatsApp receber um print ou quando você quiser transformar OCR/legenda de uma imagem em entrada JSON. O motor cruza o texto visível com a memória já carregada no Google Docs.</p>
+          <textarea id="visualRawText" placeholder="Cole aqui o texto visível do print, legenda, OCR ou descrição. Ex.: Compra aprovada Mercado Livre, Resfriador hidráulico ar/óleo 100 L/min, R$ 1.250,39, vendedor hidrohidraulicos."></textarea>
+          <select id="visualMode" class="select">
+            <option value="auto">Classificar automaticamente</option>
+            <option value="compra_confirmada">Compra confirmada / comprovante</option>
+            <option value="cotacao">Pesquisa de preço / cotação</option>
+            <option value="extrato">Extrato com múltiplos lançamentos</option>
+            <option value="conversa">Conversa / decisão / combinado</option>
+            <option value="documento">Documento / protocolo / processo</option>
+          </select>
+          <div class="visual-controls">
+            <button class="secondary" onclick="generateVisualDraft()">Gerar JSON</button>
+            <button onclick="registerVisualDraft()">Registrar print</button>
+            <button class="secondary" onclick="copyVisualDraft()">Copiar JSON</button>
+            <button class="secondary" onclick="clearVisualDraft()">Limpar</button>
+          </div>
+          <div id="visualPreview" class="visual-preview"></div>
+        </div>
       </aside>
 
       <main class="panel">
@@ -1463,6 +1638,7 @@
     let selectedMonthKey = '';
     let charts = {};
     let availableMonths = [];
+    let currentVisualDraft = null;
 
     function jsonp(url) {
       return new Promise((resolve, reject) => {
@@ -1628,10 +1804,18 @@
         const sport = inferred.esporte_minutos || saneMax(entry.esporte_minutos, entry.atividade_fisica_minutos);
         const productive = inferred.produtivo_minutos || saneProductive(entry);
 
-        const text = String(entry.entrada_original || '').toLowerCase();
-        const spent = toNumber(entry.dinheiro_gasto);
-        const earned = toNumber(entry.dinheiro_ganho);
-        const invested = toNumber(entry.dinheiro_investido);
+        const visualPayload = extractVisualPayload(entry);
+        const text = [
+          entry.entrada_original,
+          entry.resumo,
+          entry.insight_curto,
+          entry.insight_profundo,
+          visualPayload ? JSON.stringify(visualPayload) : ''
+        ].join(' ').toLowerCase();
+
+        const spent = toNumber(entry.dinheiro_gasto) || toNumber(visualPayload && visualPayload.dinheiro_gasto);
+        const earned = toNumber(entry.dinheiro_ganho) || toNumber(visualPayload && visualPayload.dinheiro_ganho);
+        const invested = toNumber(entry.dinheiro_investido) || toNumber(visualPayload && visualPayload.dinheiro_investido);
 
         const emotionalScore = getEmotionalScore(entry);
         const frictionScore = computeFrictionScore(entry, spent, productive, sport);
@@ -1641,6 +1825,14 @@
 
         return {
           ...entry,
+          dinheiro_gasto: spent,
+          dinheiro_ganho: earned,
+          dinheiro_investido: invested,
+          visual_auto: entry.visual_auto || Boolean(visualPayload),
+          _visual_payload: visualPayload,
+          _visual_kind: visualPayload ? visualPayload.classificacao_print || visualPayload.tipo_entrada || 'print_interpretado' : '',
+          _visual_confidence: visualPayload ? toNumber(visualPayload.confianca_interpretacao) : 0,
+          _visual_action: visualPayload ? visualPayload.acao_recomendada || '' : '',
           _sport_display_min: sport,
           _productive_display_min: productive,
           _emotional_score: emotionalScore,
@@ -1654,6 +1846,633 @@
           _all_text: text
         };
       });
+    }
+
+
+
+    function extractVisualPayload(entry) {
+      if (!entry) return null;
+
+      if (entry.visual_json && typeof entry.visual_json === 'object') {
+        return normalizeVisualPayload(entry.visual_json);
+      }
+
+      if (entry.print_json && typeof entry.print_json === 'object') {
+        return normalizeVisualPayload(entry.print_json);
+      }
+
+      const sources = [
+        entry.entrada_original,
+        entry.resumo,
+        entry.insight_curto,
+        entry.insight_profundo,
+        entry.visual_descricao,
+        entry.visual_contexto
+      ].filter(Boolean).map(String);
+
+      for (const source of sources) {
+        const parsed = parseEmbeddedVisualJson(source);
+        if (parsed) return normalizeVisualPayload(parsed);
+      }
+
+      return null;
+    }
+
+    function parseEmbeddedVisualJson(text) {
+      const s = String(text || '');
+      const markers = [
+        'PRINT_INTERPRETADO_JSON::',
+        'RADAR_VISUAL_JSON::',
+        'VISUAL_JSON::'
+      ];
+
+      for (const marker of markers) {
+        const idx = s.indexOf(marker);
+        if (idx >= 0) {
+          const start = s.indexOf('{', idx + marker.length);
+          if (start >= 0) {
+            const jsonText = extractBalancedJsonObject(s, start);
+            if (jsonText) {
+              try { return JSON.parse(jsonText); } catch (err) { console.warn('JSON visual inválido:', err); }
+            }
+          }
+        }
+      }
+
+      const trimmed = s.trim();
+      if (trimmed.startsWith('{') && /tipo_entrada|classificacao_print|evidencia_visual|origem/.test(trimmed)) {
+        const jsonText = extractBalancedJsonObject(trimmed, 0);
+        if (jsonText) {
+          try { return JSON.parse(jsonText); } catch (err) { return null; }
+        }
+      }
+
+      return null;
+    }
+
+    function extractBalancedJsonObject(text, startIndex) {
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+
+      for (let i = startIndex; i < text.length; i++) {
+        const ch = text[i];
+
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+          } else if (ch === '\\') {
+            escaped = true;
+          } else if (ch === '"') {
+            inString = false;
+          }
+          continue;
+        }
+
+        if (ch === '"') {
+          inString = true;
+        } else if (ch === '{') {
+          depth++;
+        } else if (ch === '}') {
+          depth--;
+          if (depth === 0) return text.slice(startIndex, i + 1);
+        }
+      }
+
+      return '';
+    }
+
+    function normalizeVisualPayload(payload) {
+      if (!payload || typeof payload !== 'object') return null;
+
+      const normalized = {
+        tipo_entrada: payload.tipo_entrada || 'print_interpretado',
+        origem: payload.origem || 'whatsapp_imagem',
+        data_registro: payload.data_registro || new Date().toISOString(),
+        data_evento_detectada: payload.data_evento_detectada || '',
+        classificacao_print: payload.classificacao_print || payload.subcategoria || 'print_interpretado',
+        categoria_principal: payload.categoria_principal || 'visual',
+        subcategoria: payload.subcategoria || payload.classificacao_print || '',
+        projeto_detectado: payload.projeto_detectado || '',
+        pessoa_ou_empresa_detectada: payload.pessoa_ou_empresa_detectada || payload.fornecedor_detectado || '',
+        plataforma_detectada: payload.plataforma_detectada || '',
+        valor_principal: toNumber(payload.valor_principal),
+        dinheiro_gasto: toNumber(payload.dinheiro_gasto),
+        dinheiro_ganho: toNumber(payload.dinheiro_ganho),
+        dinheiro_investido: toNumber(payload.dinheiro_investido),
+        tempo_minutos: toNumber(payload.tempo_minutos),
+        texto_visivel_resumido: payload.texto_visivel_resumido || '',
+        resumo_humano: payload.resumo_humano || payload.resumo || '',
+        insight_curto: payload.insight_curto || '',
+        insight_profundo: payload.insight_profundo || '',
+        evidencias_extraidas: Array.isArray(payload.evidencias_extraidas) ? payload.evidencias_extraidas : [],
+        inferencias_contextuais: Array.isArray(payload.inferencias_contextuais) ? payload.inferencias_contextuais : [],
+        confianca_interpretacao: Math.max(0, Math.min(1, toNumber(payload.confianca_interpretacao))),
+        precisa_confirmacao_usuario: Boolean(payload.precisa_confirmacao_usuario),
+        risco_duplicidade: Boolean(payload.risco_duplicidade),
+        acao_recomendada: payload.acao_recomendada || 'confirmar',
+        fingerprint_visual: payload.fingerprint_visual || stableHash(JSON.stringify(payload).slice(0, 900))
+      };
+
+      if (!normalized.valor_principal) {
+        normalized.valor_principal = normalized.dinheiro_gasto || normalized.dinheiro_ganho || normalized.dinheiro_investido || 0;
+      }
+
+      return normalized;
+    }
+
+    function generateVisualDraft() {
+      const raw = document.getElementById('visualRawText').value.trim();
+      const mode = document.getElementById('visualMode').value;
+
+      if (!raw) {
+        toast('Cole o texto visível, OCR, legenda ou descrição do print antes de gerar o JSON.');
+        return;
+      }
+
+      currentVisualDraft = buildVisualInterpretation(raw, mode);
+      renderVisualPreview(currentVisualDraft);
+      toast('JSON visual gerado. Confira antes de registrar.');
+    }
+
+    function buildVisualInterpretation(rawText, mode = 'auto') {
+      const raw = String(rawText || '').trim();
+      const norm = normalizeDedupeText(raw);
+      const values = extractMoneyValues(raw);
+      const dates = extractVisualDates(raw);
+      const platform = inferPlatformFromVisualText(raw);
+      const company = inferCompanyFromVisualText(raw);
+      const memory = buildVisualMemoryContext(raw);
+      const classification = mode === 'auto' ? inferVisualClassification(raw, values) : mode;
+      const project = inferProjectFromVisualText(raw, memory);
+      const isConfirmedPurchase = ['compra_confirmada', 'comprovante', 'pagamento_confirmado'].includes(classification);
+      const isQuote = ['cotacao', 'pesquisa_preco', 'anuncio'].includes(classification);
+      const isExtract = classification === 'extrato';
+      const primaryValue = values.length ? values[0] : 0;
+      const category = inferVisualMainCategory(raw, classification, project, platform);
+      const investmentLike = Boolean(project) || /equipamento|ferramenta|radiador|resfriador|bomba|inversor|mineradora|s21|asic|placa|solar|projeto|curso|livro|material|peça|peca|componente/.test(norm);
+      const confidence = computeVisualConfidence({ raw, values, dates, platform, company, classification, project, memory });
+      const needsConfirmation = confidence < 0.78 || isExtract || values.length > 1 || isQuote || !primaryValue && /valor|preco|preço|pagamento|compra/.test(norm);
+
+      const spent = isConfirmedPurchase && primaryValue ? primaryValue : 0;
+      const invested = spent && investmentLike ? spent : 0;
+
+      const evidence = [];
+      if (primaryValue) evidence.push(`Valor principal detectado: ${money(primaryValue)}`);
+      if (values.length > 1) evidence.push(`Múltiplos valores visíveis: ${values.map(money).join(', ')}`);
+      if (dates.length) evidence.push(`Data(s) visível(is): ${dates.join(', ')}`);
+      if (company) evidence.push(`Empresa/beneficiário detectado: ${company}`);
+      if (platform) evidence.push(`Plataforma detectada: ${platform}`);
+      if (classification) evidence.push(`Classificação do print: ${classification}`);
+
+      const inferences = [];
+      if (project) inferences.push(`Relacionado ao projeto: ${project}`);
+      if (isQuote) inferences.push('Parece pesquisa/cotação; não foi lançado como gasto confirmado.');
+      if (isConfirmedPurchase && investmentLike) inferences.push('Valor tratado como investimento/projeto, não como consumo comum.');
+      if (memory.reason) inferences.push(memory.reason);
+
+      const summary = buildVisualHumanSummary({ classification, primaryValue, company, platform, project, category, isQuote, isConfirmedPurchase, raw });
+      const fingerprintBase = [getCurrentDateKey(), classification, project, company, platform, primaryValue.toFixed(2), norm.slice(0, 180)].join('|');
+
+      return normalizeVisualPayload({
+        tipo_entrada: 'print_interpretado',
+        origem: 'whatsapp_imagem_ou_upload_manual',
+        data_registro: new Date().toISOString(),
+        data_evento_detectada: dates[0] || getCurrentDateKey(),
+        classificacao_print: classification,
+        categoria_principal: category,
+        subcategoria: classification,
+        projeto_detectado: project,
+        pessoa_ou_empresa_detectada: company,
+        plataforma_detectada: platform,
+        valor_principal: primaryValue,
+        dinheiro_gasto: spent,
+        dinheiro_ganho: 0,
+        dinheiro_investido: invested,
+        tempo_minutos: 0,
+        texto_visivel_resumido: raw.slice(0, 900),
+        resumo_humano: summary,
+        insight_curto: buildVisualShortInsight({ classification, primaryValue, project, isQuote, isConfirmedPurchase, invested }),
+        insight_profundo: buildVisualDeepInsight({ classification, primaryValue, project, company, platform, confidence, needsConfirmation }),
+        evidencias_extraidas: evidence,
+        inferencias_contextuais: inferences,
+        confianca_interpretacao: confidence,
+        precisa_confirmacao_usuario: needsConfirmation,
+        risco_duplicidade: detectVisualDraftDuplicateByFields({ classification, project, company, platform, primaryValue }),
+        acao_recomendada: needsConfirmation ? 'confirmar' : 'gravar',
+        fingerprint_visual: 'vis_' + stableHash(fingerprintBase)
+      });
+    }
+
+    function renderVisualPreview(draft) {
+      const box = document.getElementById('visualPreview');
+      if (!box || !draft) return;
+
+      const actionClass = draft.acao_recomendada === 'gravar' ? 'ok' : 'warn';
+      const duplicate = draft.risco_duplicidade ? '<span class="visual-badge warn">Possível duplicidade</span>' : '';
+
+      box.classList.add('show');
+      box.innerHTML = `
+        <div class="visual-entry-box">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <span class="visual-badge ${actionClass}">${escapeHtml(draft.acao_recomendada === 'gravar' ? 'Pode gravar' : 'Confirmar antes')}</span>
+            <span class="visual-badge">${escapeHtml(draft.classificacao_print || 'print')}</span>
+            ${duplicate}
+          </div>
+          <strong>${escapeHtml(draft.resumo_humano || 'Rascunho visual')}</strong>
+          <div class="visual-confidence"><i style="width:${Math.round((draft.confianca_interpretacao || 0) * 100)}%"></i></div>
+          <div class="visual-evidence-grid">
+            <div class="visual-evidence-item"><small>Valor</small><span>${escapeHtml(draft.valor_principal ? money(draft.valor_principal) : '—')}</span></div>
+            <div class="visual-evidence-item"><small>Projeto</small><span>${escapeHtml(draft.projeto_detectado || '—')}</span></div>
+            <div class="visual-evidence-item"><small>Empresa</small><span>${escapeHtml(draft.pessoa_ou_empresa_detectada || '—')}</span></div>
+            <div class="visual-evidence-item"><small>Confiança</small><span>${Math.round((draft.confianca_interpretacao || 0) * 100)}%</span></div>
+          </div>
+          ${draft.evidencias_extraidas.length ? `<div><strong>Evidências extraídas</strong><br>${escapeHtml(draft.evidencias_extraidas.join(' · '))}</div>` : ''}
+          ${draft.inferencias_contextuais.length ? `<div><strong>Inferências contextuais</strong><br>${escapeHtml(draft.inferencias_contextuais.join(' · '))}</div>` : ''}
+        </div>
+        <pre>${escapeHtml(JSON.stringify(draft, null, 2))}</pre>
+      `;
+    }
+
+    async function registerVisualDraft() {
+      const raw = document.getElementById('visualRawText').value.trim();
+      if (!currentVisualDraft && raw) {
+        currentVisualDraft = buildVisualInterpretation(raw, document.getElementById('visualMode').value);
+        renderVisualPreview(currentVisualDraft);
+      }
+
+      if (!currentVisualDraft) {
+        toast('Gere o JSON visual antes de registrar.');
+        return;
+      }
+
+      const duplicate = detectVisualDraftDuplicate(currentVisualDraft);
+      if (duplicate.exact) {
+        toast('Print visual duplicado bloqueado: já existe registro com o mesmo fingerprint.');
+        return;
+      }
+
+      if (duplicate.probable || currentVisualDraft.precisa_confirmacao_usuario) {
+        const ok = confirm(
+          'Este print precisa de confirmação antes de gravar.\n\n' +
+          currentVisualDraft.resumo_humano + '\n\n' +
+          (duplicate.probable ? 'Também há possível duplicidade com registro recente.\n\n' : '') +
+          'Deseja registrar mesmo assim?'
+        );
+        if (!ok) return;
+      }
+
+      const text = buildVisualRegisterText(currentVisualDraft);
+      showLoading('Registrando print interpretado...');
+      try {
+        const data = await jsonp(APPS_SCRIPT_URL + '?action=register&text=' + encodeURIComponent(text));
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao registrar o print.');
+        }
+
+        toast('Print interpretado registrado no Google Docs.');
+        clearVisualDraft(false);
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        toast('Erro ao registrar print: ' + err.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function buildVisualRegisterText(draft) {
+      return [
+        'PRINT_INTERPRETADO_JSON::' + JSON.stringify(draft),
+        '',
+        'Resumo para o diário: ' + (draft.resumo_humano || 'Print interpretado.'),
+        draft.insight_curto ? 'Insight: ' + draft.insight_curto : '',
+        draft.precisa_confirmacao_usuario ? 'Observação: interpretação visual marcada para confirmação humana.' : ''
+      ].filter(Boolean).join('\n');
+    }
+
+    async function copyVisualDraft() {
+      if (!currentVisualDraft) {
+        const raw = document.getElementById('visualRawText').value.trim();
+        if (raw) {
+          currentVisualDraft = buildVisualInterpretation(raw, document.getElementById('visualMode').value);
+          renderVisualPreview(currentVisualDraft);
+        }
+      }
+
+      if (!currentVisualDraft) {
+        toast('Gere um JSON visual antes de copiar.');
+        return;
+      }
+
+      const txt = JSON.stringify(currentVisualDraft, null, 2);
+      try {
+        await navigator.clipboard.writeText(txt);
+        toast('JSON visual copiado.');
+      } catch (err) {
+        prompt('Copie o JSON:', txt);
+      }
+    }
+
+    function clearVisualDraft(clearText = true) {
+      currentVisualDraft = null;
+      if (clearText) document.getElementById('visualRawText').value = '';
+      const box = document.getElementById('visualPreview');
+      if (box) {
+        box.classList.remove('show');
+        box.innerHTML = '';
+      }
+    }
+
+    function buildVisualHumanSummary(ctx) {
+      const value = ctx.primaryValue ? money(ctx.primaryValue) : '';
+      const who = ctx.company || ctx.platform || 'origem não identificada';
+      const project = ctx.project ? `, relacionado a ${ctx.project}` : '';
+
+      if (ctx.isQuote) {
+        return `Print tratado como pesquisa/cotação de ${who}${value ? ' no valor de ' + value : ''}${project}.`;
+      }
+
+      if (ctx.isConfirmedPurchase) {
+        return `Print tratado como compra/pagamento confirmado de ${who}${value ? ' no valor de ' + value : ''}${project}.`;
+      }
+
+      if (ctx.classification === 'extrato') {
+        return `Print tratado como extrato ou tela financeira com possível múltiplos lançamentos; requer conferência antes de registrar valores.`;
+      }
+
+      if (ctx.classification === 'conversa') {
+        return `Print tratado como conversa/combinado com possível relevância narrativa${project}.`;
+      }
+
+      if (ctx.classification === 'documento') {
+        return `Print tratado como documento/protocolo com possível relevância operacional${project}.`;
+      }
+
+      return `Print interpretado como evidência visual${project}.`;
+    }
+
+    function buildVisualShortInsight(ctx) {
+      if (ctx.isQuote) return 'Cotação visual preservada como pesquisa; não lançada como gasto confirmado.';
+      if (ctx.isConfirmedPurchase && ctx.invested) return 'Gasto classificado como investimento técnico/projeto, não como consumo comum.';
+      if (ctx.isConfirmedPurchase) return 'Gasto visual confirmado e convertido em entrada financeira.';
+      return 'Print transformado em evidência visual para a memória do Radar.';
+    }
+
+    function buildVisualDeepInsight(ctx) {
+      const parts = [];
+      if (ctx.project) parts.push(`O print foi associado ao projeto “${ctx.project}”, usando a memória recente do Google Docs.`);
+      if (ctx.company) parts.push(`A entidade detectada foi “${ctx.company}”.`);
+      if (ctx.platform) parts.push(`A plataforma detectada foi “${ctx.platform}”.`);
+      parts.push(`Confiança da interpretação: ${Math.round((ctx.confidence || 0) * 100)}%.`);
+      if (ctx.needsConfirmation) parts.push('O sistema recomenda confirmação humana antes de tratar como fato definitivo.');
+      return parts.join(' ');
+    }
+
+    function extractMoneyValues(text) {
+      const values = [];
+      const s = String(text || '');
+      const patterns = [
+        /R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+)/gi,
+        /([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2})\s*(?:reais|real)/gi
+      ];
+
+      patterns.forEach(pattern => {
+        let m;
+        while ((m = pattern.exec(s)) !== null) {
+          const value = toNumber(m[1]);
+          if (value > 0 && !values.some(v => Math.abs(v - value) < 0.01)) values.push(value);
+        }
+      });
+
+      return values.sort((a, b) => b - a);
+    }
+
+    function extractVisualDates(text) {
+      const dates = [];
+      const s = String(text || '');
+      const br = /\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/g;
+      let m;
+      while ((m = br.exec(s)) !== null) {
+        const day = m[1].padStart(2, '0');
+        const month = m[2].padStart(2, '0');
+        const year = m[3].length === 2 ? '20' + m[3] : m[3];
+        dates.push(`${year}-${month}-${day}`);
+      }
+      return unique(dates).slice(0, 5);
+    }
+
+    function inferPlatformFromVisualText(text) {
+      const norm = normalizeDedupeText(text);
+      const platforms = [
+        ['mercado livre', 'Mercado Livre'],
+        ['mercadolivre', 'Mercado Livre'],
+        ['mercado pago', 'Mercado Pago'],
+        ['nubank', 'Nubank'],
+        ['inter', 'Banco Inter'],
+        ['itau', 'Itaú'],
+        ['bradesco', 'Bradesco'],
+        ['santander', 'Santander'],
+        ['pix', 'PIX'],
+        ['ifood', 'iFood'],
+        ['uber', 'Uber'],
+        ['amazon', 'Amazon'],
+        ['shopee', 'Shopee'],
+        ['aliexpress', 'AliExpress'],
+        ['github', 'GitHub'],
+        ['render', 'Render'],
+        ['google sheets', 'Google Sheets'],
+        ['google docs', 'Google Docs']
+      ];
+
+      const found = platforms.find(([needle]) => norm.includes(needle));
+      return found ? found[1] : '';
+    }
+
+    function inferCompanyFromVisualText(text) {
+      const raw = String(text || '');
+      const known = [
+        'hidrohidraulicos', 'Hidro Hidráulicos', 'Mercado Livre', 'Mercado Pago', 'Bitmain', 'Eurobombas', 'WEG', 'Dancor', 'Schneider', 'Neoenergia', 'Unimed', 'iFood', 'Uber', 'Amazon', 'Shopee', 'AliExpress'
+      ];
+      const norm = normalizeDedupeText(raw);
+      for (const name of known) {
+        if (norm.includes(normalizeDedupeText(name))) return name;
+      }
+
+      const patterns = [
+        /(?:vendedor|loja|benefici[aá]rio|recebedor|para|empresa)[:\s]+([A-Za-zÀ-ÿ0-9&.\- ]{3,48})/i,
+        /(?:pagamento para|pix para|transfer[êe]ncia para)\s+([A-Za-zÀ-ÿ0-9&.\- ]{3,48})/i
+      ];
+
+      for (const pattern of patterns) {
+        const m = raw.match(pattern);
+        if (m && m[1]) return m[1].trim().replace(/\s{2,}/g, ' ').slice(0, 48);
+      }
+
+      return '';
+    }
+
+    function inferVisualClassification(raw, values) {
+      const norm = normalizeDedupeText(raw);
+
+      if (/extrato|fatura|saldo|lan[cç]amento|historico|hist[oó]rico|d[eé]bito|cr[eé]dito/.test(norm)) return 'extrato';
+      if (/compra aprovada|pedido confirmado|pagamento aprovado|pagamento confirmado|pix realizado|pix enviado|pago com sucesso|compra realizada|entregue|recebemos seu pagamento/.test(norm)) return 'compra_confirmada';
+      if (/comprovante|recibo|nota fiscal|nf-e|boleto pago|transferencia realizada|transfer[êe]ncia realizada/.test(norm)) return 'comprovante';
+      if (/anuncio|anúncio|carrinho|simulacao|simulação|orcamento|orçamento|cotacao|cotação|menor preco|menor preço|produto|frete/.test(norm) && values.length) return 'cotacao';
+      if (/conversa|whatsapp|mensagem|combinado|respondeu|falou|disse/.test(norm)) return 'conversa';
+      if (/processo|documento|protocolo|despacho|pje|certidao|certidão|contrato|peticao|petição/.test(norm)) return 'documento';
+      if (values.length) return 'possivel_financeiro';
+      return 'print_informativo';
+    }
+
+    function inferVisualMainCategory(raw, classification, project, platform) {
+      const norm = normalizeDedupeText(raw);
+      if (project) return 'projeto';
+      if (/saude|remedio|farmacia|exame|consulta|m[eé]dico|unimed/.test(norm)) return 'saúde';
+      if (/processo|pje|peticao|cliente|advogado|juridico|jurídico/.test(norm)) return 'trabalho';
+      if (/fii|dividendo|provento|acao|ação|cripto|bitcoin|b3|corretora|banco|pix|cartao|cartão|extrato|fatura/.test(norm) || ['extrato','comprovante','compra_confirmada','possivel_financeiro'].includes(classification)) return 'finanças';
+      if (platform === 'iFood' || platform === 'Uber') return 'consumo';
+      return 'visual';
+    }
+
+    function buildVisualMemoryContext(raw) {
+      const norm = normalizeDedupeText(raw);
+      const recent = [...allEntries]
+        .sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a))
+        .slice(0, 80);
+
+      const hay = recent.map(e => [
+        e.entrada_original,
+        e.resumo,
+        e.insight_curto,
+        e.insight_profundo,
+        ...(e.categorias || []),
+        ...(e.projetos_detectados || [])
+      ].join(' ')).join(' ').toLowerCase();
+
+      if (/radiador|resfriador|oleo|óleo|hidraulic|bomba|caixa|mineradora|asic|s21|bitmain/.test(norm) && /s21|mineradora|antminer|imers[aã]o|radiador|resfriador/.test(hay)) {
+        return { project: 'tanque de imersão S21 Imm', reason: 'A memória recente contém o projeto da mineradora/S21 Imm e o print usa termos de resfriamento, óleo, caixa, bomba ou hidráulica.' };
+      }
+
+      if (/radar de vida|whatsapp|google docs|apps script|render|github|json/.test(norm) && /radar de vida|whatsapp|apps script|google docs/.test(hay)) {
+        return { project: 'Radar da Vida', reason: 'A memória recente contém o projeto Radar da Vida e o print usa termos de app, webhook, Google Docs ou JSON.' };
+      }
+
+      if (/piuta|piut[aá]|sitio|sítio|hospedagem|airbnb/.test(norm) && /piuta|piut[aá]|sítio|sitio/.test(hay)) {
+        return { project: 'Sítio Piutá', reason: 'A memória recente contém o projeto Sítio Piutá e o print usa termos de hospedagem ou propriedade.' };
+      }
+
+      return { project: '', reason: '' };
+    }
+
+    function inferProjectFromVisualText(raw, memory) {
+      const norm = normalizeDedupeText(raw);
+      if (/s21|antminer|bitmain|mineradora|imers[aã]o|resfriador|radiador|hidraulic|óleo diel[eé]trico|oleo dieletrico/.test(norm)) return 'tanque de imersão S21 Imm';
+      if (/radar de vida|whatsapp|apps script|google docs|json|webhook|render/.test(norm)) return 'Radar da Vida';
+      if (/dividend system|fii|wealth intelligence|provento|dividendo|b3 ledger/.test(norm)) return 'Guido Wealth Intelligence';
+      if (/crypto radar|cripto|bitcoin|binance/.test(norm)) return 'Guido Crypto Radar';
+      if (/piuta|piut[aá]|s[ií]tio|hospedagem/.test(norm)) return 'Sítio Piutá';
+      return memory.project || '';
+    }
+
+    function computeVisualConfidence(ctx) {
+      let score = 0.35;
+      if (ctx.values.length) score += 0.18;
+      if (ctx.dates.length) score += 0.08;
+      if (ctx.platform) score += 0.08;
+      if (ctx.company) score += 0.08;
+      if (ctx.classification && ctx.classification !== 'print_informativo') score += 0.12;
+      if (ctx.project) score += 0.08;
+      if (/compra aprovada|pagamento aprovado|comprovante|pix realizado|pedido confirmado/i.test(ctx.raw)) score += 0.08;
+      if (ctx.values.length > 1) score -= 0.07;
+      if (ctx.classification === 'extrato') score -= 0.12;
+      if (ctx.classification === 'cotacao') score -= 0.06;
+      return Math.max(0.15, Math.min(0.97, Math.round(score * 100) / 100));
+    }
+
+    function detectVisualDraftDuplicate(draft) {
+      if (!draft) return { exact: false, probable: false, entry: null };
+      const fp = draft.fingerprint_visual;
+
+      for (const entry of allEntries) {
+        const payload = entry._visual_payload || extractVisualPayload(entry);
+        if (payload && payload.fingerprint_visual && payload.fingerprint_visual === fp) {
+          return { exact: true, probable: false, entry };
+        }
+      }
+
+      const probable = detectVisualDraftDuplicateByFields(draft, true);
+      return { exact: false, probable: Boolean(probable), entry: probable || null };
+    }
+
+    function detectVisualDraftDuplicateByFields(draft, returnEntry = false) {
+      if (!draft) return returnEntry ? null : false;
+      const value = toNumber(draft.primaryValue || draft.valor_principal);
+      const company = normalizeDedupeText(draft.company || draft.pessoa_ou_empresa_detectada || '');
+      const project = normalizeDedupeText(draft.project || draft.projeto_detectado || '');
+      const today = getCurrentDateKey();
+
+      for (const entry of allEntries) {
+        const payload = entry._visual_payload || extractVisualPayload(entry);
+        const entryValue = toNumber(entry.dinheiro_gasto) || toNumber(entry.dinheiro_investido) || toNumber(payload && payload.valor_principal);
+        const entryCompany = normalizeDedupeText((payload && payload.pessoa_ou_empresa_detectada) || entry.entrada_original || '');
+        const entryProject = normalizeDedupeText((payload && payload.projeto_detectado) || (entry.projetos_detectados || []).join(' '));
+        const sameDay = (entry._date_key || getEntryDateKey(entry)) === today;
+        const sameValue = value > 0 && Math.abs(entryValue - value) < 0.01;
+        const sameCompany = company && entryCompany.includes(company.slice(0, Math.min(company.length, 18)));
+        const sameProject = project && entryProject.includes(project.slice(0, Math.min(project.length, 18)));
+
+        if (sameDay && sameValue && (sameCompany || sameProject)) {
+          return returnEntry ? entry : true;
+        }
+      }
+
+      return returnEntry ? null : false;
+    }
+
+    function renderVisualEntryBox(entry) {
+      const payload = entry._visual_payload;
+      if (!payload) return '';
+
+      const conf = Math.round((payload.confianca_interpretacao || 0) * 100);
+      const badgeClass = payload.acao_recomendada === 'gravar' && !payload.precisa_confirmacao_usuario ? 'ok' : 'warn';
+      const evidence = payload.evidencias_extraidas || [];
+      const inferences = payload.inferencias_contextuais || [];
+
+      return `
+        <div class="visual-entry-box">
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <span class="visual-badge ${badgeClass}">${escapeHtml(payload.precisa_confirmacao_usuario ? 'Visual exige conferência' : 'Visual estruturado')}</span>
+            <span class="visual-badge">${escapeHtml(payload.classificacao_print || 'print')}</span>
+            ${payload.risco_duplicidade ? '<span class="visual-badge warn">risco de duplicidade</span>' : ''}
+          </div>
+          <strong>${escapeHtml(payload.resumo_humano || 'Print interpretado')}</strong>
+          <div class="visual-confidence"><i style="width:${conf}%"></i></div>
+          <div class="visual-evidence-grid">
+            <div class="visual-evidence-item"><small>Valor</small><span>${escapeHtml(payload.valor_principal ? money(payload.valor_principal) : '—')}</span></div>
+            <div class="visual-evidence-item"><small>Projeto</small><span>${escapeHtml(payload.projeto_detectado || '—')}</span></div>
+            <div class="visual-evidence-item"><small>Fonte</small><span>${escapeHtml(payload.pessoa_ou_empresa_detectada || payload.plataforma_detectada || '—')}</span></div>
+            <div class="visual-evidence-item"><small>Confiança</small><span>${conf}%</span></div>
+          </div>
+          ${evidence.length ? `<div><strong>Evidências:</strong> ${escapeHtml(evidence.slice(0, 4).join(' · '))}</div>` : ''}
+          ${inferences.length ? `<div><strong>Inferências:</strong> ${escapeHtml(inferences.slice(0, 3).join(' · '))}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function stableHash(text) {
+      const s = String(text || '');
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(16);
+    }
+
+    function getCurrentDateKey() {
+      return new Date().toISOString().slice(0, 10);
     }
 
     function computeFrictionScore(entry, spent, productive, sport) {
@@ -2544,6 +3363,9 @@
             e.tipo_principal,
             e.visual_descricao,
             e.visual_contexto,
+            e._visual_payload ? JSON.stringify(e._visual_payload) : '',
+            e._visual_kind,
+            e._visual_action,
             ...(e.categorias || []),
             ...(e.projetos_detectados || []),
             ...(e.pessoas_detectadas || []),
@@ -2636,7 +3458,9 @@
 
     function renderEntryCard(entry, duplicateMap) {
       const tags = [
-        entry.visual_auto ? 'foto' : '',
+        entry.visual_auto ? 'foto/print' : '',
+        entry._visual_kind ? 'visual: ' + entry._visual_kind : '',
+        entry._visual_payload && entry._visual_payload.projeto_detectado ? 'projeto: ' + entry._visual_payload.projeto_detectado : '',
         entry.tipo_principal,
         ...(entry.categorias || []).slice(0, 5),
         ...(entry.ativos_detectados || []).slice(0, 3),
@@ -2654,6 +3478,7 @@
         entry._friction_score >= 4 ? `Atrito: ${entry._friction_score}` : ''
       ].filter(Boolean);
 
+      const visualBox = renderVisualEntryBox(entry);
       const duplicateInfo = duplicateMap.get(entry.id);
       const duplicateClass = duplicateInfo ? ' duplicate-suspect' : '';
       const duplicateBadge = duplicateInfo
@@ -2671,6 +3496,7 @@
           </div>
 
           ${duplicateBadge}
+          ${visualBox}
 
           <div class="tagline">
             ${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
@@ -3208,7 +4034,24 @@
     }
 
     function toNumber(value) {
-      const n = Number(value);
+      if (value === null || value === undefined || value === '') return 0;
+
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      let s = String(value).trim();
+      if (!s) return 0;
+
+      s = s.replace(/R\$|reais|real/gi, '').replace(/\s+/g, '');
+
+      if (/^-?\d{1,3}(?:\.\d{3})*,\d+$/.test(s)) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (/^-?\d+,\d+$/.test(s)) {
+        s = s.replace(',', '.');
+      }
+
+      const n = Number(s);
       return Number.isFinite(n) ? n : 0;
     }
 
