@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Radar de Vida v7.6 — Painel Mensal</title>
+  <title>Radar de Vida v7.7 — Painel Mensal com Datas e Antiduplicidade</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -614,6 +614,105 @@
       box-shadow: none;
     }
 
+
+
+    .duplicate-box {
+      display: none;
+      margin: 0 0 12px;
+      border: 1px solid #f0c9a7;
+      background: linear-gradient(180deg, #fff, #fff6e8);
+      border-radius: 18px;
+      padding: 13px;
+      color: #69430b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .duplicate-box.show { display: block; }
+
+    .duplicate-box strong {
+      display: block;
+      color: #4b2d02;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .day-group {
+      display: grid;
+      gap: 10px;
+      background: rgba(255,255,255,.58);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 10px;
+    }
+
+    .day-header {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #18231d, #2d7a4b);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(20, 35, 28, .12);
+    }
+
+    .day-title {
+      display: grid;
+      gap: 2px;
+    }
+
+    .day-title strong {
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .day-title span {
+      font-size: 11px;
+      opacity: .78;
+      font-weight: 800;
+    }
+
+    .day-summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .day-summary span {
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.20);
+      border-radius: 999px;
+      padding: 5px 8px;
+      white-space: nowrap;
+    }
+
+    .entry.duplicate-suspect {
+      border-color: #f1bd75;
+      background: linear-gradient(180deg, #fff, #fff8ec);
+    }
+
+    .duplicate-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 5px 8px;
+      background: #fff2d8;
+      color: #7a4b00;
+      border: 1px solid #f3cf91;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
     .empty {
       border: 1px dashed #bcc8c0;
       border-radius: 18px;
@@ -964,6 +1063,32 @@
         padding: 12px;
       }
 
+
+
+      .day-group {
+        border-radius: 16px;
+        padding: 8px;
+      }
+
+      .day-header {
+        position: relative;
+        top: auto;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        padding: 11px;
+        border-radius: 14px;
+      }
+
+      .day-summary {
+        justify-content: flex-start;
+      }
+
+      .duplicate-box {
+        border-radius: 14px;
+        padding: 12px;
+      }
+
       .loading {
         left: 10px;
         right: 10px;
@@ -1043,7 +1168,7 @@
   <div class="app">
     <header class="topbar">
       <section class="hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.6 — Painel Mensal</div>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.7 — Painel Mensal com Datas e Antiduplicidade</div>
         <h1>Transforme frases e fotos do WhatsApp em inteligência mensal sobre sua vida.</h1>
         <p class="subtitle">
           O Radar agora trabalha por período: o mês atual fica em foco, os meses anteriores continuam preservados e ajudam a gerar comparação e contexto.
@@ -1216,6 +1341,8 @@
             <option value="9999">Todas</option>
           </select>
         </div>
+
+        <div id="duplicateBox" class="duplicate-box"></div>
 
         <div id="entriesBox" class="feed">
           <div class="empty">Carregando entradas...</div>
@@ -1521,6 +1648,9 @@
           _asset_score: assetScore,
           _hour: hour,
           _month_key: monthKey,
+          _date_key: getEntryDateKey(entry),
+          _dedupe_text: normalizeDedupeText(entry.entrada_original || ''),
+          _dedupe_key: buildEntryDedupeKey(entry),
           _all_text: text
         };
       });
@@ -2397,11 +2527,12 @@
 
     function renderEntries() {
       const box = document.getElementById('entriesBox');
+      const duplicateBox = document.getElementById('duplicateBox');
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const category = document.getElementById('categoryFilter').value;
       const limit = parseInt(document.getElementById('limitFilter').value, 10) || 10;
 
-      let entries = [...viewEntries];
+      let entries = [...viewEntries].sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a));
 
       if (search) {
         entries = entries.filter(e => {
@@ -2429,6 +2560,9 @@
         entries = entries.filter(e => (e.categorias || []).includes(category));
       }
 
+      const duplicateMap = buildDuplicateMap(entries);
+      renderDuplicateBox(duplicateBox, duplicateMap, entries.length);
+
       entries = entries.slice(0, limit);
 
       if (!entries.length) {
@@ -2436,55 +2570,126 @@
         return;
       }
 
-      box.innerHTML = entries.map(entry => {
-        const tags = [
-          entry.visual_auto ? 'foto' : '',
-          entry.tipo_principal,
-          ...(entry.categorias || []).slice(0, 5),
-          ...(entry.ativos_detectados || []).slice(0, 3),
-          entry.tom_emocional,
-          entry.impacto_geral
-        ].filter(Boolean);
+      const groups = groupEntriesByDate(entries);
+      box.innerHTML = groups.map(group => renderDayGroup(group, duplicateMap)).join('');
+    }
 
-        const numbers = [
-          entry.dinheiro_gasto ? `Gasto: ${money(entry.dinheiro_gasto)}` : '',
-          entry.dinheiro_ganho ? `Ganho: ${money(entry.dinheiro_ganho)}` : '',
-          entry.dinheiro_investido ? `Investido: ${money(entry.dinheiro_investido)}` : '',
-          entry._sport_display_min ? `Esporte: ${minutesHuman(entry._sport_display_min)}` : '',
-          entry._productive_display_min ? `Produtivo: ${minutesHuman(entry._productive_display_min)}` : '',
-          entry._asset_score >= 4 ? `Ativo: ${entry._asset_score}` : '',
-          entry._friction_score >= 4 ? `Atrito: ${entry._friction_score}` : ''
-        ].filter(Boolean);
+    function renderDuplicateBox(box, duplicateMap, totalEntries) {
+      if (!box) return;
 
-        return `
-          <article class="entry">
-            <div class="entry-top">
-              <div>
-                <div class="entry-date">${escapeHtml(entry.data_br || '')} ${escapeHtml(entry.hora_br || '')} · ${escapeHtml(entry.origem || '')}</div>
-                <p class="entry-text">${escapeHtml(entry.entrada_original || '')}</p>
-              </div>
-              <span class="pill">${escapeHtml(entry.confianca || '—')}</span>
+      const suspects = Array.from(duplicateMap.values()).filter(item => item.count > 1);
+
+      if (!suspects.length) {
+        box.classList.remove('show');
+        box.innerHTML = '';
+        return;
+      }
+
+      const totalSuspects = suspects.reduce((acc, item) => acc + item.count, 0);
+      box.classList.add('show');
+      box.innerHTML = `
+        <strong>Possíveis duplicidades detectadas</strong>
+        ${totalSuspects} de ${totalEntries} entrada(s) parecem repetidas ou muito semelhantes neste período. Elas foram destacadas em amarelo para conferência antes de apagar qualquer registro.
+      `;
+    }
+
+    function groupEntriesByDate(entries) {
+      const map = new Map();
+
+      entries.forEach(entry => {
+        const key = entry._date_key || getEntryDateKey(entry) || 'sem-data';
+
+        if (!map.has(key)) {
+          map.set(key, { key, label: dateKeyToHumanLabel(key), entries: [] });
+        }
+
+        map.get(key).entries.push(entry);
+      });
+
+      return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+    }
+
+    function renderDayGroup(group, duplicateMap) {
+      const summary = summarizeEntries(group.entries);
+      const duplicateCount = group.entries.filter(e => duplicateMap.has(e.id)).length;
+      const countLabel = group.entries.length === 1 ? '1 entrada' : `${group.entries.length} entradas`;
+
+      return `
+        <section class="day-group">
+          <div class="day-header">
+            <div class="day-title">
+              <strong>${escapeHtml(group.label)}</strong>
+              <span>${escapeHtml(countLabel)} no dia</span>
             </div>
+            <div class="day-summary">
+              <span>${escapeHtml(money(summary.earned))} ganhos</span>
+              <span>${escapeHtml(money(summary.spent))} gastos</span>
+              <span>${escapeHtml(minutesHuman(summary.sport))} corpo</span>
+              <span>${escapeHtml(minutesHuman(summary.productive))} produtivo</span>
+              ${duplicateCount ? `<span>${duplicateCount} possível(is) duplicada(s)</span>` : ''}
+            </div>
+          </div>
+          ${group.entries.map(entry => renderEntryCard(entry, duplicateMap)).join('')}
+        </section>
+      `;
+    }
 
+    function renderEntryCard(entry, duplicateMap) {
+      const tags = [
+        entry.visual_auto ? 'foto' : '',
+        entry.tipo_principal,
+        ...(entry.categorias || []).slice(0, 5),
+        ...(entry.ativos_detectados || []).slice(0, 3),
+        entry.tom_emocional,
+        entry.impacto_geral
+      ].filter(Boolean);
+
+      const numbers = [
+        entry.dinheiro_gasto ? `Gasto: ${money(entry.dinheiro_gasto)}` : '',
+        entry.dinheiro_ganho ? `Ganho: ${money(entry.dinheiro_ganho)}` : '',
+        entry.dinheiro_investido ? `Investido: ${money(entry.dinheiro_investido)}` : '',
+        entry._sport_display_min ? `Esporte: ${minutesHuman(entry._sport_display_min)}` : '',
+        entry._productive_display_min ? `Produtivo: ${minutesHuman(entry._productive_display_min)}` : '',
+        entry._asset_score >= 4 ? `Ativo: ${entry._asset_score}` : '',
+        entry._friction_score >= 4 ? `Atrito: ${entry._friction_score}` : ''
+      ].filter(Boolean);
+
+      const duplicateInfo = duplicateMap.get(entry.id);
+      const duplicateClass = duplicateInfo ? ' duplicate-suspect' : '';
+      const duplicateBadge = duplicateInfo
+        ? `<div class="duplicate-badge">Possível duplicidade · grupo ${escapeHtml(duplicateInfo.groupLabel)}</div>`
+        : '';
+
+      return `
+        <article class="entry${duplicateClass}">
+          <div class="entry-top">
+            <div>
+              <div class="entry-date">${escapeHtml(formatEntryDateLine(entry))}</div>
+              <p class="entry-text">${escapeHtml(entry.entrada_original || '')}</p>
+            </div>
+            <span class="pill">${escapeHtml(entry.confianca || '—')}</span>
+          </div>
+
+          ${duplicateBadge}
+
+          <div class="tagline">
+            ${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+          </div>
+
+          ${numbers.length ? `
             <div class="tagline">
-              ${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+              ${numbers.map(n => `<span class="tag">${escapeHtml(n)}</span>`).join('')}
             </div>
+          ` : ''}
 
-            ${numbers.length ? `
-              <div class="tagline">
-                ${numbers.map(n => `<span class="tag">${escapeHtml(n)}</span>`).join('')}
-              </div>
-            ` : ''}
+          ${entry.insight_curto ? `<div class="entry-insight">${escapeHtml(entry.insight_curto)}</div>` : ''}
 
-            ${entry.insight_curto ? `<div class="entry-insight">${escapeHtml(entry.insight_curto)}</div>` : ''}
-
-            <div class="entry-actions">
-              <button class="secondary" onclick="copyEntry('${escapeAttr(entry.id)}')">Copiar</button>
-              <button class="danger" onclick="deleteEntry('${escapeAttr(entry.id)}')">Excluir</button>
-            </div>
-          </article>
-        `;
-      }).join('');
+          <div class="entry-actions">
+            <button class="secondary" onclick="copyEntry('${escapeAttr(entry.id)}')">Copiar</button>
+            <button class="danger" onclick="deleteEntry('${escapeAttr(entry.id)}')">Excluir</button>
+          </div>
+        </article>
+      `;
     }
 
     async function sendManualEntry() {
@@ -2493,6 +2698,24 @@
       if (!text) {
         toast('Escreva uma frase antes de registrar.');
         return;
+      }
+
+      const duplicateCheck = detectManualDuplicate(text);
+
+      if (duplicateCheck.exact) {
+        toast('Entrada duplicada bloqueada: já existe uma frase igual ou praticamente igual hoje.');
+        return;
+      }
+
+      if (duplicateCheck.probable) {
+        const existing = duplicateCheck.entry;
+        const ok = confirm(
+          'Possível duplicidade detectada.\n\n' +
+          'Já existe hoje uma entrada parecida:\n“' + String(existing.entrada_original || '').slice(0, 180) + '”\n\n' +
+          'Deseja registrar mesmo assim?'
+        );
+
+        if (!ok) return;
       }
 
       showLoading('Registrando frase...');
@@ -2554,6 +2777,191 @@
       }).catch(() => {
         toast('Não foi possível copiar automaticamente.');
       });
+    }
+
+    function getEntryTimestamp(entry) {
+      if (entry.data_iso) {
+        const d = new Date(entry.data_iso);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+
+      const key = entry._date_key || getEntryDateKey(entry);
+      const hour = extractHour(entry.hora_br, entry.data_iso);
+      const minute = entry.hora_br && String(entry.hora_br).includes(':')
+        ? parseInt(String(entry.hora_br).split(':')[1], 10) || 0
+        : 0;
+
+      if (key && key !== 'sem-data') {
+        return new Date(`${key}T${String(Number.isFinite(hour) ? hour : 0).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`).getTime();
+      }
+
+      return 0;
+    }
+
+    function getEntryDateKey(entry) {
+      if (entry.data_iso) {
+        const d = new Date(entry.data_iso);
+        if (!isNaN(d.getTime())) {
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+      }
+
+      if (entry.data_br) {
+        const parts = String(entry.data_br).split('/');
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+
+      return 'sem-data';
+    }
+
+    function dateKeyToHumanLabel(key) {
+      if (!key || key === 'sem-data') return 'Sem data definida';
+
+      const [year, month, day] = key.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      const today = new Date();
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+      const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+      const formatted = d.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      }).replace(/^./, c => c.toUpperCase());
+
+      if (key === todayKey) return `Hoje — ${formatted}`;
+      if (key === yesterdayKey) return `Ontem — ${formatted}`;
+      return formatted;
+    }
+
+    function formatEntryDateLine(entry) {
+      const hour = entry.hora_br || '';
+      const origin = entry.origem || '';
+      const date = entry.data_br || isoToBrDate(entry.data_iso) || '';
+      return [hour, date, origin].filter(Boolean).join(' · ');
+    }
+
+    function normalizeDedupeText(text) {
+      return String(text || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/[^a-z0-9\s,.:-]/g, ' ')
+        .replace(/\b(reais|real|r\$)\b/g, ' r$ ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function buildEntryDedupeKey(entry) {
+      const dateKey = getEntryDateKey(entry);
+      const text = normalizeDedupeText(entry.entrada_original || '').slice(0, 220);
+      const spent = toNumber(entry.dinheiro_gasto).toFixed(2);
+      const earned = toNumber(entry.dinheiro_ganho).toFixed(2);
+      const invested = toNumber(entry.dinheiro_investido).toFixed(2);
+      const sport = Math.round(toNumber(entry._sport_display_min || entry.esporte_minutos || entry.atividade_fisica_minutos));
+      const productive = Math.round(toNumber(entry._productive_display_min || entry.trabalho_minutos || entry.estudo_minutos || entry.projeto_minutos));
+
+      return [dateKey, text, spent, earned, invested, sport, productive].join('|');
+    }
+
+    function buildDuplicateMap(entries) {
+      const byExact = new Map();
+      const duplicateMap = new Map();
+      let groupIndex = 1;
+
+      entries.forEach(entry => {
+        const key = entry._dedupe_key || buildEntryDedupeKey(entry);
+        if (!byExact.has(key)) byExact.set(key, []);
+        byExact.get(key).push(entry);
+      });
+
+      byExact.forEach(group => {
+        if (group.length < 2) return;
+        const label = `exato ${groupIndex++}`;
+        group.forEach(e => duplicateMap.set(e.id, { groupLabel: label, count: group.length, reason: 'exata' }));
+      });
+
+      const byDate = groupEntriesByDate(entries);
+
+      byDate.forEach(dayGroup => {
+        const list = dayGroup.entries;
+
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const a = list[i];
+            const b = list[j];
+
+            if (duplicateMap.has(a.id) && duplicateMap.has(b.id)) continue;
+            if (areProbableDuplicates(a, b)) {
+              const label = `provável ${groupIndex++}`;
+              duplicateMap.set(a.id, { groupLabel: label, count: 2, reason: 'provável' });
+              duplicateMap.set(b.id, { groupLabel: label, count: 2, reason: 'provável' });
+            }
+          }
+        }
+      });
+
+      return duplicateMap;
+    }
+
+    function areProbableDuplicates(a, b) {
+      if ((a._date_key || getEntryDateKey(a)) !== (b._date_key || getEntryDateKey(b))) return false;
+
+      const textA = a._dedupe_text || normalizeDedupeText(a.entrada_original || '');
+      const textB = b._dedupe_text || normalizeDedupeText(b.entrada_original || '');
+
+      if (!textA || !textB) return false;
+
+      const sameMoney =
+        toNumber(a.dinheiro_gasto).toFixed(2) === toNumber(b.dinheiro_gasto).toFixed(2) &&
+        toNumber(a.dinheiro_ganho).toFixed(2) === toNumber(b.dinheiro_ganho).toFixed(2) &&
+        toNumber(a.dinheiro_investido).toFixed(2) === toNumber(b.dinheiro_investido).toFixed(2);
+
+      const similarity = textSimilarity(textA, textB);
+      return sameMoney && similarity >= 0.84;
+    }
+
+    function textSimilarity(a, b) {
+      const wordsA = new Set(String(a).split(' ').filter(w => w.length > 2));
+      const wordsB = new Set(String(b).split(' ').filter(w => w.length > 2));
+
+      if (!wordsA.size || !wordsB.size) return 0;
+
+      let intersection = 0;
+      wordsA.forEach(w => { if (wordsB.has(w)) intersection += 1; });
+      const union = new Set([...wordsA, ...wordsB]).size;
+      return intersection / union;
+    }
+
+    function detectManualDuplicate(text) {
+      const dateKey = getTodayDateKey();
+      const normalized = normalizeDedupeText(text);
+      const todays = allEntries.filter(e => (e._date_key || getEntryDateKey(e)) === dateKey);
+
+      for (const entry of todays) {
+        const existing = entry._dedupe_text || normalizeDedupeText(entry.entrada_original || '');
+        const similarity = textSimilarity(normalized, existing);
+
+        if (normalized === existing || similarity >= 0.94) {
+          return { exact: true, probable: false, entry };
+        }
+
+        if (similarity >= 0.78) {
+          return { exact: false, probable: true, entry };
+        }
+      }
+
+      return { exact: false, probable: false, entry: null };
+    }
+
+    function getTodayDateKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     function openDocsData() {
