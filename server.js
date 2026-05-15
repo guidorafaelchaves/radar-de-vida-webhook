@@ -47,6 +47,7 @@ const PORT = process.env.PORT || 3000;
 const GOOGLE_DOCS_API_URL = process.env.GOOGLE_DOCS_API_URL || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+const OPENAI_AUDIO_MODEL = process.env.OPENAI_AUDIO_MODEL || 'gpt-4o-mini-transcribe';
 
 const WHATSAPP_CLOUD_TOKEN =
   process.env.WHATSAPP_CLOUD_TOKEN ||
@@ -334,6 +335,22 @@ function extractMediaFromKnownPaths(body) {
     };
   }
 
+  const cloudAudioId = cleanText(getByPath(body, 'entry[0].changes[0].value.messages[0].audio.id'));
+  const cloudAudioMime = cleanText(getByPath(body, 'entry[0].changes[0].value.messages[0].audio.mime_type'));
+
+  if (cloudAudioId) {
+    return {
+      media: {
+        type: 'audio',
+        url: '',
+        id: cloudAudioId,
+        mimeType: cloudAudioMime || 'audio/ogg',
+        provider: 'whatsapp_cloud'
+      },
+      sourcePath: 'entry[0].changes[0].value.messages[0].audio.id'
+    };
+  }
+
   const directPaths = [
     'mediaUrl',
     'media.url',
@@ -610,6 +627,146 @@ async function getImageDataUrl(media) {
   }
 
   throw new Error('Formato de mídia não suportado para download.');
+}
+
+async function downloadWhatsappCloudMedia(media, label = 'mídia') {
+  if (!media || !media.id) {
+    throw new Error(`${label} da WhatsApp Cloud API sem ID.`);
+  }
+
+  if (!WHATSAPP_CLOUD_TOKEN) {
+    throw new Error(`${label} da WhatsApp Cloud API exige WHATSAPP_CLOUD_TOKEN no Render.`);
+  }
+
+  const metaRes = await fetch(`https://graph.facebook.com/v19.0/${media.id}?fields=url,mime_type,file_size,sha256`, {
+    headers: { Authorization: `Bearer ${WHATSAPP_CLOUD_TOKEN}` }
+  });
+
+  if (!metaRes.ok) {
+    const errText = await metaRes.text();
+    throw new Error(`Falha ao buscar metadados da ${label}: ${metaRes.status} — ${errText.slice(0, 500)}`);
+  }
+
+  const meta = await metaRes.json();
+
+  if (!meta.url) {
+    throw new Error(`WhatsApp Cloud não retornou URL da ${label}.`);
+  }
+
+  const fileRes = await fetch(meta.url, {
+    headers: { Authorization: `Bearer ${WHATSAPP_CLOUD_TOKEN}` }
+  });
+
+  if (!fileRes.ok) {
+    const errText = await fileRes.text();
+    throw new Error(`Falha ao baixar ${label}: ${fileRes.status} — ${errText.slice(0, 500)}`);
+  }
+
+  const arrayBuffer = await fileRes.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const mime = meta.mime_type || media.mimeType || fileRes.headers.get('content-type') || 'application/octet-stream';
+
+  return { buffer, mime, meta };
+}
+
+function guessAudioFilename(mime) {
+  const clean = String(mime || '').split(';')[0].trim().toLowerCase();
+
+  if (clean.includes('mpeg') || clean.includes('mp3')) return 'whatsapp-audio.mp3';
+  if (clean.includes('mp4') || clean.includes('m4a')) return 'whatsapp-audio.m4a';
+  if (clean.includes('wav')) return 'whatsapp-audio.wav';
+  if (clean.includes('webm')) return 'whatsapp-audio.webm';
+  if (clean.includes('ogg') || clean.includes('opus')) return 'whatsapp-audio.ogg';
+
+  return 'whatsapp-audio.ogg';
+}
+
+async function getAudioFileFromMedia(media) {
+  if (!media) throw new Error('Áudio inexistente.');
+
+  if (media.provider === 'whatsapp_cloud' && media.id) {
+    const downloaded = await downloadWhatsappCloudMedia(media, 'áudio');
+    return {
+      buffer: downloaded.buffer,
+      mime: downloaded.mime,
+      filename: guessAudioFilename(downloaded.mime),
+      meta: downloaded.meta
+    };
+  }
+
+  if (media.url) {
+    const headers = {};
+    const twilioSid = process.env.TWILIO_ACCOUNT_SID || '';
+    const twilioToken = process.env.TWILIO_AUTH_TOKEN || '';
+
+    if (/twilio/i.test(media.url) && twilioSid && twilioToken) {
+      headers.Authorization = 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
+    }
+
+    const res = await fetch(media.url, { headers });
+
+    if (!res.ok) {
+      throw new Error(`Falha ao baixar áudio por URL: HTTP ${res.status}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const mime = media.mimeType || res.headers.get('content-type') || 'audio/ogg';
+
+    return {
+      buffer: Buffer.from(arrayBuffer),
+      mime,
+      filename: guessAudioFilename(mime),
+      meta: {}
+    };
+  }
+
+  throw new Error('Formato de áudio não suportado para download.');
+}
+
+async function transcribeAudioWithOpenAI({ audioFile, from, profileName }) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY não configurada no Render.');
+  }
+
+  const form = new FormData();
+  const blob = new Blob([audioFile.buffer], { type: audioFile.mime || 'audio/ogg' });
+
+  form.append('file', blob, audioFile.filename || 'whatsapp-audio.ogg');
+  form.append('model', OPENAI_AUDIO_MODEL);
+  form.append('language', 'pt');
+  form.append(
+    'prompt',
+    [
+      'Transcreva em português do Brasil.',
+      'Preserve valores, datas, nomes, tarefas e palavras como missão ou missões.',
+      from ? `Remetente: ${from}` : '',
+      profileName ? `Nome: ${profileName}` : ''
+    ].filter(Boolean).join('\n')
+  );
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`
+    },
+    body: form
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`OpenAI Audio HTTP ${response.status}: ${responseText.slice(0, 1000)}`);
+  }
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(responseText);
+  } catch {
+    parsed = { text: responseText };
+  }
+
+  return cleanText(parsed.text || parsed.output_text || responseText);
 }
 
 async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName }) {
@@ -1075,6 +1232,7 @@ app.get('/', (req, res) => {
       hasOpenAiApiKey: Boolean(OPENAI_API_KEY),
       hasWhatsappCloudToken: Boolean(WHATSAPP_CLOUD_TOKEN),
       openaiVisionModel: OPENAI_VISION_MODEL,
+      openaiAudioModel: OPENAI_AUDIO_MODEL,
       sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
       logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY
     }
@@ -1091,6 +1249,7 @@ app.get('/health', async (req, res) => {
     hasOpenAiApiKey: Boolean(OPENAI_API_KEY),
     hasWhatsappCloudToken: Boolean(WHATSAPP_CLOUD_TOKEN),
     openaiVisionModel: OPENAI_VISION_MODEL,
+    openaiAudioModel: OPENAI_AUDIO_MODEL,
     sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
     logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY,
     hasPublicIndex: fs.existsSync(path.join(publicDir, 'index.html'))
@@ -1259,6 +1418,82 @@ app.post('/webhook/whatsapp', async (req, res) => {
       : null,
     source: incoming.source
   });
+
+  /**
+   * Fluxo de áudio:
+   * Áudio WhatsApp -> Meta Cloud API -> OpenAI Transcription -> Apps Script.
+   */
+  if (incoming.media && /^audio/i.test(incoming.media.type || incoming.media.mimeType || '')) {
+    try {
+      const audioFile = await getAudioFileFromMedia(incoming.media);
+      const transcript = await transcribeAudioWithOpenAI({
+        audioFile,
+        from: incoming.from,
+        profileName: incoming.profileName
+      });
+
+      if (!transcript) {
+        throw new Error('Transcrição vazia.');
+      }
+
+      const text = `Transcrição de áudio do WhatsApp: ${transcript}`;
+      const result = await sendTextToAppsScript({
+        text,
+        from: incoming.from,
+        profileName: incoming.profileName,
+        source: 'whatsapp_audio_transcription',
+        raw: {
+          body: incoming.raw,
+          source: incoming.source,
+          audio: {
+            mimeType: audioFile.mime,
+            filename: audioFile.filename,
+            provider: incoming.media.provider || '',
+            mediaId: incoming.media.id || '',
+            transcriptionEngine: OPENAI_AUDIO_MODEL
+          },
+          transcript
+        }
+      });
+
+      console.log('[RADAR_AUDIO] Áudio transcrito e enviado ao Apps Script:', {
+        ok: result.ok,
+        id: result.id,
+        transcriptPreview: transcript.slice(0, 180),
+        error: result.error || null
+      });
+
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(
+          result.ok
+            ? `Áudio transcrito e registrado no Radar de Vida.\n\n${transcript.slice(0, 500)}`
+            : 'Recebi o áudio e transcrevi, mas houve erro ao registrar no Radar de Vida.'
+        ));
+      }
+
+      return res.status(result.ok ? 200 : 500).json({
+        ok: Boolean(result.ok),
+        action: 'audio_transcribed_saved',
+        transcript,
+        result
+      });
+    } catch (err) {
+      console.error('[RADAR_AUDIO] Erro ao transcrever/salvar áudio:', err);
+
+      const msg = 'Recebi o áudio, mas ainda não consegui transcrevê-lo. Erro: ' + err.message;
+
+      if (SEND_WHATSAPP_CONFIRMATION) {
+        return res.status(200).type('text/xml').send(buildWhatsappXmlMessage(msg));
+      }
+
+      return res.status(200).json({
+        ok: false,
+        action: 'audio_transcription_failed',
+        error: err.message,
+        hint: 'Verifique OPENAI_API_KEY, WHATSAPP_CLOUD_TOKEN, ID/URL da mídia de áudio e permissões da Meta.'
+      });
+    }
+  }
 
   /**
    * Fluxo visual v7.5:
@@ -1431,6 +1666,7 @@ app.listen(PORT, () => {
   console.log('OPENAI_API_KEY configurada no Render:', Boolean(OPENAI_API_KEY));
   console.log('WHATSAPP_CLOUD_TOKEN configurado no Render:', Boolean(WHATSAPP_CLOUD_TOKEN));
   console.log('OPENAI_VISION_MODEL:', OPENAI_VISION_MODEL);
+  console.log('OPENAI_AUDIO_MODEL:', OPENAI_AUDIO_MODEL);
   console.log('SEND_WHATSAPP_CONFIRMATION:', SEND_WHATSAPP_CONFIRMATION);
   console.log('LOG_RAW_WHATSAPP_EMPTY:', LOG_RAW_WHATSAPP_EMPTY);
   console.log('public/index.html encontrado:', fs.existsSync(path.join(publicDir, 'index.html')));
