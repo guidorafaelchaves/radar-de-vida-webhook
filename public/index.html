@@ -614,6 +614,56 @@
       box-shadow: none;
     }
 
+    .money-lists {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .money-list {
+      display: grid;
+      gap: 10px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .money-row {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .money-row-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .money-row-value {
+      font-weight: 950;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .money-row small {
+      color: var(--muted);
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .money-row p {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
 
 
     .duplicate-box {
@@ -801,6 +851,10 @@
       }
 
       .reading-points {
+        grid-template-columns: 1fr;
+      }
+
+      .money-lists {
         grid-template-columns: 1fr;
       }
     }
@@ -1302,6 +1356,31 @@
       </div>
     </section>
 
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
+          <h2>Dinheiro por entrada</h2>
+          <p class="hint">Listas separadas de gastos e ganhos no perÃ­odo selecionado.</p>
+        </div>
+      </div>
+
+      <div class="money-lists">
+        <div>
+          <div class="chart-title">Dinheiro gasto</div>
+          <div id="spentListBox" class="money-list">
+            <div class="empty">Carregando gastos...</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="chart-title">Dinheiro ganho</div>
+          <div id="earnedListBox" class="money-list">
+            <div class="empty">Carregando ganhos...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="section-grid">
       <aside class="panel">
         <div class="panel-header">
@@ -1599,6 +1678,7 @@
       renderCards();
       renderComparison();
       renderMonthReading();
+      renderMoneyLists();
       renderCategoryFilter();
       renderEntries();
       renderStrangeLayer();
@@ -1805,6 +1885,40 @@
       document.getElementById('cardSport').textContent = minutesHuman(sport);
       document.getElementById('cardProductive').textContent = minutesHuman(productive);
       document.getElementById('cardFriction').textContent = String(friction);
+    }
+
+    function renderMoneyLists() {
+      renderMoneyList('spentListBox', viewEntries, 'dinheiro_gasto', 'Nenhum gasto registrado neste perÃ­odo.');
+      renderMoneyList('earnedListBox', viewEntries, 'dinheiro_ganho', 'Nenhum ganho registrado neste perÃ­odo.');
+    }
+
+    function renderMoneyList(elementId, entries, field, emptyMessage) {
+      const box = document.getElementById(elementId);
+      if (!box) return;
+
+      const rows = entries
+        .filter(entry => toNumber(entry[field]) > 0)
+        .sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a));
+
+      if (!rows.length) {
+        box.innerHTML = `<div class="empty">${escapeHtml(emptyMessage)}</div>`;
+        return;
+      }
+
+      box.innerHTML = rows.map(entry => `
+        <article class="money-row">
+          <div class="money-row-top">
+            <small>${escapeHtml(formatEntryDateLine(entry) || 'Sem data definida')}</small>
+            <span class="money-row-value">${escapeHtml(money(entry[field]))}</span>
+          </div>
+          <p>${escapeHtml(entry.entrada_original || '')}</p>
+          ${entry.insight_curto ? `<div class="entry-insight">${escapeHtml(entry.insight_curto)}</div>` : ''}
+          <div class="entry-actions">
+            <button class="secondary" onclick="copyEntry('${escapeAttr(entry.id)}')">Copiar</button>
+            <button class="danger" onclick="deleteEntry('${escapeAttr(entry.id)}')">Excluir</button>
+          </div>
+        </article>
+      `).join('');
     }
 
     function renderComparison() {
@@ -2745,7 +2859,13 @@
 
       showLoading('Excluindo registro...');
       try {
-        const data = await jsonp(APPS_SCRIPT_URL + '?action=delete&id=' + encodeURIComponent(id));
+        const response = await fetch('/api/delete-entry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await response.json();
 
         if (!data || !data.ok) {
           throw new Error((data && data.error) || 'Falha ao excluir.');

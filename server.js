@@ -474,6 +474,42 @@ async function callAppsScript(payload) {
   return parsed;
 }
 
+async function callAppsScriptAction(params) {
+  requireGoogleDocsApiUrl();
+
+  const url = new URL(GOOGLE_DOCS_API_URL);
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  const response = await fetch(url.toString());
+  const responseText = await response.text();
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(responseText);
+  } catch (err) {
+    parsed = {
+      ok: false,
+      error: 'Resposta do Apps Script não era JSON válido.',
+      rawResponse: responseText
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      httpStatus: response.status,
+      appsScript: parsed
+    };
+  }
+
+  return parsed;
+}
+
 async function sendTextToAppsScript({ text, from, profileName, source, raw }) {
   return callAppsScript({
     text,
@@ -1031,7 +1067,8 @@ app.get('/', (req, res) => {
       health: '/health',
       test: '/test',
       whatsapp: '/webhook/whatsapp',
-      manualEntry: '/api/manual-entry'
+      manualEntry: '/api/manual-entry',
+      deleteEntry: '/api/delete-entry'
     },
     config: {
       hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
@@ -1165,6 +1202,39 @@ app.post('/api/manual-entry', async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: err.message
+    });
+  }
+});
+
+app.post('/api/delete-entry', async (req, res) => {
+  const id =
+    cleanText(req.body.id) ||
+    cleanText(req.body.entryId) ||
+    cleanText(req.query.id);
+
+  if (!id) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Campo id/entryId vazio.'
+    });
+  }
+
+  try {
+    const result = await callAppsScriptAction({
+      action: 'delete',
+      id
+    });
+
+    return res.status(result.ok ? 200 : 500).json({
+      ok: Boolean(result.ok),
+      id,
+      result
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message,
+      id
     });
   }
 });
