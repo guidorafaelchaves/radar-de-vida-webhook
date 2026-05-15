@@ -1370,6 +1370,13 @@ app.post('/api/delete-entry', async (req, res) => {
     cleanText(req.body.id) ||
     cleanText(req.body.entryId) ||
     cleanText(req.query.id);
+  const requestedMode =
+    cleanText(req.body.mode) ||
+    cleanText(req.body.deleteMode) ||
+    cleanText(req.query.mode) ||
+    'system';
+  const mode = requestedMode === 'permanent' ? 'permanent' : 'system';
+  const action = mode === 'permanent' ? 'delete_permanent' : 'delete';
 
   if (!id) {
     return res.status(400).json({
@@ -1380,20 +1387,25 @@ app.post('/api/delete-entry', async (req, res) => {
 
   try {
     const result = await callAppsScriptAction({
-      action: 'delete',
-      id
+      action,
+      id,
+      mode
     });
 
     return res.status(result.ok ? 200 : 500).json({
       ok: Boolean(result.ok),
       id,
+      mode,
+      action,
       result
     });
   } catch (err) {
     return res.status(500).json({
       ok: false,
       error: err.message,
-      id
+      id,
+      mode,
+      action
     });
   }
 });

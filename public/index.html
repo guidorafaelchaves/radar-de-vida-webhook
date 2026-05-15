@@ -2521,6 +2521,31 @@
       return currentMissions.find(mission => mission.key === key);
     }
 
+    function askDeleteMode(label) {
+      const answer = prompt(
+        `${label}\n\n` +
+        'Escolha o tipo de exclusao:\n' +
+        '1 - Excluir so do sistema/painel\n' +
+        '2 - Apagar tambem o registro correspondente no Google Docs\n\n' +
+        'Digite 1 ou 2.'
+      );
+
+      if (answer === null) return null;
+
+      const clean = String(answer).trim();
+      if (clean === '1') return 'system';
+      if (clean === '2') return 'permanent';
+
+      toast('Opcao invalida. Exclusao cancelada.');
+      return null;
+    }
+
+    function deleteModeLabel(mode) {
+      return mode === 'permanent'
+        ? 'apagar tambem do Google Docs'
+        : 'excluir so do sistema/painel';
+    }
+
     async function completeMission(key) {
       const mission = findCurrentMission(key);
       if (!mission) {
@@ -2573,9 +2598,13 @@
         return;
       }
 
+      const mode = askDeleteMode(`Excluir missao: ${mission.title}`);
+      if (!mode) return;
+
       const ok = confirm(
-        `Excluir esta missao do painel?\n\n${mission.title}\n\n` +
-        `Isso vai ocultar ${ids.length} registro(s) relacionado(s) no Google Docs.`
+        `Confirmar exclusao da missao?\n\n${mission.title}\n\n` +
+        `Modo: ${deleteModeLabel(mode)}.\n` +
+        `Registros relacionados: ${ids.length}.`
       );
       if (!ok) return;
 
@@ -2585,7 +2614,7 @@
           const response = await fetch('/api/delete-entry', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
+            body: JSON.stringify({ id, mode })
           });
 
           const data = await response.json();
@@ -2595,7 +2624,7 @@
           }
         }
 
-        toast('Missao excluida do painel.');
+        toast(mode === 'permanent' ? 'Missao apagada do Google Docs.' : 'Missao excluida do painel.');
         await loadData();
       } catch (err) {
         console.error(err);
@@ -3699,7 +3728,10 @@
     async function deleteEntry(id) {
       if (!id) return;
 
-      const ok = confirm('Deseja excluir esta entrada do painel? O registro não será apagado fisicamente do Google Docs; será apenas ocultado.');
+      const mode = askDeleteMode('Excluir esta entrada');
+      if (!mode) return;
+
+      const ok = confirm(`Confirmar exclusao?\n\nModo: ${deleteModeLabel(mode)}.`);
       if (!ok) return;
 
       showLoading('Excluindo registro...');
@@ -3707,7 +3739,7 @@
         const response = await fetch('/api/delete-entry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id })
+          body: JSON.stringify({ id, mode })
         });
 
         const data = await response.json();
@@ -3716,7 +3748,7 @@
           throw new Error((data && data.error) || 'Falha ao excluir.');
         }
 
-        toast('Registro excluído do painel.');
+        toast(mode === 'permanent' ? 'Registro apagado do Google Docs.' : 'Registro excluido do painel.');
         await loadData();
       } catch (err) {
         console.error(err);
