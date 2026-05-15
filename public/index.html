@@ -1058,6 +1058,10 @@
         padding: 10px 10px 28px;
       }
 
+      .topbar {
+        display: block;
+      }
+
       .topbar,
       .period-panel {
         gap: 10px;
@@ -1074,45 +1078,68 @@
       }
 
       .hero::after {
-        width: 150px;
-        height: 150px;
-        right: -70px;
-        top: -70px;
+        display: none;
       }
 
       .eyebrow {
         font-size: 11px;
         padding: 6px 9px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
       }
 
       h1 {
-        font-size: 30px;
-        line-height: 1.04;
-        letter-spacing: -0.035em;
+        font-size: 25px;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
       }
 
       .subtitle {
-        font-size: 14px;
-        line-height: 1.45;
+        display: none;
       }
 
       .actions {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
-        margin-top: 14px;
+        margin-top: 12px;
+      }
+
+      .actions button:first-child {
+        grid-column: 1 / -1;
       }
 
       button {
         width: 100%;
-        padding: 13px 14px;
+        padding: 11px 12px;
         border-radius: 14px;
-        font-size: 14px;
+        font-size: 13px;
+      }
+
+      .view-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 12;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 10px 0;
+        padding: 6px 0;
+        background: rgba(245, 247, 245, .94);
+        backdrop-filter: blur(12px);
+      }
+
+      .view-tab {
+        padding: 11px 10px;
       }
 
       .period-controls {
         grid-template-columns: 1fr;
+      }
+
+      .period-card p,
+      #periodHint,
+      #comparisonSubtitle {
+        display: none;
       }
 
       .compare-grid {
@@ -1130,18 +1157,28 @@
       }
 
       .status-card {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
+        margin-top: 10px;
       }
 
       .status-row {
-        font-size: 12px;
+        display: grid;
+        gap: 4px;
+        font-size: 11px;
         gap: 8px;
-        padding-bottom: 8px;
+        padding: 0;
+        border-bottom: 0;
       }
 
       .status-row strong {
-        text-align: right;
+        text-align: left;
         font-size: 12px;
+      }
+
+      .status-card .footer-note {
+        display: none;
       }
 
       .pill {
@@ -1172,9 +1209,7 @@
       }
 
       .metric span {
-        font-size: 11px;
-        line-height: 1.25;
-        margin-top: 7px;
+        display: none;
       }
 
       .section-grid {
@@ -1196,7 +1231,11 @@
       }
 
       .panel p.hint {
-        font-size: 12px;
+        display: none;
+      }
+
+      .footer-note {
+        display: none;
       }
 
       .filters {
@@ -1215,6 +1254,14 @@
 
       textarea {
         min-height: 108px;
+      }
+
+      .money-lists {
+        grid-template-columns: 1fr;
+      }
+
+      .money-list {
+        max-height: none;
       }
 
       .feed {
@@ -1268,6 +1315,23 @@
         font-size: 22px;
       }
 
+      .month-reading,
+      .reading-points {
+        gap: 8px;
+      }
+
+      .reading-main,
+      .reading-point {
+        font-size: 13px;
+        border-radius: 14px;
+        padding: 12px;
+      }
+
+      #overviewView > section:nth-of-type(6),
+      #overviewView > section:nth-of-type(7) {
+        display: none;
+      }
+
       .charts {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -1304,6 +1368,42 @@
         padding: 12px;
       }
 
+      .mission-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .mission-board {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .mission-card {
+        border-radius: 16px;
+        padding: 13px;
+        gap: 10px;
+      }
+
+      .mission-card h3 {
+        font-size: 16px;
+      }
+
+      .mission-meta .tag:nth-child(n+7) {
+        display: none;
+      }
+
+      .mission-update {
+        padding: 9px;
+      }
+
+      .mission-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .mission-actions button {
+        width: 100%;
+      }
 
 
       .day-group {
@@ -1351,9 +1451,20 @@
         padding-right: 8px;
       }
 
-      h1 { font-size: 27px; }
+      h1 { font-size: 23px; }
 
       .subtitle { font-size: 13px; }
+
+      .hero,
+      .status-card,
+      .panel,
+      .period-card {
+        padding: 12px;
+      }
+
+      .actions {
+        grid-template-columns: 1fr;
+      }
 
       .grid-cards,
       .compare-grid {
@@ -1372,8 +1483,24 @@
         display: none;
       }
 
+      .compare-mini span {
+        display: none;
+      }
+
       .status-row {
         align-items: flex-start;
+      }
+
+      .mission-summary {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .mission-summary .weird-card p {
+        display: none;
+      }
+
+      .mission-actions {
+        grid-template-columns: 1fr;
       }
 
       .chart-box,
