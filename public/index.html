@@ -807,6 +807,31 @@
       word-break: break-word;
     }
 
+    .mission-update.positive {
+      background: var(--green-soft);
+      color: #245337;
+      border-color: #c6dfcf;
+    }
+
+    .mission-update.negative {
+      background: var(--red-soft);
+      color: #713126;
+      border-color: #f2c8c1;
+    }
+
+    .mission-delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 6px;
+      border-radius: 999px;
+      padding: 3px 7px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 10px;
+      font-weight: 950;
+    }
+
 
 
     .duplicate-box {
@@ -2172,50 +2197,64 @@
     function buildMissions(entries) {
       const missionEntries = entries
         .filter(isMissionSignal)
-        .map(entry => ({ entry, parsed: parseMissionEntry(entry) }));
+        .map(entry => ({ entry, parsed: parseMissionEntry(entry) }))
+        .sort((a, b) => getEntryTimestamp(a.entry) - getEntryTimestamp(b.entry));
 
-      const grouped = new Map();
+      const missions = [];
 
       missionEntries.forEach(item => {
-        const key = item.parsed.key;
+        let mission = findMatchingMission(missions, item.parsed);
 
-        if (!grouped.has(key)) {
-          grouped.set(key, {
-            key,
+        if (!mission) {
+          mission = {
+            key: item.parsed.key,
             title: item.parsed.title,
+            keywords: new Set(item.parsed.keywords),
             entries: [],
+            timeline: [],
             categories: new Set(),
             dimensions: new Set(),
             progress: 0,
             status: 'em_andamento',
             insight: '',
-            nextStep: ''
-          });
+            nextStep: '',
+            trend: 'neutral'
+          };
+          missions.push(mission);
         }
 
-        const mission = grouped.get(key);
+        const before = mission.progress;
         mission.entries.push(item.entry);
+        item.parsed.keywords.forEach(keyword => mission.keywords.add(keyword));
         item.parsed.categories.forEach(cat => mission.categories.add(cat));
         item.parsed.dimensions.forEach(dim => mission.dimensions.add(dim));
-        mission.progress = Math.max(mission.progress, item.parsed.progress);
+
+        mission.progress = applyMissionProgress(mission.progress, item.parsed);
         if (item.parsed.status === 'concluida') mission.status = 'concluida';
         if (item.parsed.insight) mission.insight = item.parsed.insight;
         if (item.parsed.nextStep) mission.nextStep = item.parsed.nextStep;
+
+        const delta = Math.round(mission.progress - before);
+        mission.trend = delta > 0 ? 'positive' : delta < 0 ? 'negative' : mission.trend;
+        mission.timeline.push({
+          entry: item.entry,
+          delta,
+          sentiment: item.parsed.sentiment,
+          progress: mission.progress
+        });
       });
 
-      return Array.from(grouped.values())
+      return missions
         .map(mission => {
           const latest = [...mission.entries].sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a))[0];
           if (mission.status === 'concluida') mission.progress = 100;
-          if (!mission.progress && mission.entries.length > 1) {
-            mission.progress = Math.min(80, 20 + mission.entries.length * 15);
-          }
 
           return {
             ...mission,
             latest,
             categories: Array.from(mission.categories),
             dimensions: Array.from(mission.dimensions),
+            keywords: Array.from(mission.keywords),
             json: buildMissionJson(mission, latest)
           };
         })
@@ -2225,18 +2264,61 @@
         });
     }
 
+    function findMatchingMission(missions, parsed) {
+      let best = null;
+      let bestScore = 0;
+
+      missions.forEach(mission => {
+        const score = missionSimilarity(Array.from(mission.keywords), parsed.keywords);
+        if (score > bestScore) {
+          bestScore = score;
+          best = mission;
+        }
+      });
+
+      return bestScore >= 0.30 ? best : null;
+    }
+
+    function missionSimilarity(a, b) {
+      const setA = new Set(a || []);
+      const setB = new Set(b || []);
+      if (!setA.size || !setB.size) return 0;
+
+      let overlap = 0;
+      setA.forEach(word => {
+        if (setB.has(word)) overlap += 1;
+      });
+
+      const smaller = Math.min(setA.size, setB.size);
+      const union = new Set([...setA, ...setB]).size;
+      const containment = smaller ? overlap / smaller : 0;
+      const jaccard = union ? overlap / union : 0;
+
+      return Math.max(containment, jaccard);
+    }
+
+    function applyMissionProgress(current, parsed) {
+      if (parsed.status === 'concluida') return 100;
+      if (parsed.explicitProgress !== null) {
+        return Math.max(current, parsed.explicitProgress);
+      }
+
+      const next = current ? current + parsed.delta : Math.max(10, parsed.delta);
+      return Math.max(5, Math.min(95, next));
+    }
+
     function renderMissionCard(mission) {
       const progress = Math.max(0, Math.min(100, Math.round(mission.progress)));
       const stage = getMissionStage(progress, mission.status);
-      const updates = mission.entries
+      const updates = mission.timeline
         .slice()
-        .sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a))
+        .sort((a, b) => getEntryTimestamp(b.entry) - getEntryTimestamp(a.entry))
         .slice(0, 3);
 
       const tags = unique([
         mission.status === 'concluida' ? 'concluida' : 'em andamento',
         ...mission.categories.slice(0, 5),
-        ...mission.dimensions.slice(0, 3)
+        ...mission.keywords.slice(0, 4)
       ]);
 
       return `
@@ -2264,10 +2346,13 @@
           ${mission.nextStep ? `<p class="mission-text"><strong>Proximo sinal:</strong> ${escapeHtml(mission.nextStep)}</p>` : ''}
 
           <div class="mission-updates">
-            ${updates.map(entry => `
-              <div class="mission-update">
-                <strong>${escapeHtml(formatEntryDateLine(entry) || 'Sem data')}</strong><br />
-                ${escapeHtml(entry.entrada_original || '')}
+            ${updates.map(update => `
+              <div class="mission-update ${escapeAttr(update.sentiment)}">
+                <strong>
+                  ${escapeHtml(formatEntryDateLine(update.entry) || 'Sem data')}
+                  ${update.delta ? `<span class="mission-delta">${update.delta > 0 ? '+' : ''}${escapeHtml(update.delta)} pts</span>` : ''}
+                </strong><br />
+                ${escapeHtml(update.entry.entrada_original || '')}
               </div>
             `).join('')}
           </div>
@@ -2301,19 +2386,30 @@
       const original = String(entry.entrada_original || '').trim();
       const text = normalizeMissionText(original);
       const title = extractMissionTitle(original) || 'Missao sem titulo';
-      const progress = extractMissionProgress(text);
-      const completed = progress >= 100 || /\b(conclui|concluida|concluido|completei|finalizei|terminei|feito|100%)\b/.test(text);
-      const startedProgress = completed ? 100 : Math.max(progress, 10);
+      const progressInfo = extractMissionProgress(text);
+      const completed = progressInfo.explicitProgress >= 100 || /\b(conclui|concluida|concluido|completei|finalizei|terminei|feito|100%)\b/.test(text);
       const categories = unique([...(entry.categorias || []), entry.tipo_principal, 'missao']);
       const dimensions = unique([...(entry.dimensoes_afetadas || []), 'missao_pessoal']);
+      const keywords = extractMissionKeywords([
+        title,
+        original,
+        entry.insight_curto,
+        entry.insight_profundo,
+        entry.tipo_principal,
+        ...categories,
+        ...dimensions
+      ].join(' '));
 
       return {
         key: normalizeMissionKey(title),
         title,
-        progress: startedProgress,
+        explicitProgress: completed ? 100 : progressInfo.explicitProgress,
+        delta: completed ? 100 : progressInfo.delta,
+        sentiment: completed ? 'positive' : progressInfo.sentiment,
         status: completed ? 'concluida' : 'em_andamento',
         categories,
         dimensions,
+        keywords,
         insight: entry.insight_curto || entry.insight_profundo || '',
         nextStep: extractMissionNextStep(original)
       };
@@ -2333,19 +2429,44 @@
 
     function extractMissionProgress(text) {
       const percent = text.match(/(\d{1,3})\s*%/);
-      if (percent) return Math.max(0, Math.min(100, Number(percent[1]) || 0));
+      if (percent) {
+        return {
+          explicitProgress: Math.max(0, Math.min(100, Number(percent[1]) || 0)),
+          delta: 0,
+          sentiment: 'neutral'
+        };
+      }
 
       const fraction = text.match(/\b(\d{1,3})\s*(?:de|\/)\s*(\d{1,3})\b/);
       if (fraction) {
         const current = Number(fraction[1]) || 0;
         const total = Number(fraction[2]) || 0;
-        if (total > 0) return Math.max(0, Math.min(100, Math.round((current / total) * 100)));
+        if (total > 0) {
+          return {
+            explicitProgress: Math.max(0, Math.min(100, Math.round((current / total) * 100))),
+            delta: 0,
+            sentiment: 'neutral'
+          };
+        }
       }
 
-      if (/\b(comec|iniciei|criei|planejei|rascunhei)\b/.test(text)) return 15;
-      if (/\b(avancei|fiz|executei|treinei|estudei|progredi)\b/.test(text)) return 45;
-      if (/\b(quase|reta final|faltam|faltando)\b/.test(text)) return 75;
-      return 0;
+      if (/\b(nao consegui|n[aã]o consegui|atrasou|travou|problema|erro|dificuldade|pendente|faltam|faltando)\b/.test(text)) {
+        return { explicitProgress: null, delta: -10, sentiment: 'negative' };
+      }
+
+      if (/\b(comec|iniciei|criei|planejei|rascunhei|tenho como)\b/.test(text)) {
+        return { explicitProgress: null, delta: 10, sentiment: 'positive' };
+      }
+
+      if (/\b(consegui|agendei|marquei|resolvi|avancei|feito|passo dado|um passo|fiz|executei|progredi)\b/.test(text)) {
+        return { explicitProgress: null, delta: 20, sentiment: 'positive' };
+      }
+
+      if (/\b(quase|reta final)\b/.test(text)) {
+        return { explicitProgress: 75, delta: 0, sentiment: 'positive' };
+      }
+
+      return { explicitProgress: null, delta: 5, sentiment: 'neutral' };
     }
 
     function extractMissionNextStep(text) {
@@ -2360,8 +2481,9 @@
         status: mission.status,
         progresso_percentual: Math.max(0, Math.min(100, Math.round(mission.progress))),
         entradas_relacionadas: mission.entries.length,
-        categorias: mission.categories,
-        dimensoes_afetadas: mission.dimensions,
+        categorias: Array.from(mission.categories || []),
+        dimensoes_afetadas: Array.from(mission.dimensions || []),
+        palavras_chave: Array.from(mission.keywords || []),
         ultimo_registro: latest ? {
           id: latest.id || '',
           data: latest.data_br || isoToBrDate(latest.data_iso) || '',
@@ -2388,6 +2510,25 @@
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 80) || 'missao';
+    }
+
+    function extractMissionKeywords(text) {
+      const stop = new Set([
+        'missao', 'missoes', 'tenho', 'como', 'sobre', 'para', 'com', 'sem',
+        'uma', 'um', 'uns', 'das', 'dos', 'de', 'da', 'do', 'e', 'o', 'a',
+        'os', 'as', 'meu', 'minha', 'meus', 'minhas', 'preciso', 'quero',
+        'vou', 'ja', 'foi', 'ser', 'estar', 'estou', 'isso', 'tudo',
+        'atualizacao', 'progresso', 'status', 'passo', 'dado', 'em',
+        'andamento', 'concluida', 'concluido', 'pessoal', 'projeto'
+      ]);
+
+      return unique(
+        normalizeMissionText(text)
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .split(/\s+/)
+          .map(word => word.trim())
+          .filter(word => word.length >= 4 && !stop.has(word))
+      ).slice(0, 12);
     }
 
     function renderComparison() {
