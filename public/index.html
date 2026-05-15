@@ -751,6 +751,29 @@
       background: linear-gradient(90deg, var(--green), #6fa2ff);
     }
 
+    .mission-scale {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .mission-stage {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: var(--blue-soft);
+      color: #22406f;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
     .mission-progress-label {
       display: flex;
       justify-content: space-between;
@@ -782,18 +805,6 @@
       line-height: 1.4;
       color: var(--muted);
       word-break: break-word;
-    }
-
-    .mission-json {
-      margin: 0;
-      padding: 10px;
-      max-height: 180px;
-      overflow: auto;
-      border-radius: 14px;
-      background: #111b16;
-      color: #e8fff0;
-      font-size: 11px;
-      line-height: 1.45;
     }
 
 
@@ -1395,9 +1406,9 @@
       </aside>
     </header>
 
-    <nav class="view-tabs" aria-label="NavegaÃ§Ã£o principal">
-      <button id="overviewTab" class="view-tab active" onclick="switchView('overview')">VisÃ£o geral</button>
-      <button id="missionsTab" class="view-tab" onclick="switchView('missions')">MissÃµes</button>
+    <nav class="view-tabs" aria-label="Navegacao principal">
+      <button id="overviewTab" class="view-tab active" onclick="switchView('overview')">Visao geral</button>
+      <button id="missionsTab" class="view-tab" onclick="switchView('missions')">Missoes</button>
     </nav>
 
     <div id="overviewView" class="view-pane active">
@@ -1675,37 +1686,37 @@
       <section class="panel">
         <div class="panel-header">
           <div>
-            <h2>MissÃµes</h2>
-            <p class="hint">Entradas do WhatsApp com sinais de missÃ£o, progresso, atualizaÃ§Ã£o ou conclusÃ£o.</p>
+            <h2>Missoes</h2>
+            <p class="hint">Entradas do WhatsApp com sinais de missao, progresso, atualizacao ou conclusao.</p>
           </div>
-          <button class="secondary" onclick="loadData()">Atualizar missÃµes</button>
+          <button class="secondary" onclick="loadData()">Atualizar missoes</button>
         </div>
 
         <div class="mission-summary">
           <article class="weird-card">
-            <small>MissÃµes ativas</small>
+            <small>Missoes ativas</small>
             <strong id="missionsActiveCount">0</strong>
-            <p>Em andamento no perÃ­odo selecionado.</p>
+            <p>Em andamento no periodo selecionado.</p>
           </article>
           <article class="weird-card">
-            <small>ConcluÃ­das</small>
+            <small>Concluidas</small>
             <strong id="missionsDoneCount">0</strong>
             <p>Marcadas como completas ou com 100%.</p>
           </article>
           <article class="weird-card">
-            <small>Progresso mÃ©dio</small>
+            <small>Progresso medio</small>
             <strong id="missionsAvgProgress">0%</strong>
-            <p>MÃ©dia estimada a partir dos sinais encontrados.</p>
+            <p>Media estimada a partir dos sinais encontrados.</p>
           </article>
           <article class="weird-card">
-            <small>Ãšltimo movimento</small>
-            <strong id="missionsLastUpdate">â€”</strong>
-            <p>Registro mais recente ligado a missÃµes.</p>
+            <small>Ultimo movimento</small>
+            <strong id="missionsLastUpdate">-</strong>
+            <p>Registro mais recente ligado a missoes.</p>
           </article>
         </div>
 
         <div id="missionsBox" class="mission-board">
-          <div class="empty">Carregando missÃµes...</div>
+          <div class="empty">Carregando missoes...</div>
         </div>
       </section>
     </div>
@@ -2148,10 +2159,10 @@
       document.getElementById('missionsActiveCount').textContent = String(active.length);
       document.getElementById('missionsDoneCount').textContent = String(done.length);
       document.getElementById('missionsAvgProgress').textContent = `${avg}%`;
-      document.getElementById('missionsLastUpdate').textContent = latest ? formatEntryDateLine(latest) : 'â€”';
+      document.getElementById('missionsLastUpdate').textContent = latest ? formatEntryDateLine(latest) : '-';
 
       if (!missions.length) {
-        box.innerHTML = '<div class="empty">Nenhuma missÃ£o encontrada no perÃ­odo selecionado.</div>';
+        box.innerHTML = '<div class="empty">Nenhuma missao encontrada no periodo selecionado.</div>';
         return;
       }
 
@@ -2216,13 +2227,14 @@
 
     function renderMissionCard(mission) {
       const progress = Math.max(0, Math.min(100, Math.round(mission.progress)));
+      const stage = getMissionStage(progress, mission.status);
       const updates = mission.entries
         .slice()
         .sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a))
         .slice(0, 3);
 
       const tags = unique([
-        mission.status === 'concluida' ? 'concluÃ­da' : 'em andamento',
+        mission.status === 'concluida' ? 'concluida' : 'em andamento',
         ...mission.categories.slice(0, 5),
         ...mission.dimensions.slice(0, 3)
       ]);
@@ -2238,14 +2250,18 @@
 
           <div class="mission-progress">
             <div class="mission-progress-label">
-              <span>Progresso estimado</span>
+              <span>Progresso da missao</span>
               <strong>${progress}%</strong>
             </div>
             <div class="mission-progress-line"><i style="width:${progress}%"></i></div>
+            <div class="mission-scale">
+              <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+            </div>
+            <span class="mission-stage">${escapeHtml(stage)}</span>
           </div>
 
           ${mission.insight ? `<div class="entry-insight">${escapeHtml(mission.insight)}</div>` : ''}
-          ${mission.nextStep ? `<p class="mission-text"><strong>PrÃ³ximo sinal:</strong> ${escapeHtml(mission.nextStep)}</p>` : ''}
+          ${mission.nextStep ? `<p class="mission-text"><strong>Proximo sinal:</strong> ${escapeHtml(mission.nextStep)}</p>` : ''}
 
           <div class="mission-updates">
             ${updates.map(entry => `
@@ -2256,9 +2272,17 @@
             `).join('')}
           </div>
 
-          <pre class="mission-json">${escapeHtml(JSON.stringify(mission.json, null, 2))}</pre>
         </article>
       `;
+    }
+
+    function getMissionStage(progress, status) {
+      if (status === 'concluida' || progress >= 100) return 'Concluida';
+      if (progress >= 75) return 'Reta final';
+      if (progress >= 50) return 'Em andamento forte';
+      if (progress >= 25) return 'Em desenvolvimento';
+      if (progress > 0) return 'Iniciada';
+      return 'Identificada';
     }
 
     function isMissionSignal(entry) {
@@ -2276,16 +2300,17 @@
     function parseMissionEntry(entry) {
       const original = String(entry.entrada_original || '').trim();
       const text = normalizeMissionText(original);
-      const title = extractMissionTitle(original) || 'MissÃ£o sem tÃ­tulo';
+      const title = extractMissionTitle(original) || 'Missao sem titulo';
       const progress = extractMissionProgress(text);
       const completed = progress >= 100 || /\b(conclui|concluida|concluido|completei|finalizei|terminei|feito|100%)\b/.test(text);
+      const startedProgress = completed ? 100 : Math.max(progress, 10);
       const categories = unique([...(entry.categorias || []), entry.tipo_principal, 'missao']);
       const dimensions = unique([...(entry.dimensoes_afetadas || []), 'missao_pessoal']);
 
       return {
         key: normalizeMissionKey(title),
         title,
-        progress: completed ? 100 : progress,
+        progress: startedProgress,
         status: completed ? 'concluida' : 'em_andamento',
         categories,
         dimensions,
@@ -2296,11 +2321,12 @@
 
     function extractMissionTitle(text) {
       const raw = String(text || '').trim();
-      const match = raw.match(/miss(?:Ã£o|ao|Ãµes|oes)\s*[:\-â€”]?\s*([^.\n\r;]+)/i);
-      const candidate = match ? match[1] : raw;
+      const candidate = raw
+        .replace(/^.*?\bmiss(?:\u00e3o|ao|\u00f5es|oes)\b\s*[:\-\u2013\u2014]?\s*/i, '')
+        .replace(/^tenho como\s+/i, '');
 
       return candidate
-        .replace(/\b(atualizaÃ§Ã£o|atualizacao|update|progresso|status|concluir|concluÃ­|conclui)\b.*$/i, '')
+        .replace(/\b(atualizacao|update|progresso|status|concluir|conclui)\b.*$/i, '')
         .trim()
         .slice(0, 90);
     }
@@ -2323,7 +2349,7 @@
     }
 
     function extractMissionNextStep(text) {
-      const match = String(text || '').match(/(?:prÃ³ximo|proximo|prÃ³xima|proxima|falta|faltam|pendente)\s*[:\-â€”]?\s*([^.\n\r;]+)/i);
+      const match = String(text || '').match(/(?:proximo|proxima|falta|faltam|pendente)\s*[:\-\u2013\u2014]?\s*([^.\n\r;]+)/i);
       return match ? match[1].trim().slice(0, 140) : '';
     }
 
