@@ -202,6 +202,12 @@
       box-shadow: none;
     }
 
+    button.progress,
+    button.mission-progress-button {
+      background: #2d7a4b;
+      color: #fff;
+    }
+
     button.danger { background: #9b3024; }
 
     .view-tabs {
@@ -786,6 +792,72 @@
       border-radius: 12px;
       font-size: 12px;
       box-shadow: none;
+    }
+
+    .mission-original,
+    .mission-progress-history {
+      display: grid;
+      gap: 7px;
+    }
+
+    .mission-section-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .mission-original-card {
+      background: var(--green-soft);
+      color: #0f5132;
+      border-radius: 14px;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .mission-progress-history .mission-updates {
+      max-height: 175px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .mission-progress-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .mission-progress-form {
+      display: none;
+      gap: 8px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .mission-progress-form.show {
+      display: grid;
+    }
+
+    .mission-progress-form strong {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .mission-progress-form textarea {
+      min-height: 86px;
+      border-radius: 12px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .mission-progress-form .mission-actions {
+      justify-content: flex-start;
     }
 
     .mission-progress-label {
@@ -1398,7 +1470,7 @@
 
       .mission-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
       }
 
       .mission-actions button {
@@ -2082,7 +2154,7 @@
     }
 
     function normalizeEntries(entries) {
-      return entries.map(entry => {
+      const normalized = entries.map((entry, index) => {
         const inferred = inferTimesFromText(entry.entrada_original || '');
 
         const sport = inferred.esporte_minutos || saneMax(entry.esporte_minutos, entry.atividade_fisica_minutos);
@@ -2109,6 +2181,8 @@
 
         return {
           ...entry,
+          id: entry.id || entry.entryId || entry.entry_id || `local-${index}`,
+          _source_index: index,
           _sport_display_min: sport,
           _productive_display_min: productive,
           _emotional_score: emotionalScore,
@@ -2122,6 +2196,47 @@
           _all_text: text
         };
       });
+
+      return dedupeNormalizedEntries(normalized);
+    }
+
+    function dedupeNormalizedEntries(entries) {
+      const byKey = new Map();
+
+      entries.forEach(entry => {
+        const key = entry.id
+          ? `id:${entry.id}`
+          : `exact:${entry._dedupe_key || buildEntryDedupeKey(entry)}`;
+        const existing = byKey.get(key);
+
+        if (!existing || getEntryTimestamp(entry) >= getEntryTimestamp(existing)) {
+          byKey.set(key, {
+            ...entry,
+            _deduped_count: (existing?._deduped_count || 0) + (entry._deduped_count || 1)
+          });
+        } else {
+          existing._deduped_count = (existing._deduped_count || 1) + 1;
+        }
+      });
+
+      const firstPass = Array.from(byKey.values());
+      const byExact = new Map();
+
+      firstPass.forEach(entry => {
+        const exactKey = entry._dedupe_key || buildEntryDedupeKey(entry);
+        const existing = byExact.get(exactKey);
+
+        if (!existing || getEntryTimestamp(entry) >= getEntryTimestamp(existing)) {
+          byExact.set(exactKey, {
+            ...entry,
+            _deduped_count: (existing?._deduped_count || 0) + (entry._deduped_count || 1)
+          });
+        } else {
+          existing._deduped_count = (existing._deduped_count || 1) + (entry._deduped_count || 1);
+        }
+      });
+
+      return Array.from(byExact.values());
     }
 
     function computeFrictionScore(entry, spent, productive, sport) {
@@ -2361,13 +2476,17 @@
             status: 'em_andamento',
             insight: '',
             nextStep: '',
-            trend: 'neutral'
+            trend: 'neutral',
+            originalEntry: null
           };
           missions.push(mission);
         }
 
         const before = mission.progress;
         mission.entries.push(item.entry);
+        if (!mission.originalEntry && item.parsed.kind === 'original') {
+          mission.originalEntry = item.entry;
+        }
         item.parsed.keywords.forEach(keyword => mission.keywords.add(keyword));
         item.parsed.categories.forEach(cat => mission.categories.add(cat));
         item.parsed.dimensions.forEach(dim => mission.dimensions.add(dim));
@@ -2383,7 +2502,9 @@
           entry: item.entry,
           delta,
           sentiment: item.parsed.sentiment,
-          progress: mission.progress
+          progress: mission.progress,
+          kind: item.parsed.kind,
+          updateText: item.parsed.updateText
         });
       });
 
@@ -2453,10 +2574,12 @@
     function renderMissionCard(mission) {
       const progress = Math.max(0, Math.min(100, Math.round(mission.progress)));
       const stage = getMissionStage(progress, mission.status);
-      const updates = mission.timeline
+      const original = mission.originalEntry || mission.entries[0] || null;
+      const progressUpdates = mission.timeline
         .slice()
+        .filter(update => update.kind !== 'original')
         .sort((a, b) => getEntryTimestamp(b.entry) - getEntryTimestamp(a.entry))
-        .slice(0, 3);
+      const visibleUpdates = progressUpdates;
 
       const tags = unique([
         mission.status === 'concluida' ? 'concluida' : 'em andamento',
@@ -2488,21 +2611,42 @@
           ${mission.insight ? `<div class="entry-insight">${escapeHtml(mission.insight)}</div>` : ''}
           ${mission.nextStep ? `<p class="mission-text"><strong>Proximo sinal:</strong> ${escapeHtml(mission.nextStep)}</p>` : ''}
 
-          <div class="mission-updates">
-            ${updates.map(update => `
-              <div class="mission-update ${escapeAttr(update.sentiment)}">
-                <strong>
-                  ${escapeHtml(formatEntryDateLine(update.entry) || 'Sem data')}
-                  ${update.delta ? `<span class="mission-delta">${update.delta > 0 ? '+' : ''}${escapeHtml(update.delta)} pts</span>` : ''}
-                </strong><br />
-                ${escapeHtml(update.entry.entrada_original || '')}
-              </div>
-            `).join('')}
+          <div class="mission-original">
+            <span class="mission-section-label">Missao original</span>
+            <div class="mission-original-card">
+              ${escapeHtml(original ? original.entrada_original || mission.title : mission.title)}
+            </div>
+          </div>
+
+          <div class="mission-progress-history">
+            <span class="mission-section-label">Andamentos</span>
+            <p class="mission-progress-hint">Novos registros desta missao aparecem aqui, separados da missao original.</p>
+            <div class="mission-updates">
+              ${visibleUpdates.map(update => `
+                <div class="mission-update ${escapeAttr(update.sentiment)}">
+                  <strong>
+                    ${escapeHtml(formatEntryDateLine(update.entry) || 'Sem data')}
+                    ${update.delta ? `<span class="mission-delta">${update.delta > 0 ? '+' : ''}${escapeHtml(update.delta)} pts</span>` : ''}
+                  </strong><br />
+                  ${escapeHtml(getMissionUpdateText(update))}
+                </div>
+              `).join('') || '<div class="mission-update">Nenhum andamento registrado ainda.</div>'}
+            </div>
           </div>
 
           <div class="mission-actions">
+            <button class="mission-progress-button" onclick="toggleMissionProgressForm('${escapeAttr(mission.key)}')">Acrescentar andamento</button>
             ${mission.status !== 'concluida' ? `<button class="secondary" onclick="completeMission('${escapeAttr(mission.key)}')">Dar como concluida</button>` : ''}
             <button class="danger" onclick="deleteMission('${escapeAttr(mission.key)}')">Excluir missao</button>
+          </div>
+
+          <div id="missionProgressForm-${escapeAttr(mission.key)}" class="mission-progress-form">
+            <strong>Novo andamento</strong>
+            <textarea id="missionProgressText-${escapeAttr(mission.key)}" placeholder="Escreva o novo andamento desta missao..."></textarea>
+            <div class="mission-actions">
+              <button class="progress" onclick="submitMissionProgress('${escapeAttr(mission.key)}')">Salvar andamento</button>
+              <button class="secondary" onclick="toggleMissionProgressForm('${escapeAttr(mission.key)}', false)">Cancelar</button>
+            </div>
           </div>
         </article>
       `;
@@ -2519,6 +2663,68 @@
 
     function findCurrentMission(key) {
       return currentMissions.find(mission => mission.key === key);
+    }
+
+    function toggleMissionProgressForm(key, forceOpen) {
+      const form = document.getElementById(`missionProgressForm-${key}`);
+      const text = document.getElementById(`missionProgressText-${key}`);
+      if (!form) return;
+
+      const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !form.classList.contains('show');
+      form.classList.toggle('show', shouldOpen);
+
+      if (shouldOpen && text) {
+        setTimeout(() => text.focus(), 0);
+      }
+    }
+
+    async function submitMissionProgress(key) {
+      const mission = findCurrentMission(key);
+      const textEl = document.getElementById(`missionProgressText-${key}`);
+
+      if (!mission || !textEl) {
+        toast('Missao nao encontrada.');
+        return;
+      }
+
+      const note = textEl.value.trim();
+      if (!note) {
+        toast('Escreva o andamento antes de salvar.');
+        textEl.focus();
+        return;
+      }
+
+      showLoading('Salvando andamento...');
+      try {
+        const response = await fetch('/api/manual-entry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: [
+              `Andamento da missao: ${mission.title}`,
+              `Detalhe do andamento: ${note}`,
+              'Registro criado pelo painel de missoes.'
+            ].join('\n'),
+            from: 'mission_progress_panel',
+            profileName: 'Painel Missoes'
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao salvar andamento.');
+        }
+
+        textEl.value = '';
+        toast('Andamento salvo no Google Docs.');
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        toast('Erro ao salvar andamento: ' + err.message);
+      } finally {
+        hideLoading();
+      }
     }
 
     function askDeleteMode(label) {
@@ -2675,12 +2881,24 @@
         dimensions,
         keywords,
         insight: entry.insight_curto || entry.insight_profundo || '',
-        nextStep: extractMissionNextStep(original)
+        nextStep: extractMissionNextStep(original),
+        kind: getMissionEntryKind(original, completed),
+        updateText: extractMissionUpdateText(original)
       };
     }
 
     function extractMissionTitle(text) {
       const raw = String(text || '').trim();
+      const andamento = raw.match(/\bandamento\s+da\s+miss(?:\u00e3o|ao)\s*[:\-\u2013\u2014]?\s*([^\n\r]+)/i);
+      if (andamento && andamento[1]) {
+        return andamento[1].trim().replace(/\s*\.$/, '').slice(0, 90);
+      }
+
+      const concluida = raw.match(/\bmiss(?:\u00e3o|ao)\s+conclu[i\u00ed]da\s*[:\-\u2013\u2014]?\s*([\s\S]*?)(?:\.\s*Progresso|\n|$)/i);
+      if (concluida && concluida[1]) {
+        return concluida[1].trim().replace(/\s*\.$/, '').slice(0, 90);
+      }
+
       const candidate = raw
         .replace(/^.*?\bmiss(?:\u00e3o|ao|\u00f5es|oes)\b\s*[:\-\u2013\u2014]?\s*/i, '')
         .replace(/^tenho como\s+/i, '');
@@ -2736,6 +2954,27 @@
     function extractMissionNextStep(text) {
       const match = String(text || '').match(/(?:proximo|proxima|falta|faltam|pendente)\s*[:\-\u2013\u2014]?\s*([^.\n\r;]+)/i);
       return match ? match[1].trim().slice(0, 140) : '';
+    }
+
+    function getMissionEntryKind(text, completed) {
+      if (completed) return 'completion';
+      return /\bandamento\s+da\s+miss(?:\u00e3o|ao)\b/i.test(String(text || '')) ? 'progress' : 'original';
+    }
+
+    function extractMissionUpdateText(text) {
+      const raw = String(text || '').trim();
+      const detail = raw.match(/\bdetalhe\s+do\s+andamento\s*[:\-\u2013\u2014]?\s*([\s\S]*?)(?:\n\s*registro\s+criado\s+pelo\s+painel\s+de\s+miss(?:\u00f5es|oes)\.?|$)/i);
+      if (detail && detail[1]) return detail[1].trim();
+
+      return raw
+        .replace(/\bandamento\s+da\s+miss(?:\u00e3o|ao)\s*[:\-\u2013\u2014]?\s*[^\n\r]+[\n\r]*/i, '')
+        .replace(/\bregistro\s+criado\s+pelo\s+painel\s+de\s+miss(?:\u00f5es|oes)\.?\s*/i, '')
+        .trim() || raw;
+    }
+
+    function getMissionUpdateText(update) {
+      if (update.updateText) return update.updateText;
+      return update.entry.entrada_original || '';
     }
 
     function buildMissionJson(mission, latest) {
@@ -3647,6 +3886,9 @@
       const duplicateBadge = duplicateInfo
         ? `<div class="duplicate-badge">Possível duplicidade · grupo ${escapeHtml(duplicateInfo.groupLabel)}</div>`
         : '';
+      const dedupedBadge = entry._deduped_count > 1
+        ? `<div class="duplicate-badge">Duplicidade exata consolidada · ${escapeHtml(entry._deduped_count)} registros iguais</div>`
+        : '';
 
       return `
         <article class="entry${duplicateClass}">
@@ -3659,6 +3901,7 @@
           </div>
 
           ${duplicateBadge}
+          ${dedupedBadge}
 
           <div class="tagline">
             ${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
@@ -3708,14 +3951,19 @@
 
       showLoading('Registrando frase...');
       try {
-        const data = await jsonp(APPS_SCRIPT_URL + '?action=register&text=' + encodeURIComponent(text));
+        const response = await fetch('/api/manual-entry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await response.json();
 
         if (!data || !data.ok) {
           throw new Error((data && data.error) || 'Falha ao registrar.');
         }
 
         document.getElementById('manualText').value = '';
-        toast('Frase registrada no Google Docs.');
+        toast(data.duplicateIgnored ? 'Entrada repetida ignorada.' : 'Frase registrada no Google Docs.');
         await loadData();
       } catch (err) {
         console.error(err);
