@@ -2083,6 +2083,8 @@
     let availableMonths = [];
     let activeView = 'overview';
     let currentMissions = [];
+    let currentPersonalAiAnalysis = null;
+    let currentPersonalAiMeta = null;
 
     function jsonp(url) {
       return new Promise((resolve, reject) => {
@@ -2198,6 +2200,7 @@
 
     function onMonthChange() {
       selectedMonthKey = document.getElementById('monthSelector').value;
+      clearPersonalAiDashboardLayer();
       applySelectedMonth();
     }
 
@@ -2214,6 +2217,7 @@
       }
 
       document.getElementById('monthSelector').value = selectedMonthKey;
+      clearPersonalAiDashboardLayer();
       applySelectedMonth();
     }
 
@@ -2528,14 +2532,24 @@
       const sport = sum(entries.map(e => e._sport_display_min));
       const productive = sum(entries.map(e => e._productive_display_min));
       const friction = Math.round(sum(entries.map(e => e._friction_score)));
+      const aiTotals = getPersonalAiTotals();
 
-      document.getElementById('cardSpent').textContent = money(spent);
-      document.getElementById('cardEarned').textContent = money(earned);
-      document.getElementById('cardPassiveIncome').textContent = money(passiveIncome);
-      document.getElementById('cardBalance').textContent = money(balance);
-      document.getElementById('cardSport').textContent = minutesHuman(sport);
-      document.getElementById('cardCaloriesIn').textContent = `${Math.round(caloriesIn)} kcal`;
-      document.getElementById('cardProtein').textContent = `${Math.round(protein)} g`;
+      const displaySpent = hasPersonalAiMetric('moneySpent') ? aiTotals.moneySpent : spent;
+      const displayEarned = hasPersonalAiMetric('moneyEarned') ? aiTotals.moneyEarned : earned;
+      const displayInvested = hasPersonalAiMetric('moneyInvested') ? aiTotals.moneyInvested : invested;
+      const displayBalance = displayEarned - displaySpent - displayInvested;
+      const displayPassiveIncome = hasPersonalAiMetric('passiveIncome') ? aiTotals.passiveIncome : passiveIncome;
+      const displayCaloriesIn = hasPersonalAiMetric('caloriesIn') ? aiTotals.caloriesIn : caloriesIn;
+      const displayProtein = hasPersonalAiMetric('proteinG') ? aiTotals.proteinG : protein;
+      const displaySport = hasPersonalAiMetric('activityMinutes') ? aiTotals.activityMinutes : sport;
+
+      document.getElementById('cardSpent').textContent = money(displaySpent);
+      document.getElementById('cardEarned').textContent = money(displayEarned);
+      document.getElementById('cardPassiveIncome').textContent = money(displayPassiveIncome);
+      document.getElementById('cardBalance').textContent = money(displayBalance);
+      document.getElementById('cardSport').textContent = minutesHuman(displaySport);
+      document.getElementById('cardCaloriesIn').textContent = `${Math.round(displayCaloriesIn)} kcal`;
+      document.getElementById('cardProtein').textContent = `${Math.round(displayProtein)} g`;
       document.getElementById('cardProductive').textContent = minutesHuman(productive);
       document.getElementById('cardFriction').textContent = String(friction);
     }
@@ -3522,8 +3536,15 @@
         .slice(0, 8)
         .map(e => e.insight_curto || e.insight_profundo)
         .filter(Boolean);
+      const aiInsights = currentPersonalAiAnalysis ? [
+        currentPersonalAiAnalysis.summary,
+        ...(currentPersonalAiAnalysis.dominantPatterns || []).map(item => `Padrao IA: ${item}`),
+        ...(currentPersonalAiAnalysis.dailyGuidance || []).map(item => `Acao IA: ${item}`),
+        ...((currentPersonalAiAnalysis.dataQuality && currentPersonalAiAnalysis.dataQuality.mainGaps) || []).map(item => `Lacuna IA: ${item}`)
+      ].filter(Boolean) : [];
 
       const insights = unique([
+        ...aiInsights,
         ...monthlyInsights,
         ...entryInsights
       ]).slice(0, 12);
@@ -3636,6 +3657,8 @@
     function renderPersonalAiAnalysis(analysis, meta) {
       const box = document.getElementById('personalAiBox');
       const safe = analysis || {};
+      currentPersonalAiAnalysis = safe;
+      currentPersonalAiMeta = meta || {};
       const patterns = Array.isArray(safe.dominantPatterns) ? safe.dominantPatterns : [];
       const guidance = Array.isArray(safe.dailyGuidance) ? safe.dailyGuidance : [];
       const questions = Array.isArray(safe.questions) ? safe.questions : [];
@@ -3643,13 +3666,18 @@
       const missions = Array.isArray(safe.missions) ? safe.missions : [];
       const events = Array.isArray(safe.events) ? safe.events : [];
       const quality = safe.dataQuality || {};
+      const wellbeing = safe.wellbeing || {};
 
       const blocks = [
         `<div class="insight"><strong>Leitura profunda</strong>${escapeHtml(safe.summary || 'A IA retornou sem resumo textual.')}</div>`,
+        `<div class="insight"><strong>Vida plena</strong>Score: ${escapeHtml(String(wellbeing.score ?? 'n/a'))}<br>${escapeHtml([...(wellbeing.strengths || []), ...(wellbeing.risks || [])].slice(0, 8).join(' | ') || 'Sem leitura de bem-estar retornada.')}</div>`,
         renderPersonalAiList('Padroes dominantes', patterns),
         renderPersonalAiList('Acoes praticas', guidance),
+        renderPersonalAiList('Rituais sugeridos', wellbeing.nextRituals || []),
         renderPersonalAiList('Perguntas para melhorar fidelidade', questions),
-        renderPersonalAiList('Graficos que a IA recomenda', charts.map(chart => `${chart.title || 'Grafico'}: ${chart.why || ''}`)),
+        renderPersonalAiList('Graficos que a IA recomenda', charts
+          .filter(chart => chart && chart.title)
+          .map(chart => `${chart.title}: ${chart.why || `${chart.x || ''} x ${chart.y || ''}`}`)),
         renderPersonalAiList('Missoes percebidas', missions.map(mission => `${mission.title || 'Missao'} (${mission.status || 'sem status'}): ${mission.nextAction || mission.priority || ''}`)),
         `<div class="insight"><strong>Qualidade dos dados</strong>Score: ${escapeHtml(String(quality.score ?? 'n/a'))}<br>${escapeHtml((quality.mainGaps || []).join(' | ') || 'Sem lacunas principais informadas.')}</div>`,
         `<div class="insight"><strong>Eventos estruturados</strong>${escapeHtml(events.slice(0, 12).map(event => `${event.domain || 'dominio'}: ${event.title || event.box || 'evento'}`).join(' | ') || 'Nenhum evento estruturado retornado.')}</div>`,
@@ -3657,6 +3685,10 @@
       ];
 
       box.innerHTML = blocks.join('');
+      renderCards();
+      renderInsights();
+      renderCharts();
+      renderEntries();
     }
 
     function renderPersonalAiList(title, items) {
@@ -3666,6 +3698,132 @@
       }
 
       return `<div class="insight"><strong>${escapeHtml(title)}</strong>${rows.map(item => `- ${escapeHtml(String(item))}`).join('<br>')}</div>`;
+    }
+
+    function clearPersonalAiDashboardLayer() {
+      currentPersonalAiAnalysis = null;
+      currentPersonalAiMeta = null;
+      const box = document.getElementById('personalAiBox');
+      if (box) {
+        box.innerHTML = '<div class="empty">Carregue uma chave e rode uma leitura profunda do periodo.</div>';
+      }
+    }
+
+    function getPersonalAiEvents() {
+      if (!currentPersonalAiAnalysis || !Array.isArray(currentPersonalAiAnalysis.events)) return [];
+      return currentPersonalAiAnalysis.events;
+    }
+
+    function getPersonalAiTotals() {
+      const totals = currentPersonalAiAnalysis && currentPersonalAiAnalysis.totals ? currentPersonalAiAnalysis.totals : {};
+      const events = getPersonalAiEvents();
+      const eventTotals = events.reduce((acc, event) => {
+        const metrics = event.metrics || {};
+        acc.moneySpent += toNumber(metrics.moneySpent);
+        acc.moneyEarned += toNumber(metrics.moneyEarned);
+        acc.moneyInvested += toNumber(metrics.moneyInvested);
+        acc.passiveIncome += toNumber(metrics.passiveIncome);
+        acc.caloriesIn += toNumber(metrics.caloriesIn);
+        acc.caloriesOut += toNumber(metrics.caloriesOut);
+        acc.proteinG += toNumber(metrics.proteinG);
+        acc.activityMinutes += toNumber(metrics.activityMinutes);
+        return acc;
+      }, {
+        moneySpent: 0,
+        moneyEarned: 0,
+        moneyInvested: 0,
+        passiveIncome: 0,
+        caloriesIn: 0,
+        caloriesOut: 0,
+        proteinG: 0,
+        activityMinutes: 0
+      });
+
+      return {
+        moneySpent: toNumber(totals.moneySpent) || eventTotals.moneySpent,
+        moneyEarned: toNumber(totals.moneyEarned) || eventTotals.moneyEarned,
+        moneyInvested: toNumber(totals.moneyInvested) || eventTotals.moneyInvested,
+        passiveIncome: toNumber(totals.passiveIncome) || eventTotals.passiveIncome,
+        caloriesIn: toNumber(totals.caloriesIn) || eventTotals.caloriesIn,
+        caloriesOut: toNumber(totals.caloriesOut) || eventTotals.caloriesOut,
+        proteinG: toNumber(totals.proteinG) || eventTotals.proteinG,
+        activityMinutes: toNumber(totals.activityMinutes) || eventTotals.activityMinutes
+      };
+    }
+
+    function hasPersonalAiMetric(key) {
+      const totals = getPersonalAiTotals();
+      return toNumber(totals[key]) > 0;
+    }
+
+    function getPersonalAiDateRows(labels) {
+      const map = new Map(labels.map(label => [label, {
+        data: label,
+        dinheiro_gasto: 0,
+        dinheiro_ganho: 0,
+        dinheiro_investido: 0,
+        renda_passiva: 0,
+        calorias_ingeridas: 0,
+        calorias_gastas: 0,
+        proteina_g: 0,
+        esporte_minutos: 0
+      }]));
+
+      getPersonalAiEvents().forEach(event => {
+        const source = viewEntries[toNumber(event.sourceIndex)] || null;
+        const key = source
+          ? (source.data_br || isoToBrDate(source.data_iso) || labels[0])
+          : (labels[0] || 'IA');
+        if (!map.has(key)) return;
+
+        const row = map.get(key);
+        const metrics = event.metrics || {};
+        row.dinheiro_gasto += toNumber(metrics.moneySpent);
+        row.dinheiro_ganho += toNumber(metrics.moneyEarned);
+        row.dinheiro_investido += toNumber(metrics.moneyInvested);
+        row.renda_passiva += toNumber(metrics.passiveIncome);
+        row.calorias_ingeridas += toNumber(metrics.caloriesIn);
+        row.calorias_gastas += toNumber(metrics.caloriesOut);
+        row.proteina_g += toNumber(metrics.proteinG);
+        row.esporte_minutos += toNumber(metrics.activityMinutes);
+      });
+
+      return labels.map(label => map.get(label));
+    }
+
+    function computePersonalLifeDimensions() {
+      const dimensions = currentPersonalAiAnalysis && currentPersonalAiAnalysis.lifeDimensions
+        ? currentPersonalAiAnalysis.lifeDimensions
+        : {};
+      const events = getPersonalAiEvents();
+      const fallback = {
+        corpo: 0,
+        mente: 0,
+        alma: 0,
+        social: 0,
+        trabalho: 0,
+        financeiro: 0
+      };
+
+      events.forEach(event => {
+        const domain = String(event.domain || event.box || '').toLowerCase();
+        const confidence = Math.max(0.4, toNumber(event.confidence) || 0.6);
+        if (/aliment|atividade|corpo|saude|sono/.test(domain)) fallback.corpo += confidence;
+        if (/trabalho|projeto|estudo|mente/.test(domain)) fallback.mente += confidence;
+        if (/emocional|sentido|alma|espiritual/.test(domain)) fallback.alma += confidence;
+        if (/relac|social|familia|amigo/.test(domain)) fallback.social += confidence;
+        if (/miss|tarefa|trabalho/.test(domain)) fallback.trabalho += confidence;
+        if (/financ|invest|rend/.test(domain)) fallback.financeiro += confidence;
+      });
+
+      return {
+        corpo: toNumber(dimensions.corpo) || Math.round(fallback.corpo * 10),
+        mente: toNumber(dimensions.mente) || Math.round(fallback.mente * 10),
+        alma: toNumber(dimensions.alma) || Math.round(fallback.alma * 10),
+        social: toNumber(dimensions.social) || Math.round(fallback.social * 10),
+        trabalho: toNumber(dimensions.trabalho) || Math.round(fallback.trabalho * 10),
+        financeiro: toNumber(dimensions.financeiro) || Math.round(fallback.financeiro * 10)
+      };
     }
 
     function generateMonthlyInsights() {
@@ -3726,6 +3884,7 @@
         ? groupNormalizedByMonth(allEntries)
         : groupNormalizedByDate(viewEntries);
       const byCategory = groupNormalizedByCategory(viewEntries);
+      const aiRows = currentPersonalAiAnalysis ? getPersonalAiDateRows(byDate.map(r => r.data)) : [];
 
       document.getElementById('moneyChartTitle').textContent =
         selectedMonthKey === ALL_PERIODS ? 'Dinheiro por mês' : 'Dinheiro por dia';
@@ -3743,6 +3902,14 @@
       const protein = byDate.map(r => r.proteina_g);
       const sport = byDate.map(r => r.esporte_minutos);
       const productive = byDate.map(r => r.produtivo_minutos);
+      const aiSpent = aiRows.map(r => r.dinheiro_gasto);
+      const aiEarned = aiRows.map(r => r.dinheiro_ganho);
+      const aiInvested = aiRows.map(r => r.dinheiro_investido);
+      const aiPassiveIncome = aiRows.map(r => r.renda_passiva);
+      const aiCaloriesIn = aiRows.map(r => r.calorias_ingeridas);
+      const aiCaloriesOut = aiRows.map(r => r.calorias_gastas);
+      const aiProtein = aiRows.map(r => r.proteina_g);
+      const aiSport = aiRows.map(r => r.esporte_minutos);
 
       renderChart('moneyChart', {
         type: 'bar',
@@ -3750,7 +3917,11 @@
           labels,
           datasets: [
             { label: 'Gasto', data: spent },
-            { label: 'Ganho', data: earned }
+            { label: 'Ganho', data: earned },
+            ...(currentPersonalAiAnalysis ? [
+              { label: 'Gasto IA', data: aiSpent },
+              { label: 'Ganho IA', data: aiEarned }
+            ] : [])
           ]
         },
         options: baseChartOptions('R$')
@@ -3762,7 +3933,10 @@
           labels,
           datasets: [
             { label: 'Esporte/atividade', data: sport },
-            { label: 'Produtivo', data: productive }
+            { label: 'Produtivo', data: productive },
+            ...(currentPersonalAiAnalysis ? [
+              { label: 'Atividade IA', data: aiSport }
+            ] : [])
           ]
         },
         options: baseChartOptions('min')
@@ -3775,7 +3949,12 @@
           datasets: [
             { label: 'Gasto', data: spent },
             { label: 'Aporte', data: invested },
-            { label: 'Renda passiva', data: passiveIncome }
+            { label: 'Renda passiva', data: passiveIncome },
+            ...(currentPersonalAiAnalysis ? [
+              { label: 'Gasto IA', data: aiSpent },
+              { label: 'Aporte IA', data: aiInvested },
+              { label: 'Renda passiva IA', data: aiPassiveIncome }
+            ] : [])
           ]
         },
         options: baseChartOptions('R$')
@@ -3789,7 +3968,12 @@
             { label: 'Calorias ingeridas', data: caloriesIn },
             { label: 'Calorias gastas', data: caloriesOut },
             { label: 'Proteina (g)', data: protein },
-            { label: 'Atividade (min)', data: sport }
+            { label: 'Atividade (min)', data: sport },
+            ...(currentPersonalAiAnalysis ? [
+              { label: 'Calorias IA', data: aiCaloriesIn },
+              { label: 'Calorias gastas IA', data: aiCaloriesOut },
+              { label: 'Proteina IA', data: aiProtein }
+            ] : [])
           ]
         },
         options: baseChartOptions('')
@@ -3981,13 +4165,21 @@
 
     function renderLifeRadar() {
       const dimensions = computeLifeDimensions(viewEntries);
+      const personalDimensions = currentPersonalAiAnalysis ? computePersonalLifeDimensions() : null;
+      const labels = unique([
+        ...Object.keys(dimensions),
+        ...(personalDimensions ? Object.keys(personalDimensions) : [])
+      ]);
 
       renderChart('lifeRadarChart', {
         type: 'radar',
         data: {
-          labels: Object.keys(dimensions),
+          labels,
           datasets: [
-            { label: 'Intensidade', data: Object.values(dimensions) }
+            { label: 'Intensidade', data: labels.map(label => dimensions[label] || 0) },
+            ...(personalDimensions ? [
+              { label: 'Vida plena IA', data: labels.map(label => personalDimensions[label] || 0) }
+            ] : [])
           ]
         },
         options: {
@@ -4000,7 +4192,7 @@
               ticks: { display: window.innerWidth > 430 }
             }
           },
-          plugins: { legend: { display: false } }
+          plugins: { legend: { display: Boolean(personalDimensions), position: 'bottom' } }
         }
       });
     }
@@ -4292,6 +4484,9 @@
     }
 
     function renderEntryCard(entry, duplicateMap) {
+      const personalEvents = getPersonalAiEvents()
+        .filter(event => viewEntries[toNumber(event.sourceIndex)] && viewEntries[toNumber(event.sourceIndex)].id === entry.id)
+        .slice(0, 3);
       const tags = [
         entry.visual_auto ? 'foto' : '',
         entry.tipo_principal,
@@ -4347,6 +4542,13 @@
           ` : ''}
 
           ${entry.insight_curto ? `<div class="entry-insight">${escapeHtml(entry.insight_curto)}</div>` : ''}
+
+          ${personalEvents.length ? `
+            <div class="entry-insight">
+              <strong>IA pessoal:</strong>
+              ${escapeHtml(personalEvents.map(event => `${event.domain || event.box || 'evento'}: ${event.title || 'leitura estruturada'}`).join(' | '))}
+            </div>
+          ` : ''}
 
           <div class="entry-actions">
             <button class="secondary" onclick="copyEntry('${escapeAttr(entry.id)}')">Copiar</button>
