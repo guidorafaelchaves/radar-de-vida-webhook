@@ -1710,6 +1710,12 @@
         <span>Receitas, proventos, honorários ou entradas.</span>
       </article>
 
+      <article class="metric green">
+        <small>Renda passiva</small>
+        <strong id="cardPassiveIncome">R$ 0,00</strong>
+        <span>Dividendos, JCP, rendimentos e proventos detectados.</span>
+      </article>
+
       <article class="metric">
         <small>Saldo</small>
         <strong id="cardBalance">R$ 0,00</strong>
@@ -1720,6 +1726,18 @@
         <small>Esporte / atividade</small>
         <strong id="cardSport">0min</strong>
         <span>Caminhada, treino, corrida, pedal e similares.</span>
+      </article>
+
+      <article class="metric amber">
+        <small>Calorias ingeridas</small>
+        <strong id="cardCaloriesIn">0 kcal</strong>
+        <span>Estimativa das refeições registradas.</span>
+      </article>
+
+      <article class="metric purple">
+        <small>Proteína</small>
+        <strong id="cardProtein">0 g</strong>
+        <span>Estimativa de proteína ingerida no período.</span>
       </article>
 
       <article class="metric amber">
@@ -1893,13 +1911,23 @@
         </div>
 
         <div class="chart-box">
-          <div class="chart-title">Categorias mais recorrentes</div>
-          <canvas id="categoryChart"></canvas>
+          <div class="chart-title">Fluxo de capital: gasto, aporte e renda</div>
+          <canvas id="capitalFlowChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Corpo: combustivel, proteina e movimento</div>
+          <canvas id="bodyFuelChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Boxes do Radar Intelligence</div>
+          <canvas id="radarBoxesChart"></canvas>
         </div>
 
         <div class="chart-box tall">
-          <div class="chart-title">Mapa de atrito: gasto x produtividade</div>
-          <canvas id="frictionScatterChart"></canvas>
+          <div class="chart-title">Divida de revisao: campos que faltam</div>
+          <canvas id="reviewDebtChart"></canvas>
         </div>
 
         <div class="chart-box tall">
@@ -2153,8 +2181,36 @@
       hint.textContent = `Mostrando ${viewEntries.length} registro(s) de ${label}. Comparação automática com ${previousLabel}, quando houver dados.`;
     }
 
+    function parseMaybeJson(value) {
+      if (!value) return null;
+      if (typeof value === 'object') return value;
+      try {
+        return JSON.parse(String(value));
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function getRadarIntelligence(entry) {
+      return parseMaybeJson(entry.radar_intelligence) ||
+        parseMaybeJson(entry.structuredData) ||
+        parseMaybeJson(entry.raw && entry.raw.radar_intelligence) ||
+        null;
+    }
+
     function normalizeEntries(entries) {
       const normalized = entries.map((entry, index) => {
+        const radarIntelligence = getRadarIntelligence(entry);
+        const radarTotals = radarIntelligence && radarIntelligence.totals ? radarIntelligence.totals : {};
+        const radarBoxes = radarIntelligence && radarIntelligence.dashboard && Array.isArray(radarIntelligence.dashboard.boxes)
+          ? radarIntelligence.dashboard.boxes
+          : [];
+        const normalizedCategories = unique([
+          ...(Array.isArray(entry.categorias) ? entry.categorias : []),
+          ...(Array.isArray(entry.categorias_sugeridas) ? entry.categorias_sugeridas : []),
+          ...(Array.isArray(entry.radar_boxes) ? entry.radar_boxes : []),
+          ...radarBoxes
+        ].filter(Boolean));
         const inferred = inferTimesFromText(entry.entrada_original || '');
 
         const sport = inferred.esporte_minutos || saneMax(entry.esporte_minutos, entry.atividade_fisica_minutos);
@@ -2166,7 +2222,7 @@
           entry.insight_curto,
           entry.insight_profundo,
           entry.tipo_principal,
-          ...(entry.categorias || []),
+          ...normalizedCategories,
           ...(entry.dimensoes_afetadas || [])
         ].join(' ').toLowerCase();
         const spent = toNumber(entry.dinheiro_gasto);
@@ -2181,6 +2237,7 @@
 
         return {
           ...entry,
+          categorias: normalizedCategories.length ? normalizedCategories : entry.categorias,
           id: entry.id || entry.entryId || entry.entry_id || `local-${index}`,
           _source_index: index,
           _sport_display_min: sport,
@@ -2191,6 +2248,14 @@
           _hour: hour,
           _month_key: monthKey,
           _date_key: getEntryDateKey(entry),
+          _radar_intelligence: radarIntelligence,
+          _radar_boxes: radarBoxes,
+          _calories_in: saneMax(entry.calorias_ingeridas, entry.calorias_ingeridas_sugeridas, radarTotals.caloriesIn),
+          _calories_out: saneMax(entry.calorias_gastas, entry.calorias_gastas_sugeridas, radarTotals.caloriesOut),
+          _protein_g: saneMax(entry.proteina_g, entry.proteina_g_sugerida, radarTotals.proteinG),
+          _carbs_g: saneMax(entry.carboidratos_g, entry.carbs_g_sugerido, radarTotals.carbsG),
+          _fat_g: saneMax(entry.gordura_g, entry.fat_g_sugerida, radarTotals.fatG),
+          _passive_income: saneMax(entry.renda_passiva, entry.passive_income, radarTotals.passiveIncome),
           _dedupe_text: normalizeDedupeText(entry.entrada_original || ''),
           _dedupe_key: buildEntryDedupeKey(entry),
           _all_text: text
@@ -2378,14 +2443,20 @@
       const earned = sum(entries.map(e => e.dinheiro_ganho));
       const invested = sum(entries.map(e => e.dinheiro_investido));
       const balance = earned - spent - invested;
+      const passiveIncome = sum(entries.map(e => e._passive_income));
+      const caloriesIn = sum(entries.map(e => e._calories_in));
+      const protein = sum(entries.map(e => e._protein_g));
       const sport = sum(entries.map(e => e._sport_display_min));
       const productive = sum(entries.map(e => e._productive_display_min));
       const friction = Math.round(sum(entries.map(e => e._friction_score)));
 
       document.getElementById('cardSpent').textContent = money(spent);
       document.getElementById('cardEarned').textContent = money(earned);
+      document.getElementById('cardPassiveIncome').textContent = money(passiveIncome);
       document.getElementById('cardBalance').textContent = money(balance);
       document.getElementById('cardSport').textContent = minutesHuman(sport);
+      document.getElementById('cardCaloriesIn').textContent = `${Math.round(caloriesIn)} kcal`;
+      document.getElementById('cardProtein').textContent = `${Math.round(protein)} g`;
       document.getElementById('cardProductive').textContent = minutesHuman(productive);
       document.getElementById('cardFriction').textContent = String(friction);
     }
@@ -3089,6 +3160,9 @@
         spent: sum(entries.map(e => e.dinheiro_gasto)),
         earned: sum(entries.map(e => e.dinheiro_ganho)),
         invested: sum(entries.map(e => e.dinheiro_investido)),
+        passiveIncome: sum(entries.map(e => e._passive_income)),
+        caloriesIn: sum(entries.map(e => e._calories_in)),
+        protein: sum(entries.map(e => e._protein_g)),
         sport: sum(entries.map(e => e._sport_display_min)),
         productive: sum(entries.map(e => e._productive_display_min)),
         friction: sum(entries.map(e => e._friction_score)),
@@ -3440,7 +3514,6 @@
       const byDate = selectedMonthKey === ALL_PERIODS
         ? groupNormalizedByMonth(allEntries)
         : groupNormalizedByDate(viewEntries);
-
       const byCategory = groupNormalizedByCategory(viewEntries);
 
       document.getElementById('moneyChartTitle').textContent =
@@ -3452,6 +3525,11 @@
       const labels = byDate.map(r => r.data);
       const spent = byDate.map(r => r.dinheiro_gasto);
       const earned = byDate.map(r => r.dinheiro_ganho);
+      const invested = byDate.map(r => r.dinheiro_investido);
+      const passiveIncome = byDate.map(r => r.renda_passiva);
+      const caloriesIn = byDate.map(r => r.calorias_ingeridas);
+      const caloriesOut = byDate.map(r => r.calorias_gastas);
+      const protein = byDate.map(r => r.proteina_g);
       const sport = byDate.map(r => r.esporte_minutos);
       const productive = byDate.map(r => r.produtivo_minutos);
 
@@ -3479,6 +3557,33 @@
         options: baseChartOptions('min')
       });
 
+      renderChart('capitalFlowChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Gasto', data: spent },
+            { label: 'Aporte', data: invested },
+            { label: 'Renda passiva', data: passiveIncome }
+          ]
+        },
+        options: baseChartOptions('R$')
+      });
+
+      renderChart('bodyFuelChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Calorias ingeridas', data: caloriesIn },
+            { label: 'Calorias gastas', data: caloriesOut },
+            { label: 'Proteina (g)', data: protein },
+            { label: 'Atividade (min)', data: sport }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
       renderChart('categoryChart', {
         type: 'doughnut',
         data: {
@@ -3500,10 +3605,124 @@
         }
       });
 
+      renderRadarBoxesChart();
+      renderReviewDebtChart();
       renderFrictionScatter();
       renderLifeRadar();
       renderHourChart();
       renderVitalityChart();
+    }
+
+    function collectRadarBoxes(entry) {
+      const intelligence = entry._radar_intelligence || {};
+      const events = Array.isArray(intelligence.events) ? intelligence.events : [];
+      const boxes = [
+        ...(Array.isArray(entry._radar_boxes) ? entry._radar_boxes : []),
+        ...(Array.isArray(entry.categorias) ? entry.categorias : []),
+        ...events.map(event => event.box || event.domain || event.type)
+      ].filter(Boolean);
+
+      return unique(boxes.map(box => {
+        const key = String(box).toLowerCase();
+        if (/rendimento|dividendo|provento|renda_passiva/.test(key)) return 'rendimentos';
+        if (/invest|aporte|ticker|ativo|compra|venda/.test(key)) return 'investimentos';
+        if (/aliment|nutri|comida|refei|caloria|prote/.test(key)) return 'alimentacao';
+        if (/treino|atividade|fisic|corr|caminh|academ/.test(key)) return 'atividade_fisica';
+        if (/miss|tarefa|task|pend/.test(key)) return 'missoes';
+        if (/saude|corpo|sono|peso/.test(key)) return 'corpo';
+        return key.replace(/[_-]+/g, ' ').trim() || 'outros';
+      }));
+    }
+
+    function getRadarEvents(entry) {
+      const intelligence = entry._radar_intelligence || {};
+      return Array.isArray(intelligence.events) ? intelligence.events : [];
+    }
+
+    function renderRadarBoxesChart() {
+      const map = new Map();
+
+      viewEntries.forEach(entry => {
+        const boxes = collectRadarBoxes(entry);
+        (boxes.length ? boxes : ['sem caixa definida']).forEach(box => {
+          map.set(box, (map.get(box) || 0) + 1);
+        });
+      });
+
+      const rows = Array.from(map.entries())
+        .map(([box, count]) => ({ box, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 9);
+
+      renderChart('radarBoxesChart', {
+        type: 'doughnut',
+        data: {
+          labels: rows.map(row => row.box),
+          datasets: [{ label: 'Entradas', data: rows.map(row => row.count) }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 150,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, font: { size: window.innerWidth <= 720 ? 10 : 12 } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderReviewDebtChart() {
+      const map = new Map();
+
+      viewEntries.forEach(entry => {
+        const intelligence = entry._radar_intelligence || {};
+        const events = getRadarEvents(entry);
+        const engine = String(intelligence.engine || '').toLowerCase();
+
+        if (engine.includes('fallback') || engine.includes('offline')) {
+          map.set('IA textual em fallback/offline', (map.get('IA textual em fallback/offline') || 0) + 1);
+        }
+
+        if (intelligence.dashboard && intelligence.dashboard.reviewRequired) {
+          map.set('revisao humana solicitada', (map.get('revisao humana solicitada') || 0) + 1);
+        }
+
+        events.forEach(event => {
+          const fields = Array.isArray(event.missingFields) ? event.missingFields : [];
+          fields.forEach(field => {
+            const label = String(field).replace(/[_-]+/g, ' ').trim() || 'campo indefinido';
+            map.set(label, (map.get(label) || 0) + 1);
+          });
+
+          if (toNumber(event.confidence) > 0 && toNumber(event.confidence) < 0.6) {
+            map.set('baixa confianca da IA', (map.get('baixa confianca da IA') || 0) + 1);
+          }
+        });
+      });
+
+      const rows = Array.from(map.entries())
+        .map(([reason, count]) => ({ reason, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      renderChart('reviewDebtChart', {
+        type: 'bar',
+        data: {
+          labels: rows.length ? rows.map(row => row.reason) : ['sem pendencias visiveis'],
+          datasets: [{ label: 'Ocorrencias', data: rows.length ? rows.map(row => row.count) : [0] }]
+        },
+        options: {
+          ...baseChartOptions(''),
+          indexAxis: 'y',
+          scales: {
+            x: { beginAtZero: true },
+            y: { ticks: { font: { size: window.innerWidth <= 720 ? 9 : 11 } } }
+          }
+        }
+      });
     }
 
     function renderFrictionScatter() {
@@ -3875,6 +4094,9 @@
         entry.dinheiro_gasto ? `Gasto: ${money(entry.dinheiro_gasto)}` : '',
         entry.dinheiro_ganho ? `Ganho: ${money(entry.dinheiro_ganho)}` : '',
         entry.dinheiro_investido ? `Investido: ${money(entry.dinheiro_investido)}` : '',
+        entry._passive_income ? `Renda passiva: ${money(entry._passive_income)}` : '',
+        entry._calories_in ? `Calorias: ${Math.round(entry._calories_in)} kcal` : '',
+        entry._protein_g ? `Proteína: ${Math.round(entry._protein_g)}g` : '',
         entry._sport_display_min ? `Esporte: ${minutesHuman(entry._sport_display_min)}` : '',
         entry._productive_display_min ? `Produtivo: ${minutesHuman(entry._productive_display_min)}` : '',
         entry._asset_score >= 4 ? `Ativo: ${entry._asset_score}` : '',
@@ -4234,6 +4456,10 @@
             dinheiro_gasto: 0,
             dinheiro_ganho: 0,
             dinheiro_investido: 0,
+            renda_passiva: 0,
+            calorias_ingeridas: 0,
+            calorias_gastas: 0,
+            proteina_g: 0,
             esporte_minutos: 0,
             produtivo_minutos: 0,
             entradas: 0
@@ -4244,6 +4470,10 @@
         row.dinheiro_gasto += toNumber(e.dinheiro_gasto);
         row.dinheiro_ganho += toNumber(e.dinheiro_ganho);
         row.dinheiro_investido += toNumber(e.dinheiro_investido);
+        row.renda_passiva += toNumber(e._passive_income);
+        row.calorias_ingeridas += toNumber(e._calories_in);
+        row.calorias_gastas += toNumber(e._calories_out);
+        row.proteina_g += toNumber(e._protein_g);
         row.esporte_minutos += toNumber(e._sport_display_min);
         row.produtivo_minutos += toNumber(e._productive_display_min);
         row.entradas += 1;
@@ -4266,6 +4496,10 @@
             dinheiro_gasto: 0,
             dinheiro_ganho: 0,
             dinheiro_investido: 0,
+            renda_passiva: 0,
+            calorias_ingeridas: 0,
+            calorias_gastas: 0,
+            proteina_g: 0,
             esporte_minutos: 0,
             produtivo_minutos: 0,
             entradas: 0
@@ -4276,6 +4510,10 @@
         row.dinheiro_gasto += toNumber(e.dinheiro_gasto);
         row.dinheiro_ganho += toNumber(e.dinheiro_ganho);
         row.dinheiro_investido += toNumber(e.dinheiro_investido);
+        row.renda_passiva += toNumber(e._passive_income);
+        row.calorias_ingeridas += toNumber(e._calories_in);
+        row.calorias_gastas += toNumber(e._calories_out);
+        row.proteina_g += toNumber(e._protein_g);
         row.esporte_minutos += toNumber(e._sport_display_min);
         row.produtivo_minutos += toNumber(e._productive_display_min);
         row.entradas += 1;

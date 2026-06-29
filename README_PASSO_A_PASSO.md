@@ -9,6 +9,7 @@ Este pacote cria um backend local em Node.js para receber mensagens do WhatsApp 
 - Extrai mensagens de texto do payload da Meta
 - Analisa mensagens usando OpenAI se `OPENAI_API_KEY` estiver configurada
 - Usa análise local offline se a OpenAI não estiver configurada
+- Estrutura inputs com Radar Intelligence: investimentos, rendimentos, refeições, treinos e missões
 - Salva os registros em `data/radar-db.json`
 - Responde no WhatsApp com uma confirmação curta, se configurado
 - Exibe painel em `http://localhost:3000`
@@ -65,10 +66,36 @@ No arquivo `.env`:
 
 ```env
 OPENAI_API_KEY=sua_chave_aqui
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_TEXT_MODEL=gpt-4.1-mini
 ```
 
+Use `OPENAI_TEXT_MODEL` para a análise textual profunda do Radar Intelligence. Se existir um
+`OPENAI_MODEL` antigo com valor inválido, o servidor ignora esse valor e usa `gpt-4.1-mini` por segurança.
+
 Se a chave ficar vazia, o sistema usa análise offline local.
+
+## 4.1. Radar Intelligence
+
+Todo texto recebido por WhatsApp, Web, API ou relógio passa por uma camada de enriquecimento antes de ir ao Apps Script.
+
+Ela preserva o texto bruto e adiciona:
+
+- `radar_intelligence`
+- `structuredData`
+- eventos estruturados
+- campos ausentes
+- boxes sugeridos
+- totais de dinheiro, renda passiva, calorias, proteína e atividade física
+
+Teste sem gravar:
+
+```powershell
+Invoke-WebRequest -Uri "http://localhost:3000/api/analyze-entry" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body '{ "text": "recebi 42 reais de MXRF11 hoje" }' `
+  -UseBasicParsing
+```
 
 ## 5. Configurar WhatsApp Cloud API
 
@@ -123,6 +150,7 @@ Depois assine o campo de webhook de mensagens, normalmente chamado `messages`.
 - Painel: `http://localhost:3000`
 - Saúde do servidor: `http://localhost:3000/health`
 - Webhook Meta GET/POST: `/webhook/whatsapp`
+- Analisar sem gravar: `POST /api/analyze-entry`
 - Teste local: `POST /api/test-message`
 - Registros: `GET /api/records`
 - Exportação: `GET /api/export`

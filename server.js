@@ -44,9 +44,29 @@ app.use(express.static(publicDir));
 
 const PORT = process.env.PORT || 3000;
 
+function pickOpenAiTextModelInfo() {
+  const explicit = String(process.env.OPENAI_TEXT_MODEL || '').trim();
+  if (explicit) {
+    return { model: explicit, source: 'OPENAI_TEXT_MODEL', ignoredLegacyModel: '' };
+  }
+
+  const legacy = String(process.env.OPENAI_MODEL || '').trim();
+  if (legacy && !/^gpt-5\.4/i.test(legacy)) {
+    return { model: legacy, source: 'OPENAI_MODEL', ignoredLegacyModel: '' };
+  }
+
+  return {
+    model: 'gpt-4.1-mini',
+    source: legacy ? 'default_ignored_invalid_OPENAI_MODEL' : 'default',
+    ignoredLegacyModel: legacy
+  };
+}
+
 const GOOGLE_DOCS_API_URL = process.env.GOOGLE_DOCS_API_URL || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+const OPENAI_TEXT_MODEL_INFO = pickOpenAiTextModelInfo();
+const OPENAI_TEXT_MODEL = OPENAI_TEXT_MODEL_INFO.model;
 const OPENAI_AUDIO_MODEL = process.env.OPENAI_AUDIO_MODEL || 'gpt-4o-mini-transcribe';
 
 const WHATSAPP_CLOUD_TOKEN =
@@ -59,6 +79,9 @@ const SEND_WHATSAPP_CONFIRMATION =
 
 const LOG_RAW_WHATSAPP_EMPTY =
   String(process.env.LOG_RAW_WHATSAPP_EMPTY || 'true').toLowerCase() === 'true';
+
+const RADAR_API_TOKEN = process.env.RADAR_API_TOKEN || '';
+const RADAR_INTELLIGENCE_VERSION = 'radar_intelligence_v1_2026_06_29';
 
 function nowIso() {
   return new Date().toISOString();
@@ -80,6 +103,23 @@ function safeJson(value, maxLength = 6000) {
   } catch (err) {
     return '[Não foi possível serializar JSON]';
   }
+}
+
+function requireRadarApiToken(req, res) {
+  if (!RADAR_API_TOKEN) return true;
+
+  const token =
+    cleanText(req.headers['x-radar-token']) ||
+    cleanText(req.headers.authorization).replace(/^Bearer\s+/i, '');
+
+  if (token === RADAR_API_TOKEN) return true;
+
+  res.status(401).json({
+    ok: false,
+    error: 'RADAR_API_TOKEN invalido ou ausente.'
+  });
+
+  return false;
 }
 
 function getByPath(obj, pathExpression) {
@@ -528,6 +568,15 @@ async function callAppsScriptAction(params) {
 }
 
 async function sendTextToAppsScript({ text, from, profileName, source, raw }) {
+  const intelligence = await analyzeTextWithRadarIntelligence({
+    text,
+    from,
+    profileName,
+    source: source || 'render_whatsapp',
+    raw
+  });
+  const legacyFields = buildLegacyFieldsFromRadarIntelligence(intelligence);
+
   return callAppsScript({
     text,
     from,
@@ -535,7 +584,13 @@ async function sendTextToAppsScript({ text, from, profileName, source, raw }) {
     source: source || 'render_whatsapp',
     origem: source || 'render_whatsapp',
     receivedAt: nowIso(),
-    raw
+    ...legacyFields,
+    radar_intelligence: intelligence,
+    structuredData: intelligence,
+    raw: {
+      ...(raw && typeof raw === 'object' ? raw : { value: raw }),
+      radar_intelligence: intelligence
+    }
   });
 }
 
@@ -1161,6 +1216,537 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function normalizeWhitespace(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function uniqueClean(values) {
+  return Array.from(new Set((values || []).map(v => cleanText(v)).filter(Boolean)));
+}
+
+function isoDateOnly(value = new Date()) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function buildRadarIntelligencePrompt({ text, from, profileName, source, receivedAt }) {
+  return [
+    'Voce e o motor semantico do Radar da Vida.',
+    'Transforme um input solto em eventos estruturados, auditaveis e uteis para dashboard pessoal.',
+    '',
+    'CONTEXTO:',
+    '- O Radar recebe inputs por WhatsApp, Web, API e Amazfit T-Rex 3.',
+    '- O usuario quer registrar investimentos, rendimentos, refeicoes, treinos, tarefas, saude, humor, habitos e eventos importantes.',
+    '- O texto bruto nunca deve ser perdido.',
+    '- Nao invente dados. Diferencie fato, estimativa e inferencia.',
+    '- Saude e financas sao sensiveis: nao de diagnostico medico nem recomendacao financeira definitiva.',
+    '',
+    'PIPELINE:',
+    '1. Normalize o texto.',
+    '2. Identifique se ha um ou varios eventos no mesmo input.',
+    '3. Extraia campos estruturados por dominio.',
+    '4. Calcule metricas estimadas quando fizer sentido, marcando como estimativa.',
+    '5. Aponte campos ausentes que precisam confirmacao.',
+    '6. Gere missoes/perguntas quando faltarem dados importantes.',
+    '',
+    'DOMINIOS:',
+    '- investimentos, rendimentos, despesas, receitas',
+    '- alimentacao, treino, sono, saude, humor',
+    '- tarefas, estudos, trabalho, relacionamentos, habitos, ideias, reflexoes, eventos',
+    '',
+    'INVESTIMENTOS E RENDIMENTOS:',
+    'Extraia tipo_evento, ticker, ativo, classe_ativo, quantidade, preco_unitario, valor_total, data_competencia, data_pagamento, corretora, moeda, impostos_taxas, observacoes.',
+    'Tipos: compra, venda, aporte, rendimento, dividendo, jcp, aluguel_fii, cashback, resgate, taxa, imposto, rebalanceamento.',
+    '',
+    'ALIMENTACAO:',
+    'Extraia refeicao, alimentos, porcoes_estimadas, calorias_estimadas, proteina_g, carboidratos_g, gordura_g, fibras_g, acucar_g, sodio_mg, qualidade_nutricional, contexto.',
+    'Se nao houver quantidade, estime com prudencia e confidence menor.',
+    '',
+    'TREINO E CORPO:',
+    'Extraia tipo_atividade, duracao_minutos, distancia_km, intensidade, frequencia_cardiaca, calorias_gastas_estimadas, grupos_musculares, carga, series, repeticoes, esforco_percebido, dor_lesao_fadiga.',
+    '',
+    'TAREFAS E MISSOES:',
+    'Extraia titulo, categoria, prazo, prioridade, estado, dependencias, proxima_acao, energia_necessaria, impacto, recorrencia e projeto.',
+    'Estados: ideia, aberta, em_andamento, bloqueada, concluida, cancelada.',
+    '',
+    'FORMATO OBRIGATORIO:',
+    'Responda somente JSON valido, sem markdown.',
+    '{',
+    '  "version": "radar_intelligence_v1_2026_06_29",',
+    '  "rawText": "texto original",',
+    '  "normalizedText": "texto limpo",',
+    '  "source": "origem",',
+    '  "receivedAt": "ISO",',
+    '  "primaryDomain": "investimentos|rendimentos|despesas|receitas|alimentacao|treino|sono|saude|humor|tarefas|estudos|trabalho|relacionamentos|habitos|ideias|reflexoes|eventos|misto|outro",',
+    '  "summary": "resumo curto em primeira pessoa",',
+    '  "events": [',
+    '    {',
+    '      "idHint": "slug curto",',
+    '      "domain": "dominio",',
+    '      "subtype": "subtipo",',
+    '      "eventDate": "YYYY-MM-DD ou vazio",',
+    '      "status": "registrado|estimado|precisa_confirmacao",',
+    '      "confidence": 0.0,',
+    '      "facts": {},',
+    '      "estimates": {},',
+    '      "metrics": {},',
+    '      "missingFields": [],',
+    '      "linkedEntities": [],',
+    '      "tags": [],',
+    '      "box": "investimentos|rendimentos|nutricao|atividade_fisica|missoes|timeline|revisao_ia"',
+    '    }',
+    '  ],',
+    '  "totals": {',
+    '    "moneyEarned": 0,',
+    '    "moneySpent": 0,',
+    '    "moneyInvested": 0,',
+    '    "passiveIncome": 0,',
+    '    "caloriesIn": 0,',
+    '    "caloriesOut": 0,',
+    '    "proteinG": 0,',
+    '    "carbsG": 0,',
+    '    "fatG": 0,',
+    '    "fiberG": 0,',
+    '    "activityMinutes": 0',
+    '  },',
+    '  "dashboard": {',
+    '    "boxes": [],',
+    '    "chartHints": [],',
+    '    "reviewRequired": false',
+    '  },',
+    '  "missions": [',
+    '    { "title": "", "reason": "", "priority": "baixa|media|alta", "dueHint": "", "status": "aberta" }',
+    '  ],',
+    '  "questions": [],',
+    '  "confidence": 0.0',
+    '}',
+    '',
+    'REGRAS:',
+    '- Campos numericos devem ser numeros.',
+    '- Use arrays vazios quando nao houver dado.',
+    '- Inclua confidence por evento.',
+    '- Se houver ticker sem valor, registre ticker e marque campo ausente.',
+    '- Se houver comida sem porcao, estime nutrientes de forma conservadora e marque porcao como ausente.',
+    '- Se faltarem dados corporais do usuario para meta nutricional, crie missao para coletar peso, altura, idade, sexo, objetivo e nivel de atividade.',
+    '',
+    `Texto: ${text}`,
+    `Origem: ${source || 'desconhecida'}`,
+    from ? `Remetente: ${from}` : '',
+    profileName ? `Nome: ${profileName}` : '',
+    `Recebido em: ${receivedAt || nowIso()}`
+  ].filter(Boolean).join('\n');
+}
+
+async function analyzeTextWithRadarIntelligence({ text, from, profileName, source, raw }) {
+  const receivedAt = nowIso();
+
+  if (!OPENAI_API_KEY) {
+    const fallback = buildLocalRadarIntelligence({ text, from, profileName, source, raw, receivedAt });
+    fallback.engine = 'local_fallback_no_openai_key';
+    fallback.model = 'offline';
+    fallback.error = 'OPENAI_API_KEY ausente no ambiente do servidor';
+    return fallback;
+  }
+
+  const prompt = buildRadarIntelligencePrompt({ text, from, profileName, source, receivedAt });
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: OPENAI_TEXT_MODEL,
+        input: prompt,
+        temperature: 0.1
+      })
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`OpenAI Text HTTP ${response.status}: ${body.slice(0, 1000)}`);
+    }
+
+    const parsed = JSON.parse(body);
+    const outputText = extractOpenAIText(parsed);
+    const intelligence = normalizeRadarIntelligence(parsePossiblyWrappedJson(outputText), {
+      text,
+      source,
+      receivedAt
+    });
+
+    intelligence.engine = 'openai_responses';
+    intelligence.model = OPENAI_TEXT_MODEL;
+
+    return intelligence;
+  } catch (err) {
+    console.warn('[RADAR_INTELLIGENCE] Falha na IA textual; usando heuristica local:', err.message);
+    const fallback = buildLocalRadarIntelligence({ text, from, profileName, source, raw, receivedAt });
+    fallback.engine = 'local_fallback_after_openai_error';
+    fallback.error = err.message;
+    return fallback;
+  }
+}
+
+function normalizeRadarIntelligence(intelligence, { text, source, receivedAt }) {
+  const normalizedText = normalizeWhitespace(intelligence.normalizedText || text);
+  const events = Array.isArray(intelligence.events) ? intelligence.events : [];
+  const totals = intelligence.totals || {};
+
+  const cleanEvents = events.map((event, index) => ({
+    idHint: cleanText(event.idHint) || `event_${index + 1}`,
+    domain: cleanText(event.domain) || 'outro',
+    subtype: cleanText(event.subtype),
+    eventDate: cleanText(event.eventDate),
+    status: cleanText(event.status) || 'registrado',
+    confidence: Math.max(0, Math.min(1, Number(event.confidence) || 0.5)),
+    facts: event.facts && typeof event.facts === 'object' ? event.facts : {},
+    estimates: event.estimates && typeof event.estimates === 'object' ? event.estimates : {},
+    metrics: event.metrics && typeof event.metrics === 'object' ? event.metrics : {},
+    missingFields: uniqueClean(event.missingFields || []),
+    linkedEntities: uniqueClean(event.linkedEntities || []),
+    tags: uniqueClean(event.tags || []),
+    box: cleanText(event.box) || inferBoxFromDomain(event.domain)
+  }));
+
+  return {
+    version: RADAR_INTELLIGENCE_VERSION,
+    rawText: String(text || ''),
+    normalizedText,
+    source: cleanText(intelligence.source) || source || 'render_whatsapp',
+    receivedAt: cleanText(intelligence.receivedAt) || receivedAt || nowIso(),
+    primaryDomain: cleanText(intelligence.primaryDomain) || inferPrimaryDomain(cleanEvents),
+    summary: cleanText(intelligence.summary) || normalizedText,
+    events: cleanEvents,
+    totals: {
+      moneyEarned: toNumber(totals.moneyEarned),
+      moneySpent: toNumber(totals.moneySpent),
+      moneyInvested: toNumber(totals.moneyInvested),
+      passiveIncome: toNumber(totals.passiveIncome),
+      caloriesIn: toNumber(totals.caloriesIn),
+      caloriesOut: toNumber(totals.caloriesOut),
+      proteinG: toNumber(totals.proteinG),
+      carbsG: toNumber(totals.carbsG),
+      fatG: toNumber(totals.fatG),
+      fiberG: toNumber(totals.fiberG),
+      activityMinutes: toNumber(totals.activityMinutes)
+    },
+    dashboard: {
+      boxes: uniqueClean(intelligence.dashboard?.boxes || cleanEvents.map(e => e.box)),
+      chartHints: uniqueClean(intelligence.dashboard?.chartHints || []),
+      reviewRequired: Boolean(intelligence.dashboard?.reviewRequired || cleanEvents.some(e => e.missingFields.length))
+    },
+    missions: Array.isArray(intelligence.missions) ? intelligence.missions.map(mission => ({
+      title: cleanText(mission.title),
+      reason: cleanText(mission.reason),
+      priority: cleanText(mission.priority) || 'media',
+      dueHint: cleanText(mission.dueHint),
+      status: cleanText(mission.status) || 'aberta'
+    })).filter(mission => mission.title) : [],
+    questions: uniqueClean(intelligence.questions || []),
+    confidence: Math.max(0, Math.min(1, Number(intelligence.confidence) || average(cleanEvents.map(e => e.confidence)) || 0.5))
+  };
+}
+
+function inferBoxFromDomain(domain) {
+  const d = cleanText(domain).toLowerCase();
+  if (/rend|dividendo|provento|jcp/.test(d)) return 'rendimentos';
+  if (/invest/.test(d)) return 'investimentos';
+  if (/aliment|nutri|comida|refei/.test(d)) return 'nutricao';
+  if (/treino|atividade|sono|saude/.test(d)) return 'atividade_fisica';
+  if (/tarefa|miss|trabalho|estudo/.test(d)) return 'missoes';
+  return 'timeline';
+}
+
+function inferPrimaryDomain(events) {
+  const domains = events.map(e => e.domain).filter(Boolean);
+  if (!domains.length) return 'outro';
+  return uniqueClean(domains).length > 1 ? 'misto' : domains[0];
+}
+
+function average(values) {
+  const nums = (values || []).map(Number).filter(Number.isFinite);
+  if (!nums.length) return 0;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+
+function extractMoneyMentions(text) {
+  const mentions = [];
+  const regex = /(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?\s*(?:reais|real|brl|r\$)?/gi;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const raw = match[0];
+    if (!/[r$]|reais|real|brl/i.test(raw)) continue;
+    mentions.push(toNumber(raw));
+  }
+
+  return mentions.filter(n => n > 0);
+}
+
+function extractTickers(text) {
+  return uniqueClean(String(text || '').match(/\b[A-Z]{4}\d{1,2}\b/g) || []);
+}
+
+function extractInvestmentTrade(text, tickers, moneyMentions) {
+  const s = String(text || '');
+  const firstTicker = tickers[0] || '';
+  const quantityMatch = firstTicker
+    ? s.match(new RegExp(`(\\d+(?:[,.]\\d+)?)\\s*(?:a[cç][oõ]es|acoes|cotas|unidades)?\\s*(?:de\\s+)?${firstTicker}`, 'i'))
+    : null;
+  const priceMatch = s.match(/\b(?:a|por|preco|pre[cç]o)\s*(?:r\$\s*)?(\d+(?:[,.]\d+)?)/i);
+  const quantity = quantityMatch ? toNumber(quantityMatch[1]) : 0;
+  const unitPrice = priceMatch ? toNumber(priceMatch[1]) : 0;
+  const total = quantity && unitPrice ? quantity * unitPrice : (moneyMentions[0] || 0);
+
+  return {
+    quantity,
+    unitPrice,
+    total
+  };
+}
+
+function extractDurationMinutes(text) {
+  const s = String(text || '').toLowerCase();
+  let total = 0;
+  const regex = /(\d+(?:[,.]\d+)?)\s*(h|hora|horas|min|minuto|minutos)\b/g;
+  let match;
+
+  while ((match = regex.exec(s)) !== null) {
+    const value = parseFloat(String(match[1]).replace(',', '.')) || 0;
+    total += /^h|hora/.test(match[2]) ? value * 60 : value;
+  }
+
+  return Math.round(total);
+}
+
+function buildLocalRadarIntelligence({ text, source, receivedAt }) {
+  const rawText = String(text || '');
+  const normalizedText = normalizeWhitespace(rawText);
+  const lower = normalizedText.toLowerCase();
+  const events = [];
+  const money = extractMoneyMentions(normalizedText);
+  const tickers = extractTickers(normalizedText);
+  const durationMinutes = extractDurationMinutes(normalizedText);
+
+  const hasInvestment =
+    tickers.length ||
+    /\b(comprei|vendi|aportei|apliquei|investi|dividendo|dividendos|jcp|rendimento|rendimentos|provento|proventos|fii|a[cç][aã]o|acoes|tesouro|cdb|etf|cripto)\b/i.test(normalizedText);
+
+  const hasFood =
+    /\b(cafe|caf[eé]|almoc|almo[cç]o|jantar|jantei|lanche|comi|bebi|arroz|feij[aã]o|frango|carne|ovo|salada|hamburg|pizza|prote[ií]na|whey|banana|p[aã]o)\b/i.test(normalizedText);
+
+  const hasActivity =
+    /\b(corri|corrida|caminhei|caminhada|treinei|treino|academia|muscula[cç][aã]o|pedalei|bike|futebol|alonguei|alongamento|passos|km)\b/i.test(normalizedText);
+
+  const hasTask =
+    /\b(preciso|devo|tenho que|tarefa|miss[aã]o|missao|prazo|pagar|resolver|comprar|ligar|enviar|fazer|concluir|bloqueado|andamento)\b/i.test(normalizedText);
+
+  if (hasInvestment) {
+    const trade = extractInvestmentTrade(normalizedText, tickers, money);
+    const subtype = /\b(recebi|ganhei|dividendo|dividendos|jcp|rendimento|rendimentos|provento|proventos)\b/i.test(normalizedText)
+      ? 'rendimento'
+      : /\bvendi|venda\b/i.test(normalizedText)
+        ? 'venda'
+        : /\b(comprei|compra|aportei|apliquei|investi)\b/i.test(normalizedText)
+          ? 'compra_aporte'
+          : 'investimento';
+    const value = trade.total || 0;
+    events.push({
+      idHint: 'investimentos',
+      domain: subtype === 'rendimento' ? 'rendimentos' : 'investimentos',
+      subtype,
+      eventDate: /\bhoje\b/i.test(normalizedText) ? isoDateOnly() : '',
+      status: tickers.length && value ? 'registrado' : 'precisa_confirmacao',
+      confidence: tickers.length || value ? 0.72 : 0.45,
+      facts: {
+        tickers,
+        quantidade: trade.quantity,
+        preco_unitario: trade.unitPrice,
+        valor_total: value,
+        moeda: 'BRL',
+        tipo_evento: subtype
+      },
+      estimates: {},
+      metrics: {
+        passiveIncome: subtype === 'rendimento' ? value : 0,
+        moneyInvested: subtype === 'compra_aporte' ? value : 0,
+        moneyEarned: subtype === 'rendimento' || subtype === 'venda' ? value : 0
+      },
+      missingFields: [
+        tickers.length ? '' : 'ticker',
+        value ? '' : 'valor_total',
+        'data_competencia'
+      ].filter(Boolean),
+      linkedEntities: tickers,
+      tags: uniqueClean(['financeiro', 'investimentos', subtype, ...tickers]),
+      box: subtype === 'rendimento' ? 'rendimentos' : 'investimentos'
+    });
+  }
+
+  if (hasFood) {
+    const calorieGuess = /\b(hamburg|pizza|lanche)/i.test(normalizedText) ? 700 : /\b(arroz|feij|frango|salada)/i.test(normalizedText) ? 650 : 350;
+    events.push({
+      idHint: 'alimentacao',
+      domain: 'alimentacao',
+      subtype: /\bjantar|jantei\b/i.test(lower) ? 'jantar' : /\balmoc|almo[cç]o\b/i.test(lower) ? 'almoco' : /\bcafe|caf[eé]\b/i.test(lower) ? 'cafe_da_manha' : 'refeicao',
+      eventDate: /\bhoje\b/i.test(normalizedText) ? isoDateOnly() : '',
+      status: 'estimado',
+      confidence: 0.55,
+      facts: {
+        descricao_refeicao: normalizedText
+      },
+      estimates: {
+        calorias_estimadas: calorieGuess,
+        proteina_g: Math.round(calorieGuess * 0.06),
+        carboidratos_g: Math.round(calorieGuess * 0.12),
+        gordura_g: Math.round(calorieGuess * 0.035)
+      },
+      metrics: {
+        caloriesIn: calorieGuess,
+        proteinG: Math.round(calorieGuess * 0.06),
+        carbsG: Math.round(calorieGuess * 0.12),
+        fatG: Math.round(calorieGuess * 0.035)
+      },
+      missingFields: ['porcao', 'peso_altura_idade_objetivo_para_meta_nutricional'],
+      linkedEntities: [],
+      tags: ['alimentacao', 'nutricao', 'refeicao'],
+      box: 'nutricao'
+    });
+  }
+
+  if (hasActivity) {
+    events.push({
+      idHint: 'atividade_fisica',
+      domain: 'treino',
+      subtype: /\bcaminh/.test(lower) ? 'caminhada' : /\bcorr/.test(lower) ? 'corrida' : /\btrein|academ|muscula/.test(lower) ? 'treino' : 'atividade',
+      eventDate: /\bhoje\b/i.test(normalizedText) ? isoDateOnly() : '',
+      status: durationMinutes ? 'registrado' : 'precisa_confirmacao',
+      confidence: durationMinutes ? 0.75 : 0.55,
+      facts: {
+        duracao_minutos: durationMinutes
+      },
+      estimates: {
+        calorias_gastas_estimadas: durationMinutes ? Math.round(durationMinutes * 6) : 0
+      },
+      metrics: {
+        activityMinutes: durationMinutes,
+        caloriesOut: durationMinutes ? Math.round(durationMinutes * 6) : 0
+      },
+      missingFields: durationMinutes ? [] : ['duracao_minutos'],
+      linkedEntities: [],
+      tags: ['corpo', 'atividade_fisica'],
+      box: 'atividade_fisica'
+    });
+  }
+
+  if (hasTask) {
+    events.push({
+      idHint: 'missao_tarefa',
+      domain: 'tarefas',
+      subtype: /\bmiss/.test(lower) ? 'missao' : 'tarefa',
+      eventDate: /\bhoje\b/i.test(normalizedText) ? isoDateOnly() : '',
+      status: /\bconclu/.test(lower) ? 'concluida' : /\bbloque/.test(lower) ? 'bloqueada' : 'aberta',
+      confidence: 0.6,
+      facts: {
+        titulo: normalizedText,
+        prazo: /\bamanh/.test(lower) ? 'amanha' : /\bhoje\b/.test(lower) ? 'hoje' : ''
+      },
+      estimates: {},
+      metrics: {},
+      missingFields: /\bamanh|hoje\b/.test(lower) ? [] : ['prazo'],
+      linkedEntities: [],
+      tags: ['missao', 'tarefa'],
+      box: 'missoes'
+    });
+  }
+
+  if (!events.length) {
+    events.push({
+      idHint: 'timeline',
+      domain: 'eventos',
+      subtype: 'registro_textual',
+      eventDate: /\bhoje\b/i.test(normalizedText) ? isoDateOnly() : '',
+      status: 'registrado',
+      confidence: 0.4,
+      facts: { texto: normalizedText },
+      estimates: {},
+      metrics: {},
+      missingFields: [],
+      linkedEntities: [],
+      tags: ['timeline'],
+      box: 'timeline'
+    });
+  }
+
+  const totals = events.reduce((acc, event) => {
+    Object.entries(event.metrics || {}).forEach(([key, value]) => {
+      acc[key] = toNumber(acc[key]) + toNumber(value);
+    });
+    return acc;
+  }, {});
+
+  return normalizeRadarIntelligence({
+    version: RADAR_INTELLIGENCE_VERSION,
+    rawText,
+    normalizedText,
+    source: source || 'render_whatsapp',
+    receivedAt,
+    primaryDomain: events.length > 1 ? 'misto' : events[0].domain,
+    summary: normalizedText,
+    events,
+    totals,
+    dashboard: {
+      boxes: uniqueClean(events.map(e => e.box)),
+      chartHints: uniqueClean(events.map(e => e.domain)),
+      reviewRequired: events.some(e => (e.missingFields || []).length)
+    },
+    missions: events.some(e => e.domain === 'alimentacao' && (e.missingFields || []).includes('peso_altura_idade_objetivo_para_meta_nutricional'))
+      ? [{
+          title: 'Completar perfil corporal para metas de nutricao',
+          reason: 'Calorias e macros ficam melhores com peso, altura, idade, sexo, objetivo e nivel de atividade.',
+          priority: 'media',
+          dueHint: 'quando possivel',
+          status: 'aberta'
+        }]
+      : [],
+    questions: uniqueClean(events.flatMap(e => e.missingFields || []).map(field => `Confirmar ${field}`)),
+    confidence: average(events.map(e => e.confidence))
+  }, { text: rawText, source, receivedAt });
+}
+
+function buildLegacyFieldsFromRadarIntelligence(intelligence) {
+  const events = intelligence.events || [];
+  const categories = uniqueClean([
+    intelligence.primaryDomain,
+    ...(intelligence.dashboard?.boxes || []),
+    ...events.flatMap(e => e.tags || []),
+    ...events.map(e => e.domain),
+    ...events.map(e => e.subtype)
+  ]);
+  const linked = uniqueClean(events.flatMap(e => e.linkedEntities || []));
+
+  return {
+    radar_intelligence_version: intelligence.version,
+    radar_primary_domain: intelligence.primaryDomain,
+    radar_summary: intelligence.summary,
+    radar_structured_events_count: events.length,
+    radar_review_required: Boolean(intelligence.dashboard?.reviewRequired),
+    radar_boxes: intelligence.dashboard?.boxes || [],
+    categorias_sugeridas: categories,
+    ativos_detectados: linked.filter(v => /^[A-Z]{4}\d{1,2}$/.test(v)),
+    dinheiro_ganho_sugerido: intelligence.totals.moneyEarned,
+    dinheiro_gasto_sugerido: intelligence.totals.moneySpent,
+    dinheiro_investido_sugerido: intelligence.totals.moneyInvested,
+    calorias_ingeridas_sugeridas: intelligence.totals.caloriesIn,
+    calorias_gastas_sugeridas: intelligence.totals.caloriesOut,
+    proteina_g_sugerida: intelligence.totals.proteinG,
+    atividade_fisica_minutos_sugerida: intelligence.totals.activityMinutes
+  };
+}
+
 function escapeXml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -1224,6 +1810,7 @@ app.get('/', (req, res) => {
       health: '/health',
       test: '/test',
       whatsapp: '/webhook/whatsapp',
+      analyzeEntry: '/api/analyze-entry',
       manualEntry: '/api/manual-entry',
       deleteEntry: '/api/delete-entry'
     },
@@ -1231,7 +1818,11 @@ app.get('/', (req, res) => {
       hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
       hasOpenAiApiKey: Boolean(OPENAI_API_KEY),
       hasWhatsappCloudToken: Boolean(WHATSAPP_CLOUD_TOKEN),
+      hasRadarApiToken: Boolean(RADAR_API_TOKEN),
       openaiVisionModel: OPENAI_VISION_MODEL,
+      openaiTextModel: OPENAI_TEXT_MODEL,
+      openaiTextModelSource: OPENAI_TEXT_MODEL_INFO.source,
+      ignoredLegacyOpenAIModel: OPENAI_TEXT_MODEL_INFO.ignoredLegacyModel,
       openaiAudioModel: OPENAI_AUDIO_MODEL,
       sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
       logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY
@@ -1248,7 +1839,11 @@ app.get('/health', async (req, res) => {
     hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
     hasOpenAiApiKey: Boolean(OPENAI_API_KEY),
     hasWhatsappCloudToken: Boolean(WHATSAPP_CLOUD_TOKEN),
+    hasRadarApiToken: Boolean(RADAR_API_TOKEN),
     openaiVisionModel: OPENAI_VISION_MODEL,
+    openaiTextModel: OPENAI_TEXT_MODEL,
+    openaiTextModelSource: OPENAI_TEXT_MODEL_INFO.source,
+    ignoredLegacyOpenAIModel: OPENAI_TEXT_MODEL_INFO.ignoredLegacyModel,
     openaiAudioModel: OPENAI_AUDIO_MODEL,
     sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
     logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY,
@@ -1329,6 +1924,8 @@ app.get('/test', async (req, res) => {
 });
 
 app.post('/api/manual-entry', async (req, res) => {
+  if (!requireRadarApiToken(req, res)) return;
+
   const text =
     cleanText(req.body.text) ||
     cleanText(req.body.message) ||
@@ -1365,7 +1962,50 @@ app.post('/api/manual-entry', async (req, res) => {
   }
 });
 
+app.post('/api/analyze-entry', async (req, res) => {
+  if (!requireRadarApiToken(req, res)) return;
+
+  const text =
+    cleanText(req.body.text) ||
+    cleanText(req.body.message) ||
+    cleanText(req.body.frase);
+
+  if (!text) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Campo text/message/frase vazio.'
+    });
+  }
+
+  try {
+    const intelligence = await analyzeTextWithRadarIntelligence({
+      text,
+      from: cleanText(req.body.from) || 'analysis_api',
+      profileName: cleanText(req.body.profileName) || 'Analysis API',
+      source: 'render_analysis_api',
+      raw: {
+        body: req.body,
+        ip: getClientIp(req)
+      }
+    });
+
+    return res.status(200).json({
+      ok: true,
+      text,
+      intelligence,
+      legacyFields: buildLegacyFieldsFromRadarIntelligence(intelligence)
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
 app.post('/api/delete-entry', async (req, res) => {
+  if (!requireRadarApiToken(req, res)) return;
+
   const id =
     cleanText(req.body.id) ||
     cleanText(req.body.entryId) ||
