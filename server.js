@@ -1747,6 +1747,74 @@ function buildLegacyFieldsFromRadarIntelligence(intelligence) {
   };
 }
 
+function buildPersonalRadarPrompt({ entries, periodLabel, profileName }) {
+  return [
+    'Voce e o GPT interno do Radar da Vida.',
+    'Atue como uma inteligencia de organizacao existencial, financeira, corporal, nutricional, produtiva e narrativa.',
+    'Seu trabalho nao e apenas classificar dados: e transformar microeventos da vida real em memoria operavel, autoconsciencia, graficos uteis e proximas acoes.',
+    '',
+    'FILOSOFIA DO RADAR DA VIDA',
+    '- A vida e composta por entradas pequenas: frases, gastos, rendimentos, comida, treino, tarefas, imagens, emocoes, deslocamentos e decisoes.',
+    '- Cada entrada deve virar um evento compreensivel, com dominio, data, valor, intensidade, impacto, incerteza e destino no painel.',
+    '- O sistema deve respeitar a linguagem natural do usuario: ele pode falar de modo baguncado, poetico, incompleto, ansioso, objetivo ou misturando varios assuntos.',
+    '- O app nao deve punir frases incompletas; deve preservar o que sabe, estimar com humildade e apontar o que falta.',
+    '- O objetivo e aumentar fidelidade de registro, nao criar uma narrativa falsa.',
+    '- O Radar deve enxergar ativos invisiveis: saude, energia, disciplina, aprendizado, capital financeiro, relacoes, reputacao, organizacao, descanso e paz mental.',
+    '- O Radar deve enxergar passivos invisiveis: atrito, vazamento de dinheiro, excesso de tarefa aberta, sono ruim, comida pobre, sedentarismo, ansiedade, desorganizacao e promessas nao fechadas.',
+    '',
+    'DOMINIOS PRINCIPAIS',
+    '1. investimentos: compras, vendas, aportes, tickers, quantidade, preco medio, classe de ativo, corretora se aparecer, tese, risco, data de operacao.',
+    '2. rendimentos: dividendos, JCP, proventos, aluguel, juros, cupons, rendimento de FII, valor recebido, ticker, competencia, data de pagamento.',
+    '3. alimentacao: refeicoes, alimentos, bebidas, horario, estimativa de calorias, proteina, carboidrato, gordura, fibra, qualidade nutricional, saciedade.',
+    '4. atividade_fisica: treino, caminhada, corrida, musculacao, passos, duracao, intensidade, calorias gastas, zona de esforco, recuperacao.',
+    '5. corpo_saude: peso, sono, dor, energia, humor fisico, exames, medicamentos, sinais corporais, hidratacao.',
+    '6. missoes_tarefas: tarefas abertas, progresso, status, bloqueios, prazo, responsavel, prioridade, proxima acao, criterio de conclusao.',
+    '7. trabalho_projetos: trabalho juridico, clientes, Codex, Radar, projetos, estudo, producao, reunioes, entregas, alavancagem.',
+    '8. financeiro_pessoal: gastos, ganhos, contas, boletos, dividas, recorrencias, vazamentos, compras necessarias, compras impulsivas.',
+    '9. relacoes: familia, amigos, clientes, conversas, conflitos, presenca, cuidado, acordos, promessas.',
+    '10. casa_ambiente: sitio, casa, manutencao, objetos, organizacao fisica, compras domesticas, energia solar, estrutura.',
+    '11. emocional_sentido: medo, alegria, orgulho, cansaco, ansiedade, gratidao, luto, entusiasmo, significado e tom existencial.',
+    '12. memoria_visual_documental: fotos, prints, documentos, comprovantes, imagens que servem como evidencia.',
+    '',
+    'REGRAS DE INTERPRETACAO',
+    '- Uma frase pode gerar multiplos eventos. Ex.: "recebi 42 de MXRF11, almocei frango e corri 30 minutos" deve virar rendimento, alimentacao e atividade_fisica.',
+    '- Preserve todo numero explicitado. Nunca descarte valor, ticker, quantidade, minutos, km, horario ou data.',
+    '- Se houver dinheiro sem contexto, classifique como financeiro_pessoal e marque missingFields.',
+    '- Se houver ticker com verbo "recebi", "caiu", "pagou", "dividendo", classifique como rendimento, nao como compra.',
+    '- Se houver ticker com "comprei", "aportei", "vendi", classifique como investimento.',
+    '- Para comida, estime calorias e macros com cautela. Informe que e estimativa quando nao houver quantidade.',
+    '- Para treino, estime intensidade por verbo e contexto. Caminhada leve, corrida moderada, musculacao variavel.',
+    '- Para tarefa, identifique status: aberta, em_andamento, bloqueada, concluida, cancelada, aguardando.',
+    '- Para projetos e missoes, gere proxima acao concreta, pequena e verificavel.',
+    '- Para entradas emocionais, nao medicalize. Transforme em leitura de estado e necessidade pratica.',
+    '- Para qualquer incerteza, use confidence menor e liste perguntas objetivas.',
+    '',
+    'GRAFICOS IDEAIS A SUGERIR',
+    '- Renda passiva por ticker e por mes.',
+    '- Aportes por ativo, classe e data.',
+    '- Fluxo de capital: gasto, ganho, aporte, rendimento.',
+    '- Calorias ingeridas x calorias gastas x proteina.',
+    '- Consistencia corporal: dias com atividade, minutos, intensidade.',
+    '- Mapa de missoes por status, prazo e bloqueio.',
+    '- Divida de revisao: campos ausentes por dominio.',
+    '- Ativos invisiveis x passivos invisiveis.',
+    '- Horario narrativo: quando a vida e mais registrada.',
+    '- Energia do dia: alimentacao, treino, sono e humor.',
+    '',
+    'SAIDA OBRIGATORIA',
+    'Responda apenas JSON valido. Sem markdown. Sem texto fora do JSON.',
+    'Formato: { "summary": "...", "dominantPatterns": [], "events": [], "totals": {}, "charts": [], "missions": [], "questions": [], "dailyGuidance": [], "dataQuality": { "score": 0, "mainGaps": [], "howToImprove": [] } }',
+    'Cada item de "events" deve ter: sourceIndex, domain, box, title, dateHint, status, facts, estimates, metrics, missingFields, confidence.',
+    'Use metrics com: moneySpent, moneyEarned, moneyInvested, passiveIncome, caloriesIn, caloriesOut, proteinG, activityMinutes.',
+    '',
+    `Periodo analisado: ${periodLabel || 'periodo atual do painel'}`,
+    `Perfil: ${profileName || 'Guido / Radar da Vida'}`,
+    '',
+    'ENTRADAS NORMALIZADAS PARA ANALISE:',
+    JSON.stringify(entries, null, 2)
+  ].join('\n');
+}
+
 function escapeXml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -1811,6 +1879,7 @@ app.get('/', (req, res) => {
       test: '/test',
       whatsapp: '/webhook/whatsapp',
       analyzeEntry: '/api/analyze-entry',
+      personalIntelligence: '/api/personal-intelligence',
       manualEntry: '/api/manual-entry',
       deleteEntry: '/api/delete-entry'
     },
@@ -1994,6 +2063,119 @@ app.post('/api/analyze-entry', async (req, res) => {
       text,
       intelligence,
       legacyFields: buildLegacyFieldsFromRadarIntelligence(intelligence)
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
+app.post('/api/personal-intelligence', async (req, res) => {
+  const apiKey =
+    cleanText(req.body.openaiApiKey) ||
+    cleanText(req.body.apiKey);
+  const model =
+    cleanText(req.body.model) ||
+    OPENAI_TEXT_MODEL;
+  const rawEntries = Array.isArray(req.body.entries) ? req.body.entries : [];
+
+  if (!apiKey) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Informe uma OpenAI API key para usar o GPT interno pessoal.'
+    });
+  }
+
+  if (!rawEntries.length) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Nenhuma entrada enviada para analise.'
+    });
+  }
+
+  const entries = rawEntries.slice(0, 120).map((entry, index) => ({
+    index,
+    id: cleanText(entry.id),
+    date: cleanText(entry.data_br || entry.data_iso || entry.date),
+    time: cleanText(entry.hora_br || entry.time),
+    text: normalizeWhitespace(entry.entrada_original || entry.text || '').slice(0, 1000),
+    type: cleanText(entry.tipo_principal || entry.type),
+    categories: Array.isArray(entry.categorias) ? entry.categorias.slice(0, 12) : [],
+    boxes: Array.isArray(entry.radar_boxes) ? entry.radar_boxes.slice(0, 12) : [],
+    moneySpent: toNumber(entry.dinheiro_gasto),
+    moneyEarned: toNumber(entry.dinheiro_ganho),
+    moneyInvested: toNumber(entry.dinheiro_investido),
+    passiveIncome: toNumber(entry.renda_passiva || entry.passive_income),
+    caloriesIn: toNumber(entry.calorias_ingeridas || entry.calorias_ingeridas_sugeridas),
+    caloriesOut: toNumber(entry.calorias_gastas || entry.calorias_gastas_sugeridas),
+    proteinG: toNumber(entry.proteina_g || entry.proteina_g_sugerida),
+    sportMinutes: toNumber(entry.esporte_minutos || entry.atividade_fisica_minutos),
+    productiveMinutes: toNumber(entry.trabalho_minutos || entry.estudo_minutos || entry.projeto_minutos),
+    shortInsight: cleanText(entry.insight_curto).slice(0, 500),
+    deepInsight: cleanText(entry.insight_profundo).slice(0, 500)
+  })).filter(entry => entry.text);
+
+  const prompt = buildPersonalRadarPrompt({
+    entries,
+    periodLabel: cleanText(req.body.periodLabel),
+    profileName: cleanText(req.body.profileName)
+  });
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        input: prompt,
+        temperature: 0.2
+      })
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        ok: false,
+        error: `OpenAI HTTP ${response.status}`,
+        detail: body.slice(0, 1000)
+      });
+    }
+
+    const parsed = JSON.parse(body);
+    const outputText = extractOpenAIText(parsed);
+    let analysis;
+
+    try {
+      analysis = parsePossiblyWrappedJson(outputText);
+    } catch {
+      analysis = {
+        summary: outputText,
+        dominantPatterns: [],
+        events: [],
+        totals: {},
+        charts: [],
+        missions: [],
+        questions: [],
+        dailyGuidance: [],
+        dataQuality: {
+          score: 0,
+          mainGaps: ['A resposta da IA nao veio em JSON estruturado.'],
+          howToImprove: ['Rodar novamente ou reduzir o periodo analisado.']
+        }
+      };
+    }
+
+    return res.status(200).json({
+      ok: true,
+      model,
+      entriesAnalyzed: entries.length,
+      analysis
     });
   } catch (err) {
     return res.status(500).json({

@@ -562,6 +562,50 @@
       box-shadow: 0 0 0 4px rgba(45, 122, 75, .10);
     }
 
+    input[type="password"],
+    input[type="text"].compact-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 13px;
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="password"]:focus,
+    input[type="text"].compact-input:focus {
+      border-color: rgba(45, 122, 75, .55);
+      box-shadow: 0 0 0 4px rgba(45, 122, 75, .10);
+    }
+
+    .personal-ai-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(160px, .6fr);
+      gap: 10px;
+      align-items: end;
+    }
+
+    .personal-ai-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .personal-ai-output {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .personal-ai-output .insight strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
     .feed {
       display: grid;
       gap: 12px;
@@ -1894,6 +1938,40 @@
     <section class="panel" style="margin-top:16px;">
       <div class="panel-header">
         <div>
+          <h2>GPT interno do Radar</h2>
+          <p class="hint">Analise pessoal do periodo selecionado usando sua propria OpenAI API key. A chave fica no seu navegador se voce escolher salvar.</p>
+        </div>
+      </div>
+
+      <div class="personal-ai-grid">
+        <label>
+          <small>OpenAI API key pessoal</small>
+          <input id="personalOpenAiKey" type="password" placeholder="sk-..." autocomplete="off" />
+        </label>
+        <label>
+          <small>Modelo</small>
+          <input id="personalOpenAiModel" class="compact-input" type="text" value="gpt-4.1-mini" />
+        </label>
+      </div>
+
+      <div class="personal-ai-actions">
+        <button onclick="runPersonalRadarAnalysis()">Analisar periodo atual</button>
+        <button class="secondary" onclick="savePersonalOpenAiKey()">Salvar chave neste navegador</button>
+        <button class="secondary" onclick="forgetPersonalOpenAiKey()">Esquecer chave</button>
+      </div>
+
+      <p class="footer-note">
+        Modo pessoal/local: nao altera o Google Docs, nao muda o webhook e nao substitui a IA do servidor. Use em computador confiavel.
+      </p>
+
+      <div id="personalAiBox" class="personal-ai-output">
+        <div class="empty">Carregue uma chave e rode uma leitura profunda do periodo.</div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
           <h2>Tendências ao longo do tempo</h2>
           <p class="hint">No modo mensal, os gráficos detalham o mês. Em “Todos”, mostram a série histórica.</p>
         </div>
@@ -1994,6 +2072,7 @@
   <script>
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
     const ALL_PERIODS = '__all__';
+    const PERSONAL_OPENAI_KEY_STORAGE = 'radarVidaPersonalOpenAiKey';
 
     let currentDocId = '';
     let rawData = null;
@@ -3457,6 +3536,137 @@
       box.innerHTML = insights.map(txt => `<div class="insight">${escapeHtml(txt)}</div>`).join('');
     }
 
+    function hydratePersonalAiKey() {
+      const input = document.getElementById('personalOpenAiKey');
+      if (!input) return;
+
+      input.value = localStorage.getItem(PERSONAL_OPENAI_KEY_STORAGE) || '';
+    }
+
+    function savePersonalOpenAiKey() {
+      const input = document.getElementById('personalOpenAiKey');
+      const key = input ? input.value.trim() : '';
+
+      if (!key) {
+        toast('Informe uma OpenAI API key antes de salvar.');
+        return;
+      }
+
+      localStorage.setItem(PERSONAL_OPENAI_KEY_STORAGE, key);
+      toast('Chave salva neste navegador.');
+    }
+
+    function forgetPersonalOpenAiKey() {
+      localStorage.removeItem(PERSONAL_OPENAI_KEY_STORAGE);
+      const input = document.getElementById('personalOpenAiKey');
+      if (input) input.value = '';
+      toast('Chave removida deste navegador.');
+    }
+
+    function buildPersonalAiEntries() {
+      return viewEntries.slice(0, 120).map((entry, index) => ({
+        index,
+        id: entry.id,
+        data_br: entry.data_br,
+        data_iso: entry.data_iso,
+        hora_br: entry.hora_br,
+        entrada_original: entry.entrada_original,
+        tipo_principal: entry.tipo_principal,
+        categorias: entry.categorias || [],
+        radar_boxes: entry._radar_boxes || [],
+        dinheiro_gasto: entry.dinheiro_gasto,
+        dinheiro_ganho: entry.dinheiro_ganho,
+        dinheiro_investido: entry.dinheiro_investido,
+        renda_passiva: entry._passive_income,
+        calorias_ingeridas: entry._calories_in,
+        calorias_gastas: entry._calories_out,
+        proteina_g: entry._protein_g,
+        esporte_minutos: entry._sport_display_min,
+        trabalho_minutos: entry._productive_display_min,
+        insight_curto: entry.insight_curto,
+        insight_profundo: entry.insight_profundo
+      }));
+    }
+
+    async function runPersonalRadarAnalysis() {
+      const keyInput = document.getElementById('personalOpenAiKey');
+      const modelInput = document.getElementById('personalOpenAiModel');
+      const box = document.getElementById('personalAiBox');
+      const key = keyInput ? keyInput.value.trim() : '';
+      const model = modelInput && modelInput.value.trim() ? modelInput.value.trim() : 'gpt-4.1-mini';
+
+      if (!key) {
+        toast('Informe sua OpenAI API key pessoal.');
+        return;
+      }
+
+      if (!viewEntries.length) {
+        toast('Nao ha entradas no periodo selecionado.');
+        return;
+      }
+
+      box.innerHTML = '<div class="empty">GPT interno analisando o periodo...</div>';
+
+      try {
+        const response = await fetch('/api/personal-intelligence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            openaiApiKey: key,
+            model,
+            periodLabel: selectedMonthKey === ALL_PERIODS ? 'historico completo' : monthKeyToLabel(selectedMonthKey),
+            profileName: 'Guido / Radar da Vida',
+            entries: buildPersonalAiEntries()
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || data.detail || 'Falha na analise pessoal.');
+        }
+
+        renderPersonalAiAnalysis(data.analysis, data);
+      } catch (err) {
+        box.innerHTML = `<div class="empty">Erro na analise pessoal: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderPersonalAiAnalysis(analysis, meta) {
+      const box = document.getElementById('personalAiBox');
+      const safe = analysis || {};
+      const patterns = Array.isArray(safe.dominantPatterns) ? safe.dominantPatterns : [];
+      const guidance = Array.isArray(safe.dailyGuidance) ? safe.dailyGuidance : [];
+      const questions = Array.isArray(safe.questions) ? safe.questions : [];
+      const charts = Array.isArray(safe.charts) ? safe.charts : [];
+      const missions = Array.isArray(safe.missions) ? safe.missions : [];
+      const events = Array.isArray(safe.events) ? safe.events : [];
+      const quality = safe.dataQuality || {};
+
+      const blocks = [
+        `<div class="insight"><strong>Leitura profunda</strong>${escapeHtml(safe.summary || 'A IA retornou sem resumo textual.')}</div>`,
+        renderPersonalAiList('Padroes dominantes', patterns),
+        renderPersonalAiList('Acoes praticas', guidance),
+        renderPersonalAiList('Perguntas para melhorar fidelidade', questions),
+        renderPersonalAiList('Graficos que a IA recomenda', charts.map(chart => `${chart.title || 'Grafico'}: ${chart.why || ''}`)),
+        renderPersonalAiList('Missoes percebidas', missions.map(mission => `${mission.title || 'Missao'} (${mission.status || 'sem status'}): ${mission.nextAction || mission.priority || ''}`)),
+        `<div class="insight"><strong>Qualidade dos dados</strong>Score: ${escapeHtml(String(quality.score ?? 'n/a'))}<br>${escapeHtml((quality.mainGaps || []).join(' | ') || 'Sem lacunas principais informadas.')}</div>`,
+        `<div class="insight"><strong>Eventos estruturados</strong>${escapeHtml(events.slice(0, 12).map(event => `${event.domain || 'dominio'}: ${event.title || event.box || 'evento'}`).join(' | ') || 'Nenhum evento estruturado retornado.')}</div>`,
+        `<div class="footer-note">Modelo: ${escapeHtml(meta.model || '')} · Entradas analisadas: ${escapeHtml(String(meta.entriesAnalyzed || 0))}</div>`
+      ];
+
+      box.innerHTML = blocks.join('');
+    }
+
+    function renderPersonalAiList(title, items) {
+      const rows = (items || []).filter(Boolean).slice(0, 10);
+      if (!rows.length) {
+        return `<div class="insight"><strong>${escapeHtml(title)}</strong>Nenhum item retornado.</div>`;
+      }
+
+      return `<div class="insight"><strong>${escapeHtml(title)}</strong>${rows.map(item => `- ${escapeHtml(String(item))}`).join('<br>')}</div>`;
+    }
+
     function generateMonthlyInsights() {
       const insights = [];
       const current = summarizeEntries(viewEntries);
@@ -4760,7 +4970,10 @@
       }, 300);
     });
 
-    window.addEventListener('load', loadData);
+    window.addEventListener('load', () => {
+      hydratePersonalAiKey();
+      loadData();
+    });
   </script>
 </body>
 </html>
