@@ -3564,7 +3564,7 @@
     }
 
     function buildPersonalAiEntries() {
-      return viewEntries.slice(0, 120).map((entry, index) => ({
+      return viewEntries.slice(0, 50).map((entry, index) => ({
         index,
         id: entry.id,
         data_br: entry.data_br,
@@ -3623,7 +3623,8 @@
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          throw new Error(data.error || data.detail || 'Falha na analise pessoal.');
+          const detail = data.detail ? ` Detalhe: ${String(data.detail).slice(0, 240)}` : '';
+          throw new Error((data.error || data.technicalError || 'Falha na analise pessoal.') + detail);
         }
 
         renderPersonalAiAnalysis(data.analysis, data);
@@ -3652,7 +3653,7 @@
         renderPersonalAiList('Missoes percebidas', missions.map(mission => `${mission.title || 'Missao'} (${mission.status || 'sem status'}): ${mission.nextAction || mission.priority || ''}`)),
         `<div class="insight"><strong>Qualidade dos dados</strong>Score: ${escapeHtml(String(quality.score ?? 'n/a'))}<br>${escapeHtml((quality.mainGaps || []).join(' | ') || 'Sem lacunas principais informadas.')}</div>`,
         `<div class="insight"><strong>Eventos estruturados</strong>${escapeHtml(events.slice(0, 12).map(event => `${event.domain || 'dominio'}: ${event.title || event.box || 'evento'}`).join(' | ') || 'Nenhum evento estruturado retornado.')}</div>`,
-        `<div class="footer-note">Modelo: ${escapeHtml(meta.model || '')} · Entradas analisadas: ${escapeHtml(String(meta.entriesAnalyzed || 0))}</div>`
+        `<div class="footer-note">Modelo: ${escapeHtml(meta.model || '')} · Entradas analisadas: ${escapeHtml(String(meta.entriesAnalyzed || 0))}${meta.entriesReceived ? ` de ${escapeHtml(String(meta.entriesReceived))}` : ''}</div>`
       ];
 
       box.innerHTML = blocks.join('');

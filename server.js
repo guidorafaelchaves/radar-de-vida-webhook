@@ -1815,6 +1815,85 @@ function buildPersonalRadarPrompt({ entries, periodLabel, profileName }) {
   ].join('\n');
 }
 
+async function callOpenAiResponsesWithRetry({ apiKey, model, prompt }) {
+  const attempts = [
+    { model, prompt, label: 'primary' },
+    { model: model === 'gpt-4.1-mini' ? model : 'gpt-4.1-mini', prompt, label: 'fallback_model' }
+  ];
+  let last = null;
+
+  for (const attempt of attempts) {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: attempt.model,
+        input: attempt.prompt,
+        temperature: 0.2,
+        max_output_tokens: 4000
+      })
+    });
+
+    const body = await response.text();
+
+    if (response.ok) {
+      return {
+        model: attempt.model,
+        attempt: attempt.label,
+        body
+      };
+    }
+
+    last = {
+      status: response.status,
+      body,
+      model: attempt.model,
+      attempt: attempt.label
+    };
+
+    if (response.status < 500 && response.status !== 429) {
+      break;
+    }
+  }
+
+  const detail = last && last.body ? last.body.slice(0, 1200) : '';
+  const status = last ? last.status : 500;
+  const error = new Error(`OpenAI HTTP ${status}`);
+  error.status = status;
+  error.detail = detail;
+  error.model = last ? last.model : model;
+  throw error;
+}
+
+function summarizeOpenAiError(err) {
+  const detail = cleanText(err.detail);
+
+  if (/incorrect api key|invalid api key|invalid_api_key|401/i.test(detail)) {
+    return 'A OpenAI recusou a chave. Confira se a API key esta correta.';
+  }
+
+  if (/insufficient_quota|quota|billing|credit/i.test(detail)) {
+    return 'A chave parece estar sem credito, limite ou billing ativo na OpenAI.';
+  }
+
+  if (/model|does not exist|not found/i.test(detail)) {
+    return 'O modelo informado nao foi aceito. Tente gpt-4.1-mini.';
+  }
+
+  if (/rate limit|429/i.test(detail)) {
+    return 'A OpenAI limitou temporariamente as chamadas. Aguarde um pouco e tente novamente.';
+  }
+
+  if (err.status >= 500) {
+    return 'A OpenAI retornou erro interno temporario. Reduzi o pacote enviado; tente novamente em alguns segundos.';
+  }
+
+  return err.message || 'Falha ao chamar a OpenAI.';
+}
+
 function escapeXml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -2095,12 +2174,12 @@ app.post('/api/personal-intelligence', async (req, res) => {
     });
   }
 
-  const entries = rawEntries.slice(0, 120).map((entry, index) => ({
+  const entries = rawEntries.slice(0, 50).map((entry, index) => ({
     index,
     id: cleanText(entry.id),
     date: cleanText(entry.data_br || entry.data_iso || entry.date),
     time: cleanText(entry.hora_br || entry.time),
-    text: normalizeWhitespace(entry.entrada_original || entry.text || '').slice(0, 1000),
+    text: normalizeWhitespace(entry.entrada_original || entry.text || '').slice(0, 650),
     type: cleanText(entry.tipo_principal || entry.type),
     categories: Array.isArray(entry.categorias) ? entry.categorias.slice(0, 12) : [],
     boxes: Array.isArray(entry.radar_boxes) ? entry.radar_boxes.slice(0, 12) : [],
@@ -2113,8 +2192,8 @@ app.post('/api/personal-intelligence', async (req, res) => {
     proteinG: toNumber(entry.proteina_g || entry.proteina_g_sugerida),
     sportMinutes: toNumber(entry.esporte_minutos || entry.atividade_fisica_minutos),
     productiveMinutes: toNumber(entry.trabalho_minutos || entry.estudo_minutos || entry.projeto_minutos),
-    shortInsight: cleanText(entry.insight_curto).slice(0, 500),
-    deepInsight: cleanText(entry.insight_profundo).slice(0, 500)
+    shortInsight: cleanText(entry.insight_curto).slice(0, 280),
+    deepInsight: cleanText(entry.insight_profundo).slice(0, 280)
   })).filter(entry => entry.text);
 
   const prompt = buildPersonalRadarPrompt({
@@ -2124,30 +2203,8 @@ app.post('/api/personal-intelligence', async (req, res) => {
   });
 
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model,
-        input: prompt,
-        temperature: 0.2
-      })
-    });
-
-    const body = await response.text();
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        ok: false,
-        error: `OpenAI HTTP ${response.status}`,
-        detail: body.slice(0, 1000)
-      });
-    }
-
-    const parsed = JSON.parse(body);
+    const openAiResult = await callOpenAiResponsesWithRetry({ apiKey, model, prompt });
+    const parsed = JSON.parse(openAiResult.body);
     const outputText = extractOpenAIText(parsed);
     let analysis;
 
@@ -2173,14 +2230,19 @@ app.post('/api/personal-intelligence', async (req, res) => {
 
     return res.status(200).json({
       ok: true,
-      model,
+      model: openAiResult.model,
+      openAiAttempt: openAiResult.attempt,
       entriesAnalyzed: entries.length,
+      entriesReceived: rawEntries.length,
       analysis
     });
   } catch (err) {
-    return res.status(500).json({
+    const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
+    return res.status(status).json({
       ok: false,
-      error: err.message
+      error: summarizeOpenAiError(err),
+      technicalError: err.message,
+      detail: cleanText(err.detail).slice(0, 1000)
     });
   }
 });
