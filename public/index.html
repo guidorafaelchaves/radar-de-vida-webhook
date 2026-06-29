@@ -76,16 +76,176 @@
       overflow: hidden;
     }
 
-    .hero::after {
-      content: "";
-      position: absolute;
-      right: -80px;
-      top: -80px;
-      width: 220px;
-      height: 220px;
-      border-radius: 50%;
-      background: rgba(45, 122, 75, 0.13);
-      pointer-events: none;
+    .market-hero {
+      background:
+        linear-gradient(135deg, rgba(13, 24, 18, .96), rgba(25, 51, 36, .93)),
+        #101a14;
+      color: #fff;
+      border-color: rgba(255,255,255,.12);
+      display: grid;
+      gap: 16px;
+    }
+
+    .market-hero::after { display: none; }
+
+    .market-hero .eyebrow,
+    .market-hero .subtitle {
+      display: none;
+    }
+
+    .market-topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .market-brand {
+      display: grid;
+      gap: 4px;
+    }
+
+    .market-brand small {
+      color: rgba(255,255,255,.64);
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .market-brand h1 {
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1;
+      letter-spacing: 0;
+      margin: 0;
+      color: #fff;
+    }
+
+    .market-clock {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align: right;
+      min-width: 142px;
+    }
+
+    .market-clock small {
+      display: block;
+      color: rgba(255,255,255,.62);
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .market-clock strong { font-size: 15px; }
+
+    .market-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .market-index {
+      min-height: 116px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.07);
+      display: grid;
+      gap: 9px;
+      overflow: hidden;
+    }
+
+    .market-index small {
+      color: rgba(255,255,255,.58);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .06em;
+    }
+
+    .market-index strong {
+      font-size: 24px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .market-index span {
+      color: #9df2bc;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .market-spark {
+      height: 28px;
+      width: 100%;
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, transparent 10%, rgba(157,242,188,.34) 11%, transparent 18%),
+        linear-gradient(25deg, transparent 18%, rgba(255,255,255,.20) 19%, transparent 30%),
+        linear-gradient(160deg, transparent 30%, rgba(92,177,255,.24) 31%, transparent 44%),
+        rgba(255,255,255,.06);
+      background-size: 90px 28px, 110px 28px, 130px 28px, auto;
+      animation: sparkFlow 7s linear infinite;
+    }
+
+    @keyframes sparkFlow {
+      from { background-position: 0 0, 0 0, 0 0, 0 0; }
+      to { background-position: 180px 0, 220px 0, 260px 0, 0 0; }
+    }
+
+    .market-tape {
+      margin: 0 -24px -24px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.28);
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .market-tape-track {
+      display: inline-flex;
+      gap: 28px;
+      padding: 12px 24px;
+      animation: tickerMove 32s linear infinite;
+    }
+
+    .market-tape span {
+      font-size: 12px;
+      font-weight: 900;
+      color: rgba(255,255,255,.88);
+    }
+
+    .market-tape b { color: #9df2bc; }
+
+    @keyframes tickerMove {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .market-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .market-actions button {
+      background: #f7fff9;
+      color: #102217;
+      box-shadow: none;
+    }
+
+    .market-actions button.secondary {
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-color: rgba(255,255,255,.18);
     }
 
     .eyebrow {
@@ -1154,6 +1314,10 @@
         grid-template-columns: 1fr;
       }
 
+      .market-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .grid-cards {
         grid-template-columns: repeat(3, 1fr);
       }
@@ -1206,6 +1370,20 @@
         border-radius: 18px;
         padding: 14px;
         box-shadow: 0 10px 28px rgba(30, 55, 40, 0.07);
+      }
+
+      .market-topline {
+        align-items: flex-start;
+      }
+
+      .market-clock {
+        text-align: left;
+      }
+
+      .market-tape {
+        margin-left: -14px;
+        margin-right: -14px;
+        margin-bottom: -14px;
       }
 
       .hero::after {
@@ -1586,6 +1764,23 @@
 
       .subtitle { font-size: 13px; }
 
+      .market-topline {
+        display: grid;
+      }
+
+      .market-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .market-index {
+        min-height: 104px;
+        padding: 10px;
+      }
+
+      .market-index strong {
+        font-size: 20px;
+      }
+
       .hero,
       .status-card,
       .panel,
@@ -1651,6 +1846,10 @@
     }
 
     @media (max-width: 360px) {
+      .market-grid {
+        grid-template-columns: 1fr;
+      }
+
       .grid-cards,
       .compare-grid {
         grid-template-columns: 1fr;
@@ -1666,17 +1865,66 @@
 <body>
   <div class="app">
     <header class="topbar">
-      <section class="hero">
+      <section class="hero market-hero">
         <div class="eyebrow"><span class="dot"></span> Radar de Vida v7.7 — Painel Mensal com Datas e Antiduplicidade</div>
-        <h1>Transforme frases e fotos do WhatsApp em inteligência mensal sobre sua vida.</h1>
+        <div class="market-topline">
+          <div class="market-brand">
+            <small>Radar Life Exchange</small>
+            <h1>Painel de indices vitais</h1>
+          </div>
+          <div class="market-clock">
+            <small>Pregao pessoal</small>
+            <strong id="marketSessionLabel">Carregando...</strong>
+          </div>
+        </div>
+
+        <div class="market-grid">
+          <article class="market-index">
+            <small>RDV Saldo</small>
+            <strong id="marketBalanceIndex">R$ 0,00</strong>
+            <span id="marketBalanceHint">fluxo do periodo</span>
+            <div class="market-spark"></div>
+          </article>
+          <article class="market-index">
+            <small>Corpo 100</small>
+            <strong id="marketBodyIndex">0min</strong>
+            <span id="marketBodyHint">movimento registrado</span>
+            <div class="market-spark"></div>
+          </article>
+          <article class="market-index">
+            <small>Energia</small>
+            <strong id="marketEnergyIndex">0 kcal</strong>
+            <span id="marketEnergyHint">combustivel narrado</span>
+            <div class="market-spark"></div>
+          </article>
+          <article class="market-index">
+            <small>Vida Plena IA</small>
+            <strong id="marketWellbeingIndex">--</strong>
+            <span id="marketWellbeingHint">rode o GPT interno</span>
+            <div class="market-spark"></div>
+          </article>
+        </div>
         <p class="subtitle">
           O Radar agora trabalha por período: o mês atual fica em foco, os meses anteriores continuam preservados e ajudam a gerar comparação e contexto.
         </p>
 
-        <div class="actions">
+        <div class="market-actions">
           <button onclick="loadData()">Atualizar painel</button>
           <button class="secondary" onclick="openDocsData()">Abrir JSON de dados</button>
           <button class="secondary" onclick="openDiaryDoc()">Abrir Google Docs</button>
+        </div>
+
+        <div class="market-tape">
+          <div class="market-tape-track" id="marketTickerTape">
+            <span>RDV <b>carregando indices...</b></span>
+            <span>BODY <b>aguardando dados</b></span>
+            <span>SOUL <b>aguardando IA</b></span>
+            <span>CASH <b>aguardando fluxo</b></span>
+            <span>RDV <b>carregando indices...</b></span>
+            <span>BODY <b>aguardando dados</b></span>
+            <span>SOUL <b>aguardando IA</b></span>
+            <span>CASH <b>aguardando fluxo</b></span>
+          </div>
         </div>
       </section>
 
@@ -2264,6 +2512,7 @@
 
     function renderAll() {
       renderPeriodHeader();
+      renderMarketHeader();
       renderCards();
       renderComparison();
       renderMonthReading();
@@ -2292,6 +2541,54 @@
       const previousLabel = previous ? monthKeyToLabel(previous) : 'mês anterior';
 
       hint.textContent = `Mostrando ${viewEntries.length} registro(s) de ${label}. Comparação automática com ${previousLabel}, quando houver dados.`;
+    }
+
+    function setElementText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function renderMarketHeader() {
+      const summary = summarizeEntries(viewEntries);
+      const aiTotals = getPersonalAiTotals();
+      const wellbeing = currentPersonalAiAnalysis && currentPersonalAiAnalysis.wellbeing ? currentPersonalAiAnalysis.wellbeing : {};
+      const label = selectedMonthKey === ALL_PERIODS ? 'Historico completo' : monthKeyToLabel(selectedMonthKey);
+      const spent = hasPersonalAiMetric('moneySpent') ? aiTotals.moneySpent : summary.spent;
+      const earned = hasPersonalAiMetric('moneyEarned') ? aiTotals.moneyEarned : summary.earned;
+      const invested = hasPersonalAiMetric('moneyInvested') ? aiTotals.moneyInvested : summary.invested;
+      const passive = hasPersonalAiMetric('passiveIncome') ? aiTotals.passiveIncome : summary.passiveIncome;
+      const activity = hasPersonalAiMetric('activityMinutes') ? aiTotals.activityMinutes : summary.sport;
+      const calories = hasPersonalAiMetric('caloriesIn') ? aiTotals.caloriesIn : summary.caloriesIn;
+      const balance = earned - spent - invested;
+      const wellbeingScore = toNumber(wellbeing.score);
+
+      setElementText('marketSessionLabel', label);
+      setElementText('marketBalanceIndex', money(balance));
+      setElementText('marketBalanceHint', `${balance >= 0 ? 'alta' : 'baixa'} no fluxo vital`);
+      setElementText('marketBodyIndex', minutesHuman(activity));
+      setElementText('marketBodyHint', activity > 0 ? 'corpo em movimento' : 'sem movimento narrado');
+      setElementText('marketEnergyIndex', `${Math.round(calories)} kcal`);
+      setElementText('marketEnergyHint', calories > 0 ? 'combustivel registrado' : 'energia sem registro');
+      setElementText('marketWellbeingIndex', wellbeingScore ? String(Math.round(wellbeingScore)) : '--');
+      setElementText('marketWellbeingHint', wellbeingScore ? 'score do dossie IA' : 'rode o GPT interno');
+
+      const tapeItems = [
+        ['SALDO', money(balance)],
+        ['GASTOS', money(spent)],
+        ['GANHOS', money(earned)],
+        ['APORTES', money(invested)],
+        ['RENDA PASSIVA', money(passive)],
+        ['CORPO', minutesHuman(activity)],
+        ['ENERGIA', `${Math.round(calories)} kcal`],
+        ['REGISTROS', String(viewEntries.length)],
+        ['VIDA PLENA', wellbeingScore ? String(Math.round(wellbeingScore)) : 'sem dossie'],
+        ['ATRITO', String(Math.round(summary.friction))]
+      ];
+      const html = [...tapeItems, ...tapeItems]
+        .map(([name, value]) => `<span>${escapeHtml(name)} <b>${escapeHtml(value)}</b></span>`)
+        .join('');
+      const tape = document.getElementById('marketTickerTape');
+      if (tape) tape.innerHTML = html;
     }
 
     function parseMaybeJson(value) {
@@ -3720,6 +4017,7 @@
       } else {
         renderPersonalDossierPanel();
       }
+      renderMarketHeader();
       renderCards();
       renderInsights();
       renderCharts();
@@ -3743,6 +4041,7 @@
         box.innerHTML = '<div class="empty">Carregue uma chave e rode uma leitura profunda do periodo.</div>';
       }
       renderPersonalDossierPanel();
+      renderMarketHeader();
     }
 
     function getPersonalDossierPeriodKey() {
