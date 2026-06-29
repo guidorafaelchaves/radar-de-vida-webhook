@@ -595,6 +595,21 @@
       margin-top: 10px;
     }
 
+    .personal-dossier-box {
+      background: #fff;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 12px;
+    }
+
+    .personal-dossier-box strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
     .personal-ai-output {
       display: grid;
       gap: 10px;
@@ -1960,9 +1975,21 @@
         <button class="secondary" onclick="forgetPersonalOpenAiKey()">Esquecer chave</button>
       </div>
 
+      <div class="personal-ai-actions">
+        <button class="secondary" onclick="savePersonalDossier(false)">Salvar dossie do periodo</button>
+        <button class="secondary" onclick="loadPersonalDossierForCurrentPeriod(true)">Carregar dossie salvo</button>
+        <button class="secondary" onclick="comparePersonalDossiers()">Comparar dossies</button>
+        <button class="danger" onclick="deletePersonalDossier()">Excluir dossie</button>
+      </div>
+
       <p class="footer-note">
         Modo pessoal/local: nao altera o Google Docs, nao muda o webhook e nao substitui a IA do servidor. Use em computador confiavel.
       </p>
+
+      <div id="personalDossierBox" class="personal-dossier-box">
+        <strong>Dossie mensal</strong>
+        Nenhum dossie carregado para este periodo.
+      </div>
 
       <div id="personalAiBox" class="personal-ai-output">
         <div class="empty">Carregue uma chave e rode uma leitura profunda do periodo.</div>
@@ -2073,6 +2100,7 @@
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
     const ALL_PERIODS = '__all__';
     const PERSONAL_OPENAI_KEY_STORAGE = 'radarVidaPersonalOpenAiKey';
+    const PERSONAL_DOSSIER_STORAGE = 'radarVidaPersonalDossiersV1';
 
     let currentDocId = '';
     let rawData = null;
@@ -2231,6 +2259,7 @@
         : allEntries.filter(e => e._month_key === selectedMonthKey);
 
       renderAll();
+      loadPersonalDossierForCurrentPeriod(false);
     }
 
     function renderAll() {
@@ -2244,6 +2273,7 @@
       renderEntries();
       renderStrangeLayer();
       renderInsights();
+      renderPersonalDossierPanel();
       if (activeView === 'overview') {
         renderCharts();
       }
@@ -3654,7 +3684,7 @@
       }
     }
 
-    function renderPersonalAiAnalysis(analysis, meta) {
+    function renderPersonalAiAnalysis(analysis, meta, options = {}) {
       const box = document.getElementById('personalAiBox');
       const safe = analysis || {};
       currentPersonalAiAnalysis = safe;
@@ -3685,6 +3715,11 @@
       ];
 
       box.innerHTML = blocks.join('');
+      if (options.autoSave !== false) {
+        savePersonalDossier(true);
+      } else {
+        renderPersonalDossierPanel();
+      }
       renderCards();
       renderInsights();
       renderCharts();
@@ -3707,6 +3742,168 @@
       if (box) {
         box.innerHTML = '<div class="empty">Carregue uma chave e rode uma leitura profunda do periodo.</div>';
       }
+      renderPersonalDossierPanel();
+    }
+
+    function getPersonalDossierPeriodKey() {
+      return selectedMonthKey || ALL_PERIODS;
+    }
+
+    function getPersonalDossierPeriodLabel(key = getPersonalDossierPeriodKey()) {
+      return key === ALL_PERIODS ? 'Historico completo' : monthKeyToLabel(key);
+    }
+
+    function readPersonalDossiers() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(PERSONAL_DOSSIER_STORAGE) || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function writePersonalDossiers(dossiers) {
+      localStorage.setItem(PERSONAL_DOSSIER_STORAGE, JSON.stringify(dossiers || {}));
+    }
+
+    function getPersonalDossierForCurrentPeriod() {
+      const dossiers = readPersonalDossiers();
+      return dossiers[getPersonalDossierPeriodKey()] || null;
+    }
+
+    function buildPersonalDossierSnapshot() {
+      const totals = getPersonalAiTotals();
+      const wellbeing = currentPersonalAiAnalysis && currentPersonalAiAnalysis.wellbeing
+        ? currentPersonalAiAnalysis.wellbeing
+        : {};
+
+      return {
+        version: 1,
+        periodKey: getPersonalDossierPeriodKey(),
+        periodLabel: getPersonalDossierPeriodLabel(),
+        savedAt: new Date().toISOString(),
+        entryCount: viewEntries.length,
+        analysis: currentPersonalAiAnalysis,
+        meta: currentPersonalAiMeta,
+        summary: currentPersonalAiAnalysis ? currentPersonalAiAnalysis.summary : '',
+        wellbeingScore: toNumber(wellbeing.score),
+        totals,
+        lifeDimensions: currentPersonalAiAnalysis ? (currentPersonalAiAnalysis.lifeDimensions || {}) : {}
+      };
+    }
+
+    function savePersonalDossier(auto = false) {
+      if (!currentPersonalAiAnalysis) {
+        if (!auto) toast('Rode a analise pessoal antes de salvar o dossie.');
+        renderPersonalDossierPanel();
+        return false;
+      }
+
+      const dossiers = readPersonalDossiers();
+      const snapshot = buildPersonalDossierSnapshot();
+      dossiers[snapshot.periodKey] = snapshot;
+      writePersonalDossiers(dossiers);
+
+      if (!auto) {
+        toast('Dossie do periodo salvo neste navegador.');
+      }
+
+      renderPersonalDossierPanel();
+      return true;
+    }
+
+    function loadPersonalDossierForCurrentPeriod(showToast = true) {
+      const snapshot = getPersonalDossierForCurrentPeriod();
+
+      if (!snapshot || !snapshot.analysis) {
+        if (showToast) toast('Nao ha dossie salvo para este periodo.');
+        renderPersonalDossierPanel();
+        return false;
+      }
+
+      renderPersonalAiAnalysis(snapshot.analysis, {
+        ...(snapshot.meta || {}),
+        loadedFromDossier: true,
+        savedAt: snapshot.savedAt,
+        entriesAnalyzed: snapshot.meta?.entriesAnalyzed || snapshot.entryCount || 0
+      }, { autoSave: false });
+
+      if (showToast) {
+        toast('Dossie carregado sem chamar a OpenAI.');
+      }
+
+      return true;
+    }
+
+    function deletePersonalDossier() {
+      const key = getPersonalDossierPeriodKey();
+      const dossiers = readPersonalDossiers();
+
+      if (!dossiers[key]) {
+        toast('Nao ha dossie salvo para excluir neste periodo.');
+        return;
+      }
+
+      delete dossiers[key];
+      writePersonalDossiers(dossiers);
+      clearPersonalAiDashboardLayer();
+      renderCards();
+      renderInsights();
+      renderCharts();
+      renderEntries();
+      toast('Dossie excluido deste navegador.');
+    }
+
+    function renderPersonalDossierPanel(message = '') {
+      const box = document.getElementById('personalDossierBox');
+      if (!box) return;
+
+      const dossiers = readPersonalDossiers();
+      const current = dossiers[getPersonalDossierPeriodKey()];
+      const total = Object.keys(dossiers).length;
+
+      if (!current) {
+        box.innerHTML = `<strong>Dossie mensal</strong>Nenhum dossie salvo para ${escapeHtml(getPersonalDossierPeriodLabel())}. Dossies salvos: ${escapeHtml(String(total))}.${message ? `<br>${escapeHtml(message)}` : ''}`;
+        return;
+      }
+
+      box.innerHTML = [
+        '<strong>Dossie mensal carregavel</strong>',
+        `${escapeHtml(current.periodLabel)} salvo em ${escapeHtml(formatDateTime(new Date(current.savedAt)))}.`,
+        `Registros: ${escapeHtml(String(current.entryCount || 0))}. Vida plena: ${escapeHtml(String(current.wellbeingScore || 'n/a'))}.`,
+        current.summary ? `<br>${escapeHtml(String(current.summary).slice(0, 260))}` : '',
+        message ? `<br>${escapeHtml(message)}` : ''
+      ].join(' ');
+    }
+
+    function comparePersonalDossiers() {
+      const dossiers = readPersonalDossiers();
+      const rows = Object.values(dossiers)
+        .filter(item => item && item.periodKey !== ALL_PERIODS)
+        .sort((a, b) => String(a.periodKey).localeCompare(String(b.periodKey)));
+
+      if (rows.length < 2) {
+        renderPersonalDossierPanel('Salve pelo menos dois dossies mensais para comparar.');
+        toast('Salve pelo menos dois dossies mensais para comparar.');
+        return;
+      }
+
+      const currentKey = getPersonalDossierPeriodKey();
+      const foundIndex = rows.findIndex(item => item.periodKey === currentKey);
+      const currentIndex = foundIndex >= 0 ? foundIndex : rows.length - 1;
+      const current = rows[currentIndex];
+      const previous = rows[Math.max(0, rows.indexOf(current) - 1)];
+      const curTotals = current.totals || {};
+      const prevTotals = previous.totals || {};
+      const deltas = [
+        `Vida plena: ${formatSignedNumber(toNumber(current.wellbeingScore) - toNumber(previous.wellbeingScore))}`,
+        `Gasto: ${money(toNumber(curTotals.moneySpent) - toNumber(prevTotals.moneySpent))}`,
+        `Renda passiva: ${money(toNumber(curTotals.passiveIncome) - toNumber(prevTotals.passiveIncome))}`,
+        `Calorias: ${formatSignedNumber(Math.round(toNumber(curTotals.caloriesIn) - toNumber(prevTotals.caloriesIn)))}`,
+        `Atividade: ${formatSignedNumber(Math.round(toNumber(curTotals.activityMinutes) - toNumber(prevTotals.activityMinutes)))}min`
+      ];
+
+      renderPersonalDossierPanel(`Comparacao ${previous.periodLabel} -> ${current.periodLabel}: ${deltas.join(' | ')}`);
     }
 
     function getPersonalAiEvents() {
@@ -5101,6 +5298,12 @@
       if (h && m) return `${h}h${String(m).padStart(2, '0')}min`;
       if (h) return `${h}h`;
       return `${m}min`;
+    }
+
+    function formatSignedNumber(value) {
+      const n = toNumber(value);
+      if (!n) return '0';
+      return `${n > 0 ? '+' : ''}${n}`;
     }
 
     function toNumber(value) {
