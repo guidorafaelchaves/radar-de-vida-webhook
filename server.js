@@ -1816,10 +1816,12 @@ function buildPersonalRadarPrompt({ entries, periodLabel, profileName }) {
 }
 
 async function callOpenAiResponsesWithRetry({ apiKey, model, prompt }) {
-  const attempts = [
-    { model, prompt, label: 'primary' },
-    { model: model === 'gpt-4.1-mini' ? model : 'gpt-4.1-mini', prompt, label: 'fallback_model' }
-  ];
+  const models = uniqueClean([model, 'gpt-4.1-mini', 'gpt-4o-mini']);
+  const attempts = models.map((attemptModel, index) => ({
+    model: attemptModel,
+    prompt,
+    label: index === 0 ? 'primary' : `fallback_model_${index}`
+  }));
   let last = null;
 
   for (const attempt of attempts) {
