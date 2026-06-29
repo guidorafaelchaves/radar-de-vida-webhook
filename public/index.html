@@ -349,11 +349,20 @@
       font-weight: 900;
       font-size: 13px;
       box-shadow: 0 12px 24px rgba(20, 35, 28, 0.14);
-      transition: transform .15s ease, opacity .15s ease;
+      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease, filter .15s ease;
       touch-action: manipulation;
     }
 
-    button:hover { transform: translateY(-1px); }
+    button:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.08);
+    }
+
+    button:disabled {
+      opacity: .72;
+      cursor: wait;
+      transform: none;
+    }
 
     button.secondary {
       background: white;
@@ -369,6 +378,68 @@
     }
 
     button.danger { background: #9b3024; }
+
+    .go-button {
+      width: 100%;
+      min-height: 58px;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background:
+        linear-gradient(135deg, #102217, #205f39);
+      color: #fff;
+      font-size: 22px;
+      letter-spacing: .08em;
+      box-shadow: 0 18px 34px rgba(30, 95, 57, .22);
+    }
+
+    .go-button .go-label {
+      line-height: 1;
+    }
+
+    .go-hourglass {
+      width: 22px;
+      height: 28px;
+      border: 3px solid currentColor;
+      border-left-color: transparent;
+      border-right-color: transparent;
+      border-radius: 9px;
+      position: relative;
+      opacity: .9;
+    }
+
+    .go-hourglass::before,
+    .go-hourglass::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 8px;
+      background: currentColor;
+      border-radius: 50%;
+    }
+
+    .go-hourglass::before { top: 4px; }
+    .go-hourglass::after { bottom: 4px; opacity: .45; }
+
+    .go-button.pending .go-hourglass {
+      animation: hourglassSpin .9s linear infinite;
+    }
+
+    .go-button.success {
+      background: linear-gradient(135deg, #167a42, #35b86a);
+    }
+
+    .go-button.error {
+      background: linear-gradient(135deg, #8f231f, #d3473d);
+    }
+
+    @keyframes hourglassSpin {
+      to { transform: rotate(360deg); }
+    }
 
     .view-tabs {
       display: flex;
@@ -2109,7 +2180,10 @@
 
         <div class="composer">
           <textarea id="manualText" placeholder="Ex.: Ganhei 300 reais com atendimento jurídico, caminhei 25 minutos e estudei 1 hora sobre IA."></textarea>
-          <button onclick="sendManualEntry()">Registrar frase</button>
+          <button id="manualGoButton" class="go-button" onclick="sendManualEntry()">
+            <span class="go-label">GO</span>
+            <span class="go-hourglass" aria-hidden="true"></span>
+          </button>
         </div>
 
         <p class="footer-note">
@@ -2278,6 +2352,16 @@
           <canvas id="radarBoxesChart"></canvas>
         </div>
 
+        <div class="chart-box">
+          <div class="chart-title">Ledgers da vida: eventos por dimensão</div>
+          <canvas id="lifeLedgersChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Qualidade dos ledgers: confiança e lacunas</div>
+          <canvas id="ledgerQualityChart"></canvas>
+        </div>
+
         <div class="chart-box tall">
           <div class="chart-title">Divida de revisao: campos que faltam</div>
           <canvas id="reviewDebtChart"></canvas>
@@ -2403,6 +2487,16 @@
       el.textContent = message;
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 4200);
+    }
+
+    function setGoButtonState(state, label) {
+      const button = document.getElementById('manualGoButton');
+      if (!button) return;
+      button.classList.remove('pending', 'success', 'error');
+      if (state) button.classList.add(state);
+      const labelEl = button.querySelector('.go-label');
+      if (labelEl) labelEl.textContent = label || 'GO';
+      button.disabled = state === 'pending';
     }
 
     function switchView(view) {
@@ -2608,6 +2702,102 @@
         null;
     }
 
+    function getEntryLifeEvents(entry, radarIntelligence) {
+      const intelligence = radarIntelligence || getRadarIntelligence(entry) || {};
+      const provided = Array.isArray(intelligence.lifeEvents) ? intelligence.lifeEvents : [];
+      if (provided.length) return provided.map(normalizeLifeEventForClient).filter(Boolean);
+
+      const events = Array.isArray(intelligence.events) ? intelligence.events : [];
+      return events.flatMap(eventToClientLifeEvents).filter(Boolean);
+    }
+
+    function normalizeLifeEventForClient(event) {
+      if (!event || typeof event !== 'object') return null;
+      return {
+        ledger: canonicalClientLedger(event.ledger || event.domain || event.box),
+        kind: String(event.kind || event.subtype || event.type || 'registro'),
+        title: String(event.title || event.summary || event.idHint || 'Registro de vida'),
+        date: String(event.date || event.eventDate || ''),
+        status: canonicalClientLifeStatus(event.status),
+        confidence: Math.max(0, Math.min(1, toNumber(event.confidence) || 0.5)),
+        metrics: event.metrics && typeof event.metrics === 'object' ? event.metrics : {},
+        entities: Array.isArray(event.entities) ? event.entities : (Array.isArray(event.linkedEntities) ? event.linkedEntities : []),
+        missingFields: Array.isArray(event.missingFields) ? event.missingFields : [],
+        sourceEventId: String(event.sourceEventId || event.idHint || '')
+      };
+    }
+
+    function eventToClientLifeEvents(event) {
+      const domain = String(event.domain || '').toLowerCase();
+      const box = String(event.box || '').toLowerCase();
+      const metrics = event.metrics || {};
+      const facts = event.facts || {};
+      const common = {
+        title: facts.titulo || facts.descricao_refeicao || event.subtype || event.domain || 'Registro de vida',
+        date: event.eventDate || '',
+        status: event.status || 'registered',
+        confidence: event.confidence,
+        entities: event.linkedEntities || [],
+        missingFields: event.missingFields || [],
+        sourceEventId: event.idHint || ''
+      };
+      const out = [];
+
+      if (/invest|rend|receita|despesa|finance/.test(domain) || /invest|rend/.test(box) || toNumber(metrics.moneySpent) || toNumber(metrics.moneyEarned) || toNumber(metrics.moneyInvested) || toNumber(metrics.passiveIncome)) {
+        out.push(normalizeLifeEventForClient({ ...common, ledger: 'finance', kind: event.subtype || 'movimento_financeiro', metrics }));
+      }
+      if (/aliment|nutri|refei|comida/.test(domain) || /nutri/.test(box) || toNumber(metrics.caloriesIn) || toNumber(metrics.proteinG)) {
+        out.push(normalizeLifeEventForClient({ ...common, ledger: 'nutrition', kind: event.subtype || 'refeicao', metrics }));
+      }
+      if (/treino|atividade|sono|saude|corpo/.test(domain) || /atividade/.test(box) || toNumber(metrics.activityMinutes) || toNumber(metrics.caloriesOut)) {
+        out.push(normalizeLifeEventForClient({ ...common, ledger: 'body', kind: event.subtype || 'atividade', metrics }));
+      }
+      if (/tarefa|miss|trabalho|estudo/.test(domain) || /miss/.test(box)) {
+        out.push(normalizeLifeEventForClient({ ...common, ledger: 'mission', kind: event.subtype || 'missao', metrics }));
+      }
+      if (/relac|social|familia|amigo|mae|pai|encontro/.test(domain) || /relac|social/.test(box)) {
+        out.push(normalizeLifeEventForClient({ ...common, ledger: 'relationship', kind: event.subtype || 'interacao_social', metrics: { relationalValue: 1, ...metrics } }));
+      }
+      if (!out.length) {
+        out.push(normalizeLifeEventForClient({ ...common, ledger: /humor|reflex|ideia|alma|espiritual|mente/.test(domain) ? 'mind' : 'timeline', kind: event.subtype || 'registro_textual', metrics }));
+      }
+
+      return out;
+    }
+
+    function canonicalClientLedger(value) {
+      const v = String(value || '').toLowerCase();
+      if (/financ|invest|rend|money|receita|despesa/.test(v)) return 'finance';
+      if (/nutri|aliment|refei|food/.test(v)) return 'nutrition';
+      if (/body|corpo|treino|atividade|sono|saude/.test(v)) return 'body';
+      if (/mission|miss|tarefa|todo|trabalho|estudo/.test(v)) return 'mission';
+      if (/relac|social|famil|pessoa|contact/.test(v)) return 'relationship';
+      if (/mind|mente|alma|soul|humor|reflex|ideia/.test(v)) return 'mind';
+      return 'timeline';
+    }
+
+    function canonicalClientLifeStatus(status) {
+      const s = String(status || '').toLowerCase();
+      if (/conclu|done|final/.test(s)) return 'done';
+      if (/bloque|block/.test(s)) return 'blocked';
+      if (/estim/.test(s)) return 'estimated';
+      if (/confirm|review|revis/.test(s)) return 'needs_review';
+      if (/abert|open|andamento/.test(s)) return 'open';
+      return 'registered';
+    }
+
+    function ledgerLabel(ledger) {
+      return {
+        finance: 'Financeiro',
+        nutrition: 'Nutrição',
+        body: 'Corpo',
+        mission: 'Missões',
+        relationship: 'Social',
+        mind: 'Mente/alma',
+        timeline: 'Timeline'
+      }[ledger] || ledger;
+    }
+
     function normalizeEntries(entries) {
       const normalized = entries.map((entry, index) => {
         const radarIntelligence = getRadarIntelligence(entry);
@@ -2644,6 +2834,10 @@
         const assetScore = computeAssetScore(entry, invested, productive);
         const hour = extractHour(entry.hora_br, entry.data_iso);
         const monthKey = getEntryMonthKey(entry);
+        const lifeEvents = getEntryLifeEvents(entry, radarIntelligence);
+        const ledgerQuality = radarIntelligence && radarIntelligence.ledgers
+          ? Object.fromEntries(Object.entries(radarIntelligence.ledgers).map(([key, ledger]) => [key, toNumber(ledger?.quality?.score)]))
+          : parseMaybeJson(entry.radar_ledger_quality) || {};
 
         return {
           ...entry,
@@ -2660,6 +2854,8 @@
           _date_key: getEntryDateKey(entry),
           _radar_intelligence: radarIntelligence,
           _radar_boxes: radarBoxes,
+          _life_events: lifeEvents,
+          _ledger_quality: ledgerQuality,
           _calories_in: saneMax(entry.calorias_ingeridas, entry.calorias_ingeridas_sugeridas, radarTotals.caloriesIn),
           _calories_out: saneMax(entry.calorias_gastas, entry.calorias_gastas_sugeridas, radarTotals.caloriesOut),
           _protein_g: saneMax(entry.proteina_g, entry.proteina_g_sugerida, radarTotals.proteinG),
@@ -4497,6 +4693,8 @@
       });
 
       renderRadarBoxesChart();
+      renderLifeLedgersChart();
+      renderLedgerQualityChart();
       renderReviewDebtChart();
       renderFrictionScatter();
       renderLifeRadar();
@@ -4560,6 +4758,88 @@
               position: 'bottom',
               labels: { boxWidth: 10, font: { size: window.innerWidth <= 720 ? 10 : 12 } }
             }
+          }
+        }
+      });
+    }
+
+    function renderLifeLedgersChart() {
+      const map = new Map();
+
+      viewEntries.forEach(entry => {
+        const events = Array.isArray(entry._life_events) ? entry._life_events : [];
+        (events.length ? events : [{ ledger: 'timeline' }]).forEach(event => {
+          const ledger = canonicalClientLedger(event.ledger);
+          map.set(ledger, (map.get(ledger) || 0) + 1);
+        });
+      });
+
+      const order = ['finance', 'nutrition', 'body', 'mission', 'relationship', 'mind', 'timeline'];
+      const rows = order
+        .map(ledger => ({ ledger, count: map.get(ledger) || 0 }))
+        .filter(row => row.count > 0 || viewEntries.length);
+
+      renderChart('lifeLedgersChart', {
+        type: 'bar',
+        data: {
+          labels: rows.map(row => ledgerLabel(row.ledger)),
+          datasets: [{ label: 'Eventos estruturados', data: rows.map(row => row.count) }]
+        },
+        options: baseChartOptions('')
+      });
+    }
+
+    function renderLedgerQualityChart() {
+      const quality = new Map();
+      const counts = new Map();
+
+      viewEntries.forEach(entry => {
+        const ledgerQuality = entry._ledger_quality || {};
+        Object.entries(ledgerQuality).forEach(([ledger, score]) => {
+          const canonical = canonicalClientLedger(ledger);
+          quality.set(canonical, (quality.get(canonical) || 0) + toNumber(score));
+          counts.set(canonical, (counts.get(canonical) || 0) + 1);
+        });
+
+        (entry._life_events || []).forEach(event => {
+          const ledger = canonicalClientLedger(event.ledger);
+          if (!counts.has(ledger)) {
+            quality.set(ledger, (quality.get(ledger) || 0) + Math.round((toNumber(event.confidence) || 0.5) * 100));
+            counts.set(ledger, (counts.get(ledger) || 0) + 1);
+          }
+        });
+      });
+
+      const order = ['finance', 'nutrition', 'body', 'mission', 'relationship', 'mind', 'timeline'];
+      const rows = order
+        .filter(ledger => counts.has(ledger))
+        .map(ledger => ({
+          ledger,
+          score: Math.round((quality.get(ledger) || 0) / Math.max(1, counts.get(ledger) || 1))
+        }));
+
+      renderChart('ledgerQualityChart', {
+        type: 'radar',
+        data: {
+          labels: rows.length ? rows.map(row => ledgerLabel(row.ledger)) : ['Sem dados'],
+          datasets: [{
+            label: 'Qualidade',
+            data: rows.length ? rows.map(row => row.score) : [0]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 150,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { display: false }
+            }
+          },
+          plugins: {
+            legend: { display: false }
           }
         }
       });
@@ -5004,6 +5284,10 @@
         entry._asset_score >= 4 ? `Ativo: ${entry._asset_score}` : '',
         entry._friction_score >= 4 ? `Atrito: ${entry._friction_score}` : ''
       ].filter(Boolean);
+      const lifeEventSummary = (entry._life_events || [])
+        .slice(0, 4)
+        .map(event => `${ledgerLabel(event.ledger)}: ${event.kind}`)
+        .join(' | ');
 
       const duplicateInfo = duplicateMap.get(entry.id);
       const duplicateClass = duplicateInfo ? ' duplicate-suspect' : '';
@@ -5039,6 +5323,8 @@
 
           ${entry.insight_curto ? `<div class="entry-insight">${escapeHtml(entry.insight_curto)}</div>` : ''}
 
+          ${lifeEventSummary ? `<div class="entry-insight"><strong>LifeEvents:</strong> ${escapeHtml(lifeEventSummary)}</div>` : ''}
+
           ${personalEvents.length ? `
             <div class="entry-insight">
               <strong>IA pessoal:</strong>
@@ -5059,12 +5345,16 @@
 
       if (!text) {
         toast('Escreva uma frase antes de registrar.');
+        setGoButtonState('error', 'VAZIO');
+        setTimeout(() => setGoButtonState('', 'GO'), 1800);
         return;
       }
 
       const duplicateCheck = detectManualDuplicate(text);
 
       if (duplicateCheck.exact) {
+        setGoButtonState('error', 'DUP');
+        setTimeout(() => setGoButtonState('', 'GO'), 1800);
         toast('Entrada duplicada bloqueada: já existe uma frase igual ou praticamente igual hoje.');
         return;
       }
@@ -5081,6 +5371,7 @@
       }
 
       showLoading('Registrando frase...');
+      setGoButtonState('pending', 'GO');
       try {
         const response = await fetch('/api/manual-entry', {
           method: 'POST',
@@ -5094,13 +5385,16 @@
         }
 
         document.getElementById('manualText').value = '';
+        setGoButtonState('success', data.duplicateIgnored ? 'OK' : 'SALVO');
         toast(data.duplicateIgnored ? 'Entrada repetida ignorada.' : 'Frase registrada no Google Docs.');
         await loadData();
       } catch (err) {
         console.error(err);
+        setGoButtonState('error', 'ERRO');
         toast('Erro ao registrar: ' + err.message);
       } finally {
         hideLoading();
+        setTimeout(() => setGoButtonState('', 'GO'), 2600);
       }
     }
 

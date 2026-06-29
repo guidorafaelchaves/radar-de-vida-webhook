@@ -1295,6 +1295,28 @@ function buildRadarIntelligencePrompt({ text, from, profileName, source, receive
     '      "box": "investimentos|rendimentos|nutricao|atividade_fisica|missoes|timeline|revisao_ia"',
     '    }',
     '  ],',
+    '  "lifeEvents": [',
+    '    {',
+    '      "ledger": "finance|nutrition|body|mission|relationship|mind|soul|timeline",',
+    '      "kind": "tipo canonico do evento",',
+    '      "title": "nome humano do evento",',
+    '      "date": "YYYY-MM-DD ou vazio",',
+    '      "status": "registered|estimated|needs_review|done|blocked|open",',
+    '      "confidence": 0.0,',
+    '      "metrics": {},',
+    '      "entities": [],',
+    '      "missingFields": [],',
+    '      "sourceEventId": "idHint"',
+    '    }',
+    '  ],',
+    '  "ledgers": {',
+    '    "finance": { "events": [], "totals": {}, "quality": { "score": 0, "gaps": [] } },',
+    '    "nutrition": { "events": [], "totals": {}, "quality": { "score": 0, "gaps": [] } },',
+    '    "body": { "events": [], "totals": {}, "quality": { "score": 0, "gaps": [] } },',
+    '    "missions": { "events": [], "totals": {}, "quality": { "score": 0, "gaps": [] } },',
+    '    "relationships": { "events": [], "totals": {}, "quality": { "score": 0, "gaps": [] } },',
+    '    "mindSoul": { "events": [], "totals": {}, "quality": { "score": 0, "gaps": [] } }',
+    '  },',
     '  "totals": {',
     '    "moneyEarned": 0,',
     '    "moneySpent": 0,',
@@ -1324,6 +1346,8 @@ function buildRadarIntelligencePrompt({ text, from, profileName, source, receive
     '- Campos numericos devem ser numeros.',
     '- Use arrays vazios quando nao houver dado.',
     '- Inclua confidence por evento.',
+    '- Sempre preencha lifeEvents a partir dos events. lifeEvents e ledgers sao a camada canonica para graficos futuros.',
+    '- Um mesmo input pode gerar mais de um lifeEvent; por exemplo jantar com a mae = nutrition + relationship + finance se houver gasto.',
     '- Se houver ticker sem valor, registre ticker e marque campo ausente.',
     '- Se houver comida sem porcao, estime nutrientes de forma conservadora e marque porcao como ausente.',
     '- Se faltarem dados corporais do usuario para meta nutricional, crie missao para coletar peso, altura, idade, sexo, objetivo e nivel de atividade.',
@@ -1410,6 +1434,8 @@ function normalizeRadarIntelligence(intelligence, { text, source, receivedAt }) 
     tags: uniqueClean(event.tags || []),
     box: cleanText(event.box) || inferBoxFromDomain(event.domain)
   }));
+  const cleanLifeEvents = normalizeLifeEvents(intelligence.lifeEvents, cleanEvents);
+  const ledgers = buildLifeLedgers(cleanLifeEvents);
 
   return {
     version: RADAR_INTELLIGENCE_VERSION,
@@ -1420,6 +1446,8 @@ function normalizeRadarIntelligence(intelligence, { text, source, receivedAt }) 
     primaryDomain: cleanText(intelligence.primaryDomain) || inferPrimaryDomain(cleanEvents),
     summary: cleanText(intelligence.summary) || normalizedText,
     events: cleanEvents,
+    lifeEvents: cleanLifeEvents,
+    ledgers,
     totals: {
       moneyEarned: toNumber(totals.moneyEarned),
       moneySpent: toNumber(totals.moneySpent),
@@ -1447,6 +1475,226 @@ function normalizeRadarIntelligence(intelligence, { text, source, receivedAt }) 
     })).filter(mission => mission.title) : [],
     questions: uniqueClean(intelligence.questions || []),
     confidence: Math.max(0, Math.min(1, Number(intelligence.confidence) || average(cleanEvents.map(e => e.confidence)) || 0.5))
+  };
+}
+
+function normalizeLifeEvents(inputLifeEvents, events) {
+  const provided = Array.isArray(inputLifeEvents) ? inputLifeEvents : [];
+  const normalizedProvided = provided.map((event, index) => normalizeLifeEvent(event, `provided_${index + 1}`));
+  const derived = events.flatMap(eventToLifeEvents);
+  const merged = [...normalizedProvided, ...derived].filter(Boolean);
+  const seen = new Set();
+
+  return merged.filter(event => {
+    const key = [
+      event.ledger,
+      event.kind,
+      event.title,
+      event.date,
+      JSON.stringify(event.metrics || {})
+    ].join('|').toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizeLifeEvent(event, fallbackId) {
+  if (!event || typeof event !== 'object') return null;
+  const ledger = canonicalLedger(event.ledger || event.domain || event.box);
+  const confidence = Math.max(0, Math.min(1, Number(event.confidence) || 0.5));
+
+  return {
+    id: cleanText(event.id) || fallbackId,
+    ledger,
+    kind: cleanText(event.kind || event.subtype || event.type) || 'registro',
+    title: cleanText(event.title || event.summary || event.idHint) || 'Registro de vida',
+    date: cleanText(event.date || event.eventDate),
+    status: canonicalLifeStatus(event.status),
+    confidence,
+    metrics: event.metrics && typeof event.metrics === 'object' ? normalizeMetricObject(event.metrics) : {},
+    entities: uniqueClean(event.entities || event.linkedEntities || []),
+    missingFields: uniqueClean(event.missingFields || []),
+    sourceEventId: cleanText(event.sourceEventId || event.idHint)
+  };
+}
+
+function eventToLifeEvents(event) {
+  const domain = cleanText(event.domain).toLowerCase();
+  const box = cleanText(event.box).toLowerCase();
+  const facts = event.facts || {};
+  const metrics = event.metrics || {};
+  const title = cleanText(facts.titulo || facts.descricao_refeicao || event.subtype || event.domain) || 'Registro de vida';
+  const common = {
+    title,
+    date: event.eventDate,
+    status: event.status,
+    confidence: event.confidence,
+    entities: event.linkedEntities || [],
+    missingFields: event.missingFields || [],
+    sourceEventId: event.idHint
+  };
+  const out = [];
+
+  if (/invest|rend|receita|despesa|finance/.test(domain) || /invest|rend/.test(box) || toNumber(metrics.moneySpent) || toNumber(metrics.moneyEarned) || toNumber(metrics.moneyInvested) || toNumber(metrics.passiveIncome)) {
+    out.push(normalizeLifeEvent({
+      ...common,
+      ledger: 'finance',
+      kind: event.subtype || 'movimento_financeiro',
+      metrics: {
+        moneySpent: metrics.moneySpent,
+        moneyEarned: metrics.moneyEarned,
+        moneyInvested: metrics.moneyInvested,
+        passiveIncome: metrics.passiveIncome,
+        quantity: facts.quantidade,
+        unitPrice: facts.preco_unitario,
+        totalValue: facts.valor_total
+      }
+    }, `${event.idHint || 'finance'}_life`));
+  }
+
+  if (/aliment|nutri|refei|comida/.test(domain) || /nutri/.test(box) || toNumber(metrics.caloriesIn) || toNumber(metrics.proteinG)) {
+    out.push(normalizeLifeEvent({
+      ...common,
+      ledger: 'nutrition',
+      kind: event.subtype || 'refeicao',
+      metrics: {
+        caloriesIn: metrics.caloriesIn,
+        proteinG: metrics.proteinG,
+        carbsG: metrics.carbsG,
+        fatG: metrics.fatG,
+        fiberG: metrics.fiberG
+      }
+    }, `${event.idHint || 'nutrition'}_life`));
+  }
+
+  if (/treino|atividade|sono|saude|corpo/.test(domain) || /atividade/.test(box) || toNumber(metrics.activityMinutes) || toNumber(metrics.caloriesOut)) {
+    out.push(normalizeLifeEvent({
+      ...common,
+      ledger: 'body',
+      kind: event.subtype || 'atividade',
+      metrics: {
+        activityMinutes: metrics.activityMinutes,
+        caloriesOut: metrics.caloriesOut,
+        distanceKm: facts.distancia_km,
+        heartRate: facts.frequencia_cardiaca
+      }
+    }, `${event.idHint || 'body'}_life`));
+  }
+
+  if (/tarefa|miss|trabalho|estudo/.test(domain) || /miss/.test(box)) {
+    out.push(normalizeLifeEvent({
+      ...common,
+      ledger: 'mission',
+      kind: event.subtype || 'missao',
+      metrics: {
+        progress: facts.progresso,
+        priorityWeight: priorityToWeight(facts.prioridade || event.tags?.join(' '))
+      }
+    }, `${event.idHint || 'mission'}_life`));
+  }
+
+  if (/relac|social|familia|amigo|mae|pai|encontro/.test(domain) || /relac|social/.test(box)) {
+    out.push(normalizeLifeEvent({
+      ...common,
+      ledger: 'relationship',
+      kind: event.subtype || 'interacao_social',
+      metrics: {
+        relationalValue: 1
+      }
+    }, `${event.idHint || 'relationship'}_life`));
+  }
+
+  if (!out.length) {
+    out.push(normalizeLifeEvent({
+      ...common,
+      ledger: /humor|reflex|ideia|alma|espiritual|mente/.test(domain) ? 'mind' : 'timeline',
+      kind: event.subtype || 'registro_textual',
+      metrics: {}
+    }, `${event.idHint || 'timeline'}_life`));
+  }
+
+  return out.filter(Boolean);
+}
+
+function canonicalLedger(value) {
+  const v = cleanText(value).toLowerCase();
+  if (/financ|invest|rend|money|receita|despesa/.test(v)) return 'finance';
+  if (/nutri|aliment|refei|food/.test(v)) return 'nutrition';
+  if (/body|corpo|treino|atividade|sono|saude/.test(v)) return 'body';
+  if (/mission|miss|tarefa|todo|trabalho|estudo/.test(v)) return 'mission';
+  if (/relac|social|famil|pessoa|contact/.test(v)) return 'relationship';
+  if (/mind|mente|alma|soul|humor|reflex|ideia/.test(v)) return 'mind';
+  return 'timeline';
+}
+
+function canonicalLifeStatus(status) {
+  const s = cleanText(status).toLowerCase();
+  if (/conclu|done|final/.test(s)) return 'done';
+  if (/bloque|block/.test(s)) return 'blocked';
+  if (/estim/.test(s)) return 'estimated';
+  if (/confirm|review|revis/.test(s)) return 'needs_review';
+  if (/abert|open|andamento/.test(s)) return 'open';
+  return 'registered';
+}
+
+function normalizeMetricObject(metrics) {
+  return Object.fromEntries(Object.entries(metrics || {}).map(([key, value]) => [key, toNumber(value)]));
+}
+
+function priorityToWeight(value) {
+  const v = cleanText(value).toLowerCase();
+  if (/alta|high|urgente/.test(v)) return 2;
+  if (/baixa|low/.test(v)) return 0.5;
+  return 1;
+}
+
+function buildLifeLedgers(lifeEvents) {
+  const ledgers = {
+    finance: emptyLedger(),
+    nutrition: emptyLedger(),
+    body: emptyLedger(),
+    missions: emptyLedger(),
+    relationships: emptyLedger(),
+    mindSoul: emptyLedger(),
+    timeline: emptyLedger()
+  };
+
+  (lifeEvents || []).forEach(event => {
+    const key = event.ledger === 'mission'
+      ? 'missions'
+      : event.ledger === 'relationship'
+        ? 'relationships'
+        : event.ledger === 'mind'
+          ? 'mindSoul'
+          : event.ledger;
+    const ledger = ledgers[key] || ledgers.timeline;
+    ledger.events.push(event);
+    Object.entries(event.metrics || {}).forEach(([metric, value]) => {
+      ledger.totals[metric] = toNumber(ledger.totals[metric]) + toNumber(value);
+    });
+    event.missingFields.forEach(field => {
+      if (!ledger.quality.gaps.includes(field)) ledger.quality.gaps.push(field);
+    });
+  });
+
+  Object.values(ledgers).forEach(ledger => {
+    const confidence = average(ledger.events.map(event => event.confidence));
+    const gapPenalty = Math.min(45, ledger.quality.gaps.length * 8);
+    ledger.quality.score = Math.max(0, Math.round((confidence || 0) * 100 - gapPenalty));
+  });
+
+  return ledgers;
+}
+
+function emptyLedger() {
+  return {
+    events: [],
+    totals: {},
+    quality: {
+      score: 0,
+      gaps: []
+    }
   };
 }
 
@@ -1733,6 +1981,8 @@ function buildLegacyFieldsFromRadarIntelligence(intelligence) {
     radar_primary_domain: intelligence.primaryDomain,
     radar_summary: intelligence.summary,
     radar_structured_events_count: events.length,
+    radar_life_events_count: intelligence.lifeEvents?.length || 0,
+    radar_ledger_quality: Object.fromEntries(Object.entries(intelligence.ledgers || {}).map(([key, ledger]) => [key, ledger.quality?.score || 0])),
     radar_review_required: Boolean(intelligence.dashboard?.reviewRequired),
     radar_boxes: intelligence.dashboard?.boxes || [],
     categorias_sugeridas: categories,
