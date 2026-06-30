@@ -709,6 +709,111 @@
       min-height: 18px;
     }
 
+    .recurring-grid {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+    }
+
+    .recurring-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .recurring-row {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .recurring-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .recurring-row strong {
+      font-size: 15px;
+    }
+
+    .recurring-row small,
+    .recurring-row p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .recurring-meter {
+      height: 7px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e3ece7;
+      margin: 8px 0;
+    }
+
+    .recurring-meter span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #163428, #37c17f);
+      border-radius: inherit;
+    }
+
+    .word-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: flex-start;
+    }
+
+    .word-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      padding: 7px 10px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .strategy-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .strategy-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(247,250,248,.96), rgba(255,255,255,.8));
+      min-height: 124px;
+    }
+
+    .strategy-card small {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      font-weight: 900;
+      font-size: 11px;
+    }
+
+    .strategy-card strong {
+      display: block;
+      margin: 6px 0;
+      font-size: 16px;
+    }
+
+    .strategy-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .weird-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -1381,7 +1486,8 @@
     @media (max-width: 1080px) {
       .topbar,
       .section-grid,
-      .period-panel {
+      .period-panel,
+      .recurring-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1394,7 +1500,8 @@
       }
 
       .weird-grid,
-      .compare-grid {
+      .compare-grid,
+      .strategy-board {
         grid-template-columns: repeat(2, 1fr);
       }
 
@@ -1407,7 +1514,8 @@
       }
 
       .mission-summary,
-      .mission-board {
+      .mission-board,
+      .strategy-board {
         grid-template-columns: 1fr;
       }
     }
@@ -2134,6 +2242,44 @@
     <section class="panel" style="margin-top:16px;">
       <div class="panel-header">
         <div>
+          <h2>Eventos recorrentes</h2>
+          <p class="hint">O Radar reorganiza seus registros por tipos de acontecimento: dinheiro, investimentos, comida, sono, corpo, eventos e missÃµes.</p>
+        </div>
+      </div>
+
+      <div class="recurring-grid">
+        <div>
+          <div class="chart-title">O que mais apareceu no perÃ­odo</div>
+          <div id="recurringEventsBox" class="recurring-list">
+            <div class="empty">Calculando eventos recorrentes...</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="chart-title">Palavras dominantes</div>
+          <div id="wordCloudBox" class="word-cloud">
+            <div class="empty">Calculando vocabulÃ¡rio...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
+          <h2>Mapa estratÃ©gico</h2>
+          <p class="hint">Uma camada fixa para separar gasto de aporte, refeiÃ§Ã£o de nutriente, sono de energia e tarefa de missÃ£o.</p>
+        </div>
+      </div>
+
+      <div id="strategyMapBox" class="strategy-board">
+        <div class="empty">Montando mapa estratÃ©gico...</div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
           <h2>Leitura do mês</h2>
           <p class="hint">Síntese automática do período selecionado, usando o histórico como contexto.</p>
         </div>
@@ -2348,6 +2494,16 @@
         </div>
 
         <div class="chart-box">
+          <div class="chart-title">Eventos recorrentes: o que sua vida repete</div>
+          <canvas id="recurringEventsChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">VocabulÃ¡rio dominante dos registros</div>
+          <canvas id="wordFrequencyChart"></canvas>
+        </div>
+
+        <div class="chart-box">
           <div class="chart-title">Boxes do Radar Intelligence</div>
           <canvas id="radarBoxesChart"></canvas>
         </div>
@@ -2433,6 +2589,12 @@
     const ALL_PERIODS = '__all__';
     const PERSONAL_OPENAI_KEY_STORAGE = 'radarVidaPersonalOpenAiKey';
     const PERSONAL_DOSSIER_STORAGE = 'radarVidaPersonalDossiersV1';
+    const STRATEGIC_WORD_STOP = new Set([
+      'para','com','uma','umas','uns','dos','das','que','hoje','agora','pela','pelo','meu','minha','meus','minhas',
+      'mais','menos','como','por','em','no','na','nos','nas','de','do','da','ao','aos','aqui','isso','essa','esse',
+      'este','esta','foi','era','sou','estou','estava','vou','vai','ter','teve','tem','tive','dia','dias','real',
+      'reais','muito','muita','tambem','também','sobre','entre','apos','após','antes','depois','cada','todo','toda'
+    ]);
 
     let currentDocId = '';
     let rawData = null;
@@ -2608,6 +2770,7 @@
       renderPeriodHeader();
       renderMarketHeader();
       renderCards();
+      renderRecurringIntelligence();
       renderComparison();
       renderMonthReading();
       renderMoneyLists();
@@ -3109,6 +3272,296 @@
           </div>
         </article>
       `).join('');
+    }
+
+    function normalizeStrategicText(value) {
+      return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/ç/g, 'c');
+    }
+
+    function getStrategicEntryText(entry) {
+      return normalizeStrategicText([
+        entry.entrada_original,
+        entry.resumo,
+        entry.insight_curto,
+        entry.insight_profundo,
+        entry.tipo_principal,
+        ...(entry.categorias || []),
+        ...(entry.dimensoes_afetadas || []),
+        ...(entry.projetos_detectados || []),
+        ...(entry.lugares_detectados || []),
+        ...(entry.pessoas_detectadas || [])
+      ].filter(Boolean).join(' '));
+    }
+
+    function strategicEventDefinitions() {
+      return [
+        {
+          key: 'gasto_consumo',
+          label: 'Gastos e compras',
+          group: 'capital',
+          description: 'Saidas de dinheiro, consumo, compras e pagamentos cotidianos.',
+          test: (entry, text) => toNumber(entry.dinheiro_gasto) > 0 || /\b(gastei|paguei|comprei|compra|boleto|pix|cartao|mercado|farmacia|loja)\b/.test(text)
+        },
+        {
+          key: 'investimento_aporte',
+          label: 'Aportes e investimentos',
+          group: 'investimentos',
+          description: 'Capital direcionado para ativos, tickers, corretora ou patrimonio futuro.',
+          test: (entry, text) => toNumber(entry.dinheiro_investido) > 0 || /\b(aporte|aportei|investi|investimento|ticker|corretora|xp|fii|acoes|acao|mxrf|hglg|cpts|aiec|bhdv|c1ht)\b/.test(text)
+        },
+        {
+          key: 'rendimento_passivo',
+          label: 'Rendimentos e alugueis',
+          group: 'investimentos',
+          description: 'Dinheiro que entrou por proventos, dividendos, JCP, aluguel ou renda passiva.',
+          test: (entry, text) => toNumber(entry._passive_income) > 0 || /\b(recebi|rendimento|rendimentos|dividendo|dividendos|provento|proventos|jcp|aluguel|renda passiva)\b/.test(text)
+        },
+        {
+          key: 'refeicao_nutricao',
+          label: 'Refeicoes e nutrientes',
+          group: 'nutricao',
+          description: 'Comidas, bebidas, doces, proteina, calorias e qualidade nutricional.',
+          test: (entry, text) => toNumber(entry._calories_in) > 0 || /\b(comi|almo|almoco|jantar|jantei|cafe|lanche|arroz|feijao|frango|sopa|chocolate|proteina|caloria|agua|hidratacao|refeicao)\b/.test(text)
+        },
+        {
+          key: 'sono_recuperacao',
+          label: 'Sono e recuperacao',
+          group: 'corpo',
+          description: 'Dormir, acordar, ritmo circadiano, energia e descanso real.',
+          test: (entry, text) => /\b(sono|dormi|dormir|acordei|acordar|soneca|descanso|cansaco|energia|horas de sono)\b/.test(text)
+        },
+        {
+          key: 'peso_saude',
+          label: 'Peso, saude e sinais corporais',
+          group: 'corpo',
+          description: 'Peso, sintomas, humor fisico, medidas, exames e estado do corpo.',
+          test: (entry, text) => /\b(peso|kg|quilo|saude|humor|dor|frequencia cardiaca|batimento|pressao|exame|medicamento)\b/.test(text)
+        },
+        {
+          key: 'atividade_fisica',
+          label: 'Atividade fisica',
+          group: 'corpo',
+          description: 'Treino, corrida, bicicleta, caminhada, passos, minutos e calorias gastas.',
+          test: (entry, text) => toNumber(entry._sport_display_min) > 0 || /\b(treino|corrida|caminhada|bicicleta|bike|pedal|passos|musculacao|atividade fisica|calorias queimadas|exercicio)\b/.test(text)
+        },
+        {
+          key: 'missao_tarefa',
+          label: 'Missoes e tarefas',
+          group: 'missao',
+          description: 'Projetos, pendencias, progresso, bloqueios, conclusoes e proximas acoes.',
+          test: (entry, text) => /\b(missao|tarefa|preciso|concluir|conclui|finalizei|pendente|bloqueio|projeto|instalacao|codex|radar|regularizacao|cartorio|processo)\b/.test(text)
+        },
+        {
+          key: 'vida_social',
+          label: 'Vida social e afetos',
+          group: 'social',
+          description: 'Mae, familia, amigos, encontros, cuidado, presentes e gastos relacionais.',
+          test: (entry, text) => /\b(mae|familia|amigo|amigos|jantar com|encontro|presente|reuniao|social|conversa|cuidado|aniversario)\b/.test(text)
+        },
+        {
+          key: 'evento_memoria',
+          label: 'Eventos e memoria visual',
+          group: 'memoria',
+          description: 'Fotos, lugares, documentos, eventos marcantes e provas do mundo fisico.',
+          test: (entry, text) => isVisualEntry(entry) || /\b(foto|print|documento|comprovante|sitio|piuta|casa|viagem|evento|imagem|visual)\b/.test(text)
+        }
+      ];
+    }
+
+    function classifyStrategicEntry(entry) {
+      const text = getStrategicEntryText(entry);
+      const matches = strategicEventDefinitions()
+        .filter(def => def.test(entry, text))
+        .map(def => ({
+          ...def,
+          spent: toNumber(entry.dinheiro_gasto),
+          earned: toNumber(entry.dinheiro_ganho),
+          invested: toNumber(entry.dinheiro_investido),
+          passiveIncome: toNumber(entry._passive_income),
+          caloriesIn: toNumber(entry._calories_in),
+          proteinG: toNumber(entry._protein_g),
+          activityMinutes: toNumber(entry._sport_display_min),
+          title: entry.entrada_original || entry.resumo || def.label,
+          date: entry.data_br || isoToBrDate(entry.data_iso) || ''
+        }));
+
+      if (matches.length) return matches;
+
+      return [{
+        key: 'registro_geral',
+        label: 'Registros gerais',
+        group: 'memoria',
+        description: 'Eventos de vida ainda sem familia estrategica clara.',
+        spent: 0,
+        earned: 0,
+        invested: 0,
+        passiveIncome: 0,
+        caloriesIn: 0,
+        proteinG: 0,
+        activityMinutes: 0,
+        title: entry.entrada_original || entry.resumo || 'Registro',
+        date: entry.data_br || isoToBrDate(entry.data_iso) || ''
+      }];
+    }
+
+    function buildRecurringEventRows(entries) {
+      const map = new Map();
+
+      entries.forEach(entry => {
+        classifyStrategicEntry(entry).forEach(event => {
+          if (!map.has(event.key)) {
+            map.set(event.key, {
+              key: event.key,
+              label: event.label,
+              group: event.group,
+              description: event.description,
+              count: 0,
+              spent: 0,
+              earned: 0,
+              invested: 0,
+              passiveIncome: 0,
+              caloriesIn: 0,
+              proteinG: 0,
+              activityMinutes: 0,
+              examples: []
+            });
+          }
+
+          const row = map.get(event.key);
+          row.count += 1;
+          row.spent += event.spent;
+          row.earned += event.earned;
+          row.invested += event.invested;
+          row.passiveIncome += event.passiveIncome;
+          row.caloriesIn += event.caloriesIn;
+          row.proteinG += event.proteinG;
+          row.activityMinutes += event.activityMinutes;
+          if (row.examples.length < 3) row.examples.push(event.title);
+        });
+      });
+
+      return Array.from(map.values()).sort((a, b) => {
+        const impactA = a.count * 100 + a.spent + a.earned + a.invested + a.passiveIncome;
+        const impactB = b.count * 100 + b.spent + b.earned + b.invested + b.passiveIncome;
+        return impactB - impactA;
+      });
+    }
+
+    function buildWordFrequency(entries, limit = 28) {
+      const map = new Map();
+
+      entries.forEach(entry => {
+        const text = normalizeStrategicText(entry.entrada_original || '');
+        const words = text.match(/[a-z0-9]{3,}/g) || [];
+        words.forEach(word => {
+          if (STRATEGIC_WORD_STOP.has(word)) return;
+          map.set(word, (map.get(word) || 0) + 1);
+        });
+      });
+
+      return Array.from(map.entries())
+        .map(([word, count]) => ({ word, count }))
+        .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
+        .slice(0, limit);
+    }
+
+    function recurringMetricLine(row) {
+      const parts = [];
+      if (row.spent) parts.push(`gastos ${money(row.spent)}`);
+      if (row.earned) parts.push(`ganhos ${money(row.earned)}`);
+      if (row.invested) parts.push(`aportes ${money(row.invested)}`);
+      if (row.passiveIncome) parts.push(`renda ${money(row.passiveIncome)}`);
+      if (row.caloriesIn) parts.push(`${Math.round(row.caloriesIn)} kcal`);
+      if (row.proteinG) parts.push(`${Math.round(row.proteinG)}g proteina`);
+      if (row.activityMinutes) parts.push(minutesHuman(row.activityMinutes));
+      return parts.join(' | ') || row.description;
+    }
+
+    function renderRecurringIntelligence() {
+      renderRecurringEventsBox();
+      renderWordCloudBox();
+      renderStrategyMapBox();
+    }
+
+    function renderRecurringEventsBox() {
+      const box = document.getElementById('recurringEventsBox');
+      if (!box) return;
+
+      const rows = buildRecurringEventRows(viewEntries).slice(0, 7);
+      const max = Math.max(1, ...rows.map(row => row.count));
+
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty">Ainda nao ha eventos suficientes neste periodo.</div>';
+        return;
+      }
+
+      box.innerHTML = rows.map(row => `
+        <article class="recurring-row">
+          <div class="recurring-row-top">
+            <strong>${escapeHtml(row.label)}</strong>
+            <small>${escapeHtml(String(row.count))} registro(s)</small>
+          </div>
+          <div class="recurring-meter"><span style="width:${Math.max(8, Math.round((row.count / max) * 100))}%"></span></div>
+          <p>${escapeHtml(recurringMetricLine(row))}</p>
+          <small>${escapeHtml(row.examples[0] || row.description)}</small>
+        </article>
+      `).join('');
+    }
+
+    function renderWordCloudBox() {
+      const box = document.getElementById('wordCloudBox');
+      if (!box) return;
+
+      const words = buildWordFrequency(viewEntries, 30);
+      const max = Math.max(1, ...words.map(row => row.count));
+
+      if (!words.length) {
+        box.innerHTML = '<div class="empty">Ainda nao ha palavras suficientes neste periodo.</div>';
+        return;
+      }
+
+      box.innerHTML = words.map(row => {
+        const size = 11 + Math.round((row.count / max) * 13);
+        return `<span class="word-chip" style="font-size:${size}px">${escapeHtml(row.word)} <small>${escapeHtml(String(row.count))}</small></span>`;
+      }).join('');
+    }
+
+    function renderStrategyMapBox() {
+      const box = document.getElementById('strategyMapBox');
+      if (!box) return;
+
+      const rows = buildRecurringEventRows(viewEntries);
+      const byGroup = new Map();
+      rows.forEach(row => {
+        if (!byGroup.has(row.group)) byGroup.set(row.group, []);
+        byGroup.get(row.group).push(row);
+      });
+
+      const cards = [
+        { group: 'capital', label: 'Capital', title: 'Gastos precisam de causa', hint: 'Separar consumo, manutencao, burocracia e gasto social evita tratar todo dinheiro que sai como a mesma coisa.' },
+        { group: 'investimentos', label: 'Investimentos', title: 'Ticker vira linha de carteira', hint: 'Aporte, rendimento, quantidade, corretora e data devem formar uma ficha por ativo.' },
+        { group: 'nutricao', label: 'Nutricao', title: 'Comida vira combustivel', hint: 'Cada refeicao deve estimar calorias, proteina, horario, qualidade e contexto social.' },
+        { group: 'corpo', label: 'Corpo', title: 'Sono, peso e movimento juntos', hint: 'Sono sem atividade e comida sem proteina geram leituras incompletas sobre energia.' },
+        { group: 'missao', label: 'Missoes', title: 'Tarefa precisa de estado', hint: 'Aberta, bloqueada, em andamento ou concluida: o status e mais importante que a frase solta.' },
+        { group: 'social', label: 'Social e alma', title: 'Afeto tambem e ativo', hint: 'Jantar, mae, amigos e cuidado podem ser gasto financeiro e ganho relacional ao mesmo tempo.' }
+      ];
+
+      box.innerHTML = cards.map(card => {
+        const groupRows = byGroup.get(card.group) || [];
+        const count = sum(groupRows.map(row => row.count));
+        const leader = groupRows[0] ? groupRows[0].label : 'sem sinal forte';
+        return `
+          <article class="strategy-card">
+            <small>${escapeHtml(card.label)}</small>
+            <strong>${escapeHtml(count ? `${count} evento(s)` : card.title)}</strong>
+            <p>${escapeHtml(count ? `${leader}. ${card.hint}` : card.hint)}</p>
+          </article>
+        `;
+      }).join('');
     }
 
     function renderMissions() {
@@ -4059,6 +4512,7 @@
         .slice(0, 8)
         .map(e => e.insight_curto || e.insight_profundo)
         .filter(Boolean);
+      const strategicInsights = generateStrategicRecurringInsights(viewEntries);
       const aiInsights = currentPersonalAiAnalysis ? [
         personalSummaryText(currentPersonalAiAnalysis),
         ...(currentPersonalAiAnalysis.dominantPatterns || []).map(item => `Padrao IA: ${item}`),
@@ -4068,6 +4522,7 @@
 
       const insights = unique([
         ...aiInsights,
+        ...strategicInsights,
         ...monthlyInsights,
         ...entryInsights
       ]).slice(0, 12);
@@ -4078,6 +4533,39 @@
       }
 
       box.innerHTML = insights.map(txt => `<div class="insight">${escapeHtml(txt)}</div>`).join('');
+    }
+
+    function generateStrategicRecurringInsights(entries) {
+      const rows = buildRecurringEventRows(entries);
+      if (!rows.length) return [];
+
+      const insights = [];
+      const top = rows[0];
+      insights.push(`Evento recorrente dominante: ${top.label}, com ${top.count} registro(s). Isso sugere que este periodo deve ser lido primeiro por esse eixo, antes das categorias soltas.`);
+
+      const food = rows.find(row => row.key === 'refeicao_nutricao');
+      const body = rows.find(row => row.key === 'atividade_fisica');
+      const sleep = rows.find(row => row.key === 'sono_recuperacao');
+      if (food && !sleep) {
+        insights.push('Ha comida registrada sem sono correspondente. Para entender energia e saciedade, o Radar precisa cruzar refeicao com horario de dormir/acordar.');
+      }
+      if (body && !food) {
+        insights.push('Ha movimento corporal sem alimentacao suficiente no mesmo periodo. Isso reduz a leitura de recuperacao, calorias e proteina.');
+      }
+
+      const capital = rows.find(row => row.key === 'gasto_consumo');
+      const invest = rows.find(row => row.key === 'investimento_aporte');
+      const passive = rows.find(row => row.key === 'rendimento_passivo');
+      if (capital && (invest || passive)) {
+        insights.push('Dinheiro aparece em dois regimes: consumo/saida e construcao de patrimonio. O painel deve sempre separar gasto, aporte e rendimento para nao misturar custo de vida com aumento de ativo.');
+      }
+
+      const social = rows.find(row => row.key === 'vida_social');
+      if (social && capital && social.count > 0) {
+        insights.push('Parte da vida financeira tambem e relacional: encontros, mae, presentes e jantares devem aparecer como gasto social e ativo afetivo ao mesmo tempo.');
+      }
+
+      return insights.slice(0, 5);
     }
 
     function hydratePersonalAiKey() {
@@ -4740,6 +5228,9 @@
         options: baseChartOptions('')
       });
 
+      renderRecurringEventsChart();
+      renderWordFrequencyChart();
+
       renderChart('categoryChart', {
         type: 'doughnut',
         data: {
@@ -4769,6 +5260,62 @@
       renderLifeRadar();
       renderHourChart();
       renderVitalityChart();
+    }
+
+    function renderRecurringEventsChart() {
+      const rows = buildRecurringEventRows(viewEntries).slice(0, 10);
+
+      renderChart('recurringEventsChart', {
+        type: 'bar',
+        data: {
+          labels: rows.length ? rows.map(row => row.label) : ['Sem eventos'],
+          datasets: [
+            { label: 'Ocorrencias', data: rows.length ? rows.map(row => row.count) : [0] }
+          ]
+        },
+        options: {
+          ...baseChartOptions(''),
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterLabel: ctx => {
+                  const row = rows[ctx.dataIndex];
+                  return row ? recurringMetricLine(row) : '';
+                }
+              }
+            }
+          },
+          scales: {
+            x: { beginAtZero: true },
+            y: { ticks: { font: { size: window.innerWidth <= 720 ? 9 : 11 } } }
+          }
+        }
+      });
+    }
+
+    function renderWordFrequencyChart() {
+      const rows = buildWordFrequency(viewEntries, 14);
+
+      renderChart('wordFrequencyChart', {
+        type: 'bar',
+        data: {
+          labels: rows.length ? rows.map(row => row.word) : ['sem palavras'],
+          datasets: [
+            { label: 'Uso', data: rows.length ? rows.map(row => row.count) : [0] }
+          ]
+        },
+        options: {
+          ...baseChartOptions(''),
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true },
+            y: { ticks: { font: { size: window.innerWidth <= 720 ? 9 : 11 } } }
+          }
+        }
+      });
     }
 
     function collectRadarBoxes(entry) {
