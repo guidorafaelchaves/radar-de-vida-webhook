@@ -2082,6 +2082,12 @@ function buildPersonalRadarPrompt({ entries, periodLabel, profileName }) {
     'wellbeing deve conter: score 0-100, strengths, risks, nextRituals, socialSignals, meaningSignals, joySignals.',
     'charts deve conter objetos completos, nunca vazios. Cada chart precisa ter title, why, x, y e priority. Se nao houver grafico util, nao inclua o item.',
     'dominantPatterns, dailyGuidance e questions devem ser frases completas e especificas, nunca rotulos genericos.',
+    'LIMITES DE TAMANHO PARA EVITAR RESPOSTA TRUNCADA',
+    '- summary: maximo 900 caracteres, em texto humano corrido.',
+    '- events: maximo 18 eventos, priorizando dinheiro, comida, corpo, sono, missoes e relacoes mais importantes.',
+    '- dominantPatterns, dailyGuidance, questions, charts e missions: maximo 8 itens cada.',
+    '- facts e missingFields: maximo 6 itens cada.',
+    '- Nunca coloque o JSON inteiro dentro de summary. summary deve ser apenas uma leitura humana.',
     '',
     `Periodo analisado: ${periodLabel || 'periodo atual do painel'}`,
     `Perfil: ${profileName || 'Guido / Radar da Vida'}`,
@@ -2111,7 +2117,7 @@ async function callOpenAiResponsesWithRetry({ apiKey, model, prompt }) {
         model: attempt.model,
         input: attempt.prompt,
         temperature: 0.2,
-        max_output_tokens: 4000
+        max_output_tokens: 9000
       })
     });
 
@@ -2144,6 +2150,85 @@ async function callOpenAiResponsesWithRetry({ apiKey, model, prompt }) {
   error.detail = detail;
   error.model = last ? last.model : model;
   throw error;
+}
+
+function extractJsonLikeSummary(text) {
+  const raw = String(text || '');
+  const match = raw.match(/"summary"\s*:\s*"((?:\\.|[^"\\])*)"/);
+
+  if (!match) return '';
+
+  try {
+    return JSON.parse(`"${match[1]}"`);
+  } catch {
+    return match[1].replace(/\\"/g, '"').replace(/\\n/g, ' ');
+  }
+}
+
+function stringifyPersonalValue(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return cleanText(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map(stringifyPersonalValue).filter(Boolean).join(' | ');
+  }
+  if (typeof value === 'object') {
+    return cleanText(value.title || value.summary || value.name || value.label || value.why || value.nextAction || '');
+  }
+  return cleanText(value);
+}
+
+function normalizeStringList(value, limit = 8) {
+  return (Array.isArray(value) ? value : [])
+    .map(stringifyPersonalValue)
+    .map(cleanText)
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function normalizePersonalAnalysis(analysis, rawText = '') {
+  let source = analysis && typeof analysis === 'object' ? { ...analysis } : {};
+
+  if (typeof source.summary === 'string') {
+    const summaryText = source.summary.trim();
+    if (/^\{/.test(summaryText) && /"summary"\s*:/.test(summaryText)) {
+      try {
+        const nested = parsePossiblyWrappedJson(summaryText);
+        if (nested && typeof nested === 'object') {
+          source = { ...nested, ...source, summary: nested.summary || source.summary };
+        }
+      } catch {
+        source.summary = extractJsonLikeSummary(summaryText) || '';
+      }
+    }
+  }
+
+  if (source.summary && typeof source.summary === 'object') {
+    source.summary = stringifyPersonalValue(source.summary);
+  }
+
+  let summary = cleanText(source.summary);
+  if (!summary && rawText) {
+    summary = extractJsonLikeSummary(rawText);
+  }
+
+  if (/^\{/.test(summary) || /^\[/.test(summary)) {
+    summary = 'A IA retornou dados estruturados, mas sem resumo textual confiavel. Os eventos e metricas uteis foram preservados para os graficos e listas.';
+  }
+
+  source.summary = cleanText(summary).slice(0, 1200) || 'A IA retornou uma analise estruturada sem resumo textual.';
+  source.dominantPatterns = normalizeStringList(source.dominantPatterns, 8);
+  source.dailyGuidance = normalizeStringList(source.dailyGuidance, 8);
+  source.questions = normalizeStringList(source.questions, 8);
+  source.events = (Array.isArray(source.events) ? source.events : []).slice(0, 18);
+  source.charts = (Array.isArray(source.charts) ? source.charts : []).filter(Boolean).slice(0, 8);
+  source.missions = (Array.isArray(source.missions) ? source.missions : []).filter(Boolean).slice(0, 8);
+  source.dataQuality = source.dataQuality && typeof source.dataQuality === 'object' ? source.dataQuality : {};
+  source.wellbeing = source.wellbeing && typeof source.wellbeing === 'object' ? source.wellbeing : {};
+  source.lifeDimensions = source.lifeDimensions && typeof source.lifeDimensions === 'object' ? source.lifeDimensions : {};
+  source.totals = source.totals && typeof source.totals === 'object' ? source.totals : {};
+
+  return source;
 }
 
 function summarizeOpenAiError(err) {
@@ -2490,7 +2575,7 @@ app.post('/api/personal-intelligence', async (req, res) => {
       analysis = parsePossiblyWrappedJson(outputText);
     } catch {
       analysis = {
-        summary: outputText,
+        summary: extractJsonLikeSummary(outputText) || outputText,
         dominantPatterns: [],
         events: [],
         totals: {},
@@ -2505,6 +2590,8 @@ app.post('/api/personal-intelligence', async (req, res) => {
         }
       };
     }
+
+    analysis = normalizePersonalAnalysis(analysis, outputText);
 
     return res.status(200).json({
       ok: true,

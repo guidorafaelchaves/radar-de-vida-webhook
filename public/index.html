@@ -4060,7 +4060,7 @@
         .map(e => e.insight_curto || e.insight_profundo)
         .filter(Boolean);
       const aiInsights = currentPersonalAiAnalysis ? [
-        currentPersonalAiAnalysis.summary,
+        personalSummaryText(currentPersonalAiAnalysis),
         ...(currentPersonalAiAnalysis.dominantPatterns || []).map(item => `Padrao IA: ${item}`),
         ...(currentPersonalAiAnalysis.dailyGuidance || []).map(item => `Acao IA: ${item}`),
         ...((currentPersonalAiAnalysis.dataQuality && currentPersonalAiAnalysis.dataQuality.mainGaps) || []).map(item => `Lacuna IA: ${item}`)
@@ -4177,9 +4177,78 @@
       }
     }
 
+    function extractPersonalSummaryFromJsonText(text) {
+      const raw = String(text || '').trim();
+      const match = raw.match(/"summary"\s*:\s*"((?:\\.|[^"\\])*)"/);
+      if (!match) return '';
+
+      try {
+        return JSON.parse(`"${match[1]}"`);
+      } catch {
+        return match[1].replace(/\\"/g, '"').replace(/\\n/g, ' ');
+      }
+    }
+
+    function personalValueText(value) {
+      if (value == null) return '';
+      if (typeof value === 'string') return value.trim();
+      if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+      if (Array.isArray(value)) return value.map(personalValueText).filter(Boolean).join(' | ');
+      if (typeof value === 'object') {
+        return personalValueText(value.title || value.summary || value.name || value.label || value.why || value.nextAction || '');
+      }
+      return String(value || '').trim();
+    }
+
+    function normalizePersonalStringList(items) {
+      return (Array.isArray(items) ? items : [])
+        .map(personalValueText)
+        .filter(Boolean)
+        .slice(0, 10);
+    }
+
+    function normalizePersonalAiAnalysisForDisplay(analysis) {
+      let safe = analysis && typeof analysis === 'object' ? { ...analysis } : {};
+      let summary = personalValueText(safe.summary);
+
+      if (/^\{/.test(summary) && /"summary"\s*:/.test(summary)) {
+        try {
+          const nested = JSON.parse(summary);
+          if (nested && typeof nested === 'object') {
+            safe = { ...nested, ...safe, summary: nested.summary || safe.summary };
+            summary = personalValueText(safe.summary);
+          }
+        } catch {
+          summary = extractPersonalSummaryFromJsonText(summary);
+        }
+      }
+
+      if (/^\{/.test(summary) || /^\[/.test(summary)) {
+        summary = 'A IA retornou dados estruturados, mas sem resumo textual confiavel. A visualizacao preservou os campos uteis para graficos, eventos e listas.';
+      }
+
+      safe.summary = summary || 'A IA retornou sem resumo textual.';
+      safe.dominantPatterns = normalizePersonalStringList(safe.dominantPatterns);
+      safe.dailyGuidance = normalizePersonalStringList(safe.dailyGuidance);
+      safe.questions = normalizePersonalStringList(safe.questions);
+      safe.events = Array.isArray(safe.events) ? safe.events.slice(0, 18) : [];
+      safe.charts = Array.isArray(safe.charts) ? safe.charts.filter(Boolean).slice(0, 8) : [];
+      safe.missions = Array.isArray(safe.missions) ? safe.missions.filter(Boolean).slice(0, 8) : [];
+      safe.wellbeing = safe.wellbeing && typeof safe.wellbeing === 'object' ? safe.wellbeing : {};
+      safe.dataQuality = safe.dataQuality && typeof safe.dataQuality === 'object' ? safe.dataQuality : {};
+      safe.lifeDimensions = safe.lifeDimensions && typeof safe.lifeDimensions === 'object' ? safe.lifeDimensions : {};
+      safe.totals = safe.totals && typeof safe.totals === 'object' ? safe.totals : {};
+
+      return safe;
+    }
+
+    function personalSummaryText(analysis) {
+      return normalizePersonalAiAnalysisForDisplay(analysis).summary;
+    }
+
     function renderPersonalAiAnalysis(analysis, meta, options = {}) {
       const box = document.getElementById('personalAiBox');
-      const safe = analysis || {};
+      const safe = normalizePersonalAiAnalysisForDisplay(analysis);
       currentPersonalAiAnalysis = safe;
       currentPersonalAiMeta = meta || {};
       const patterns = Array.isArray(safe.dominantPatterns) ? safe.dominantPatterns : [];
@@ -4193,7 +4262,7 @@
 
       const blocks = [
         `<div class="insight"><strong>Leitura profunda</strong>${escapeHtml(safe.summary || 'A IA retornou sem resumo textual.')}</div>`,
-        `<div class="insight"><strong>Vida plena</strong>Score: ${escapeHtml(String(wellbeing.score ?? 'n/a'))}<br>${escapeHtml([...(wellbeing.strengths || []), ...(wellbeing.risks || [])].slice(0, 8).join(' | ') || 'Sem leitura de bem-estar retornada.')}</div>`,
+        `<div class="insight"><strong>Vida plena</strong>Score: ${escapeHtml(String(wellbeing.score ?? 'n/a'))}<br>${escapeHtml(normalizePersonalStringList([...(wellbeing.strengths || []), ...(wellbeing.risks || [])]).slice(0, 8).join(' | ') || 'Sem leitura de bem-estar retornada.')}</div>`,
         renderPersonalAiList('Padroes dominantes', patterns),
         renderPersonalAiList('Acoes praticas', guidance),
         renderPersonalAiList('Rituais sugeridos', wellbeing.nextRituals || []),
@@ -4201,8 +4270,8 @@
         renderPersonalAiList('Graficos que a IA recomenda', charts
           .filter(chart => chart && chart.title)
           .map(chart => `${chart.title}: ${chart.why || `${chart.x || ''} x ${chart.y || ''}`}`)),
-        renderPersonalAiList('Missoes percebidas', missions.map(mission => `${mission.title || 'Missao'} (${mission.status || 'sem status'}): ${mission.nextAction || mission.priority || ''}`)),
-        `<div class="insight"><strong>Qualidade dos dados</strong>Score: ${escapeHtml(String(quality.score ?? 'n/a'))}<br>${escapeHtml((quality.mainGaps || []).join(' | ') || 'Sem lacunas principais informadas.')}</div>`,
+        renderPersonalAiList('Missoes percebidas', missions.map(mission => `${personalValueText(mission.title || 'Missao')} (${personalValueText(mission.status || 'sem status')}): ${personalValueText(mission.nextAction || mission.priority || '')}`)),
+        `<div class="insight"><strong>Qualidade dos dados</strong>Score: ${escapeHtml(String(quality.score ?? 'n/a'))}<br>${escapeHtml(normalizePersonalStringList(quality.mainGaps || []).join(' | ') || 'Sem lacunas principais informadas.')}</div>`,
         `<div class="insight"><strong>Eventos estruturados</strong>${escapeHtml(events.slice(0, 12).map(event => `${event.domain || 'dominio'}: ${event.title || event.box || 'evento'}`).join(' | ') || 'Nenhum evento estruturado retornado.')}</div>`,
         `<div class="footer-note">Modelo: ${escapeHtml(meta.model || '')} · Entradas analisadas: ${escapeHtml(String(meta.entriesAnalyzed || 0))}${meta.entriesReceived ? ` de ${escapeHtml(String(meta.entriesReceived))}` : ''}</div>`
       ];
@@ -4221,12 +4290,12 @@
     }
 
     function renderPersonalAiList(title, items) {
-      const rows = (items || []).filter(Boolean).slice(0, 10);
+      const rows = normalizePersonalStringList(items);
       if (!rows.length) {
         return `<div class="insight"><strong>${escapeHtml(title)}</strong>Nenhum item retornado.</div>`;
       }
 
-      return `<div class="insight"><strong>${escapeHtml(title)}</strong>${rows.map(item => `- ${escapeHtml(String(item))}`).join('<br>')}</div>`;
+      return `<div class="insight"><strong>${escapeHtml(title)}</strong>${rows.map(item => `- ${escapeHtml(item)}`).join('<br>')}</div>`;
     }
 
     function clearPersonalAiDashboardLayer() {
@@ -4280,7 +4349,7 @@
         entryCount: viewEntries.length,
         analysis: currentPersonalAiAnalysis,
         meta: currentPersonalAiMeta,
-        summary: currentPersonalAiAnalysis ? currentPersonalAiAnalysis.summary : '',
+        summary: currentPersonalAiAnalysis ? personalSummaryText(currentPersonalAiAnalysis) : '',
         wellbeingScore: toNumber(wellbeing.score),
         totals,
         lifeDimensions: currentPersonalAiAnalysis ? (currentPersonalAiAnalysis.lifeDimensions || {}) : {}
@@ -4366,7 +4435,7 @@
         '<strong>Dossie mensal carregavel</strong>',
         `${escapeHtml(current.periodLabel)} salvo em ${escapeHtml(formatDateTime(new Date(current.savedAt)))}.`,
         `Registros: ${escapeHtml(String(current.entryCount || 0))}. Vida plena: ${escapeHtml(String(current.wellbeingScore || 'n/a'))}.`,
-        current.summary ? `<br>${escapeHtml(String(current.summary).slice(0, 260))}` : '',
+        current.summary ? `<br>${escapeHtml(personalSummaryText({ summary: current.summary }).slice(0, 260))}` : '',
         message ? `<br>${escapeHtml(message)}` : ''
       ].join(' ');
     }
