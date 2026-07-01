@@ -693,6 +693,31 @@ function buildZeppDecisionText(snapshot) {
   return parts.join(' ');
 }
 
+function looksLikeZeppText(text) {
+  const clean = normalizeText(text);
+  if (!clean) return false;
+
+  const hasZeppOrigin =
+    clean.includes('zepp') ||
+    clean.includes('amazfit') ||
+    clean.includes('t-rex') ||
+    clean.includes('trex') ||
+    clean.includes('health connect');
+
+  const hasMetric =
+    /\bpassos?\b/.test(clean) ||
+    /\bsono\b/.test(clean) ||
+    /\batividade\b/.test(clean) ||
+    /\bcalorias?\b/.test(clean) ||
+    /\bbpm\b/.test(clean) ||
+    /\bfrequencia cardiaca\b/.test(clean) ||
+    /\bdistancia\b/.test(clean) ||
+    /\bpeso\b/.test(clean) ||
+    /\bspo2\b/.test(clean);
+
+  return hasZeppOrigin && hasMetric;
+}
+
 async function createVisualEntryInAppsScript({ from, profileName, originalText, mediaInfo, analysis, raw }) {
   return callAppsScript({
     action: 'create_visual_entry',
@@ -2434,6 +2459,7 @@ app.get('/', (req, res) => {
       personalIntelligence: '/api/personal-intelligence',
       manualEntry: '/api/manual-entry',
       zeppHealthSnapshot: '/api/zepp-health-snapshot',
+      zeppTextEntry: '/api/zepp-text-entry',
       deleteEntry: '/api/delete-entry'
     },
     config: {
@@ -2623,6 +2649,58 @@ app.post('/api/zepp-health-snapshot', async (req, res) => {
       error: err.message,
       text,
       snapshot
+    });
+  }
+});
+
+app.post('/api/zepp-text-entry', async (req, res) => {
+  const explicitText =
+    cleanText(req.body.text) ||
+    cleanText(req.body.message) ||
+    cleanText(req.body.frase);
+  const snapshot = normalizeZeppHealthSnapshot(req.body || {});
+  const hasSnapshotMetric = Boolean(
+    snapshot.steps ||
+    snapshot.sleepMinutes ||
+    snapshot.activeMinutes ||
+    snapshot.workoutMinutes ||
+    snapshot.avgHeartRate ||
+    snapshot.maxHeartRate ||
+    snapshot.weightKg ||
+    snapshot.spo2
+  );
+  const text = explicitText || (hasSnapshotMetric ? buildZeppDecisionText(snapshot) : '');
+
+  if (!looksLikeZeppText(text)) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Entrada recusada: envie texto/snapshot Zepp com pelo menos uma metrica corporal reconhecivel.'
+    });
+  }
+
+  try {
+    const result = await sendTextToAppsScript({
+      text,
+      from: cleanText(req.body.from) || cleanText(req.body.deviceId) || 'amazfit-trex3',
+      profileName: cleanText(req.body.profileName) || 'Zepp Health Bridge',
+      source: 'zepp_text_bridge',
+      raw: {
+        body: req.body,
+        ip: getClientIp(req),
+        publicZeppTextEndpoint: true
+      }
+    });
+
+    return res.status(result.ok ? 200 : 500).json({
+      ok: Boolean(result.ok),
+      text,
+      result
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message,
+      text
     });
   }
 });
