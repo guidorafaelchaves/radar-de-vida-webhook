@@ -785,6 +785,129 @@
       gap: 12px;
     }
 
+    .zepp-board {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .zepp-readiness {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(247,250,248,.98), rgba(227,247,246,.7));
+      display: grid;
+      gap: 12px;
+    }
+
+    .zepp-score-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .zepp-score {
+      width: 104px;
+      height: 104px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(var(--green) calc(var(--score, 0) * 1%), #e2ece6 0),
+        #e2ece6;
+      position: relative;
+      font-weight: 950;
+      font-size: 26px;
+      color: var(--text);
+    }
+
+    .zepp-score::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: inherit;
+      background: #fff;
+      border: 1px solid rgba(255,255,255,.8);
+      z-index: 0;
+    }
+
+    .zepp-score span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .zepp-decision strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+
+    .zepp-decision p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .zepp-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .zepp-kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.82);
+      padding: 10px;
+      min-height: 84px;
+    }
+
+    .zepp-kpi small {
+      display: block;
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+
+    .zepp-kpi strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.05;
+    }
+
+    .zepp-kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+      margin-top: 5px;
+    }
+
+    .zepp-insights {
+      display: grid;
+      gap: 9px;
+    }
+
+    .zepp-insight {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 11px;
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .zepp-insight strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
     .strategy-card {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -1487,7 +1610,8 @@
       .topbar,
       .section-grid,
       .period-panel,
-      .recurring-grid {
+      .recurring-grid,
+      .zepp-board {
         grid-template-columns: 1fr;
       }
 
@@ -1501,7 +1625,8 @@
 
       .weird-grid,
       .compare-grid,
-      .strategy-board {
+      .strategy-board,
+      .zepp-kpis {
         grid-template-columns: repeat(2, 1fr);
       }
 
@@ -1678,6 +1803,16 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin: 10px 0;
+      }
+
+      .zepp-score-row,
+      .zepp-kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .zepp-score {
+        width: 92px;
+        height: 92px;
       }
 
       .metric {
@@ -2242,6 +2377,19 @@
     <section class="panel" style="margin-top:16px;">
       <div class="panel-header">
         <div>
+          <h2>Zepp / T-Rex 3</h2>
+          <p class="hint">Dados automáticos do corpo: movimento, sono, batimentos e energia transformados em decisão prática.</p>
+        </div>
+      </div>
+
+      <div id="zeppDashboardBox" class="zepp-board">
+        <div class="empty">Aguardando snapshots Zepp/Health Connect...</div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <div>
           <h2>Eventos recorrentes</h2>
           <p class="hint">O Radar reorganiza seus registros por tipos de acontecimento: dinheiro, investimentos, comida, sono, corpo, eventos e missÃµes.</p>
         </div>
@@ -2770,6 +2918,7 @@
       renderPeriodHeader();
       renderMarketHeader();
       renderCards();
+      renderZeppDashboard();
       renderRecurringIntelligence();
       renderComparison();
       renderMonthReading();
@@ -2961,6 +3110,61 @@
       }[ledger] || ledger;
     }
 
+    function extractZeppHealthFromText(text, entry = {}) {
+      const raw = String(text || '');
+      const normalized = raw
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      const origin = String(entry.origem || entry.source || '').toLowerCase();
+      const looksZepp = /zepp|amazfit|t-rex|trex|health connect|snapshot/.test(normalized + ' ' + origin);
+
+      if (!looksZepp) return null;
+
+      const numberAfter = patterns => {
+        for (const pattern of patterns) {
+          const match = raw.match(pattern);
+          if (match && match[1] !== undefined) return parseLocaleNumber(match[1]);
+        }
+        return 0;
+      };
+
+      const sleepText = raw.match(/sono\s*:\s*([0-9]+)\s*h\s*([0-9]{1,2})?/i);
+      const sleepMinutes = sleepText
+        ? (toNumber(sleepText[1]) * 60) + toNumber(sleepText[2])
+        : numberAfter([/sono\s*:\s*([0-9]+)\s*min/i, /sleepMinutes["']?\s*:\s*([0-9.]+)/i]);
+
+      const snapshot = {
+        date: (raw.match(/(?:de|date["']?\s*:)\s*["']?([0-9]{4}-[0-9]{2}-[0-9]{2})/i) || [])[1] || entry.data_br || isoToBrDate(entry.data_iso) || '',
+        steps: numberAfter([/passos\s*:\s*([0-9.,]+)/i, /steps["']?\s*:\s*([0-9.]+)/i]),
+        activeMinutes: numberAfter([/atividade do dia\s*:\s*([0-9.,]+)\s*min/i, /activeMinutes["']?\s*:\s*([0-9.]+)/i, /atividade\s*:\s*([0-9.,]+)\s*min/i]),
+        activeCalories: numberAfter([/calorias ativas\s*:\s*([0-9.,]+)\s*kcal/i, /activeCalories["']?\s*:\s*([0-9.]+)/i]),
+        totalCalories: numberAfter([/calorias totais(?: estimadas)?\s*:\s*([0-9.,]+)\s*kcal/i, /totalCalories["']?\s*:\s*([0-9.]+)/i]),
+        distanceKm: numberAfter([/dist[aâ]ncia aproximada\s*:\s*([0-9.,]+)\s*km/i, /dist[aâ]ncia\s*:\s*([0-9.,]+)\s*km/i]),
+        sleepMinutes,
+        restingHeartRate: numberAfter([/repouso\s*:\s*([0-9.,]+)\s*bpm/i, /restingHeartRate["']?\s*:\s*([0-9.]+)/i]),
+        avgHeartRate: numberAfter([/cardiaca media\s*:\s*([0-9.,]+)\s*bpm/i, /avgHeartRate["']?\s*:\s*([0-9.]+)/i]),
+        maxHeartRate: numberAfter([/pico cardiaco\s*:\s*([0-9.,]+)\s*bpm/i, /maxHeartRate["']?\s*:\s*([0-9.]+)/i]),
+        weightKg: numberAfter([/peso registrado\s*:\s*([0-9.,]+)\s*kg/i, /weightKg["']?\s*:\s*([0-9.]+)/i]),
+        spo2: numberAfter([/spo2\s*:\s*([0-9.,]+)%/i, /spo2["']?\s*:\s*([0-9.]+)/i])
+      };
+
+      const hasMetric = Object.entries(snapshot)
+        .filter(([key]) => key !== 'date')
+        .some(([, value]) => toNumber(value) > 0);
+
+      return hasMetric ? snapshot : null;
+    }
+
+    function parseLocaleNumber(value) {
+      const text = String(value || '').trim();
+      if (!text) return 0;
+      const normalized = text.includes(',') && text.includes('.')
+        ? text.replace(/\./g, '').replace(',', '.')
+        : text.replace(',', '.');
+      return toNumber(normalized);
+    }
+
     function normalizeEntries(entries) {
       const normalized = entries.map((entry, index) => {
         const radarIntelligence = getRadarIntelligence(entry);
@@ -2975,8 +3179,14 @@
           ...radarBoxes
         ].filter(Boolean));
         const inferred = inferTimesFromText(entry.entrada_original || '');
+        const zeppSnapshot = extractZeppHealthFromText([
+          entry.entrada_original,
+          entry.resumo,
+          entry.insight_curto,
+          entry.insight_profundo
+        ].join(' '), entry);
 
-        const sport = inferred.esporte_minutos || saneMax(entry.esporte_minutos, entry.atividade_fisica_minutos);
+        const sport = saneMax(inferred.esporte_minutos, entry.esporte_minutos, entry.atividade_fisica_minutos, zeppSnapshot?.activeMinutes);
         const productive = inferred.produtivo_minutos || saneProductive(entry);
 
         const text = [
@@ -3020,11 +3230,12 @@
           _life_events: lifeEvents,
           _ledger_quality: ledgerQuality,
           _calories_in: saneMax(entry.calorias_ingeridas, entry.calorias_ingeridas_sugeridas, radarTotals.caloriesIn),
-          _calories_out: saneMax(entry.calorias_gastas, entry.calorias_gastas_sugeridas, radarTotals.caloriesOut),
+          _calories_out: saneMax(entry.calorias_gastas, entry.calorias_gastas_sugeridas, radarTotals.caloriesOut, zeppSnapshot?.activeCalories),
           _protein_g: saneMax(entry.proteina_g, entry.proteina_g_sugerida, radarTotals.proteinG),
           _carbs_g: saneMax(entry.carboidratos_g, entry.carbs_g_sugerido, radarTotals.carbsG),
           _fat_g: saneMax(entry.gordura_g, entry.fat_g_sugerida, radarTotals.fatG),
           _passive_income: saneMax(entry.renda_passiva, entry.passive_income, radarTotals.passiveIncome),
+          _zepp_snapshot: zeppSnapshot,
           _dedupe_text: normalizeDedupeText(entry.entrada_original || ''),
           _dedupe_key: buildEntryDedupeKey(entry),
           _all_text: text
@@ -3238,6 +3449,165 @@
       document.getElementById('cardProtein').textContent = `${Math.round(displayProtein)} g`;
       document.getElementById('cardProductive').textContent = minutesHuman(productive);
       document.getElementById('cardFriction').textContent = String(friction);
+    }
+
+    function getZeppSnapshots(entries = viewEntries) {
+      return entries
+        .map(entry => ({
+          ...(entry._zepp_snapshot || {}),
+          entry
+        }))
+        .filter(snapshot => snapshot && Object.keys(snapshot).length > 1)
+        .sort((a, b) => getEntryTimestamp(a.entry) - getEntryTimestamp(b.entry));
+    }
+
+    function summarizeZeppSnapshots(entries = viewEntries) {
+      const snapshots = getZeppSnapshots(entries);
+      const latest = snapshots[snapshots.length - 1] || null;
+      const totals = snapshots.reduce((acc, item) => {
+        acc.steps += toNumber(item.steps);
+        acc.activeMinutes += toNumber(item.activeMinutes);
+        acc.activeCalories += toNumber(item.activeCalories);
+        acc.totalCalories += toNumber(item.totalCalories);
+        acc.distanceKm += toNumber(item.distanceKm);
+        acc.sleepMinutes += toNumber(item.sleepMinutes);
+        acc.avgHeartRateValues.push(toNumber(item.avgHeartRate));
+        acc.maxHeartRate = Math.max(acc.maxHeartRate, toNumber(item.maxHeartRate));
+        return acc;
+      }, {
+        steps: 0,
+        activeMinutes: 0,
+        activeCalories: 0,
+        totalCalories: 0,
+        distanceKm: 0,
+        sleepMinutes: 0,
+        avgHeartRateValues: [],
+        maxHeartRate: 0
+      });
+
+      const days = Math.max(1, snapshots.length);
+      const avgHeartValues = totals.avgHeartRateValues.filter(Boolean);
+
+      return {
+        snapshots,
+        latest,
+        days,
+        steps: totals.steps,
+        avgSteps: totals.steps / days,
+        activeMinutes: totals.activeMinutes,
+        avgActiveMinutes: totals.activeMinutes / days,
+        activeCalories: totals.activeCalories,
+        totalCalories: totals.totalCalories,
+        distanceKm: totals.distanceKm,
+        sleepMinutes: totals.sleepMinutes,
+        avgSleepMinutes: totals.sleepMinutes / days,
+        avgHeartRate: avgHeartValues.length ? average(avgHeartValues) : 0,
+        maxHeartRate: totals.maxHeartRate
+      };
+    }
+
+    function computeZeppReadiness(summary) {
+      if (!summary || !summary.snapshots.length) return 0;
+      const latest = summary.latest || {};
+      let score = 45;
+
+      const sleep = toNumber(latest.sleepMinutes) || summary.avgSleepMinutes;
+      const active = toNumber(latest.activeMinutes) || summary.avgActiveMinutes;
+      const steps = toNumber(latest.steps) || summary.avgSteps;
+      const avgHr = toNumber(latest.avgHeartRate) || summary.avgHeartRate;
+
+      if (sleep >= 420) score += 18;
+      else if (sleep >= 360) score += 10;
+      else if (sleep > 0) score -= 12;
+
+      if (active >= 60 || steps >= 9000) score += 16;
+      else if (active >= 30 || steps >= 5000) score += 8;
+      else score -= 6;
+
+      if (avgHr > 0 && avgHr <= 90) score += 8;
+      if (avgHr >= 115) score -= 10;
+
+      if (summary.snapshots.length >= 3) score += 8;
+
+      return Math.max(0, Math.min(100, Math.round(score)));
+    }
+
+    function zeppDecisionLabel(score) {
+      if (score >= 78) return 'Dia bom para missão difícil';
+      if (score >= 60) return 'Energia utilizável com atenção';
+      if (score >= 42) return 'Manter ritmo moderado';
+      return 'Priorizar recuperação';
+    }
+
+    function buildZeppInsights(summary, score) {
+      const latest = summary.latest || {};
+      const insights = [];
+      const sleep = toNumber(latest.sleepMinutes) || summary.avgSleepMinutes;
+      const active = toNumber(latest.activeMinutes) || summary.avgActiveMinutes;
+      const steps = toNumber(latest.steps) || summary.avgSteps;
+      const maxHr = toNumber(latest.maxHeartRate) || summary.maxHeartRate;
+
+      if (sleep && sleep < 390) {
+        insights.push(['Recuperação', 'Sono abaixo do ideal. O Radar deve tratar o dia como energia limitada: menos treino forte, mais hidratação e sono cedo.']);
+      } else if (sleep >= 420) {
+        insights.push(['Recuperação', 'Sono suficiente para sustentar decisões mais ambiciosas, desde que alimentação e agenda acompanhem.']);
+      }
+
+      if (active >= 60 || steps >= 9000) {
+        insights.push(['Movimento', 'O corpo já entregou volume relevante. Bom sinal para humor, metabolismo e foco, mas vale proteger proteína e descanso.']);
+      } else if (summary.snapshots.length) {
+        insights.push(['Movimento', 'Movimento ainda discreto no período. Uma caminhada curta pode ter alto retorno decisório.']);
+      }
+
+      if (maxHr >= 160) {
+        insights.push(['Carga', 'Houve pico cardiovascular alto. O próximo bloco deve observar recuperação, água e sinais de fadiga.']);
+      }
+
+      if (score >= 78) {
+        insights.push(['Decisão', 'Use a energia para uma missão importante, não para espalhar esforço em tarefas pequenas demais.']);
+      } else if (score < 42) {
+        insights.push(['Decisão', 'O melhor ganho hoje pode ser preservar o sistema: sono, comida simples e menos atrito.']);
+      }
+
+      return insights.slice(0, 4);
+    }
+
+    function renderZeppDashboard() {
+      const box = document.getElementById('zeppDashboardBox');
+      if (!box) return;
+
+      const summary = summarizeZeppSnapshots(viewEntries);
+      if (!summary.snapshots.length) {
+        box.innerHTML = '<div class="empty">Nenhum snapshot Zepp/Health Connect no período. Quando o app Android sincronizar, passos, sono e batimentos aparecerão aqui.</div>';
+        return;
+      }
+
+      const score = computeZeppReadiness(summary);
+      const latest = summary.latest || {};
+      const insights = buildZeppInsights(summary, score);
+
+      box.innerHTML = `
+        <div class="zepp-readiness">
+          <div class="zepp-score-row">
+            <div class="zepp-score" style="--score:${score}"><span>${score}</span></div>
+            <div class="zepp-decision">
+              <strong>${escapeHtml(zeppDecisionLabel(score))}</strong>
+              <p>${escapeHtml(summary.snapshots.length)} snapshot(s) no período. Última leitura: ${escapeHtml(latest.date || latest.entry?.data_br || 'sem data')}.</p>
+            </div>
+          </div>
+          <div class="zepp-kpis">
+            <div class="zepp-kpi"><small>Passos</small><strong>${Math.round(summary.steps).toLocaleString('pt-BR')}</strong><span>${Math.round(summary.avgSteps).toLocaleString('pt-BR')}/dia</span></div>
+            <div class="zepp-kpi"><small>Atividade</small><strong>${minutesHuman(summary.activeMinutes)}</strong><span>${Math.round(summary.avgActiveMinutes)} min/dia</span></div>
+            <div class="zepp-kpi"><small>Sono médio</small><strong>${minutesHuman(summary.avgSleepMinutes)}</strong><span>${latest.sleepMinutes ? `último ${minutesHuman(latest.sleepMinutes)}` : 'sem sono no último'}</span></div>
+            <div class="zepp-kpi"><small>Batimentos</small><strong>${Math.round(summary.avgHeartRate || 0)} bpm</strong><span>pico ${Math.round(summary.maxHeartRate || 0)} bpm</span></div>
+          </div>
+        </div>
+        <div class="zepp-insights">
+          ${insights.map(([title, body]) => `
+            <div class="zepp-insight"><strong>${escapeHtml(title)}</strong>${escapeHtml(body)}</div>
+          `).join('') || '<div class="zepp-insight"><strong>Leitura</strong>Dados recebidos; o Radar precisa de mais dias para gerar tendência.</div>'}
+        </div>
+      `;
     }
 
     function renderMoneyLists() {
@@ -4258,6 +4628,7 @@
       const visuals = viewEntries.filter(isVisualEntry).length;
       const assets = unique(viewEntries.flatMap(e => e.ativos_detectados || [])).filter(Boolean);
       const balance = current.earned - current.spent - current.invested;
+      const zepp = summarizeZeppSnapshots(viewEntries);
 
       const main = buildMonthlyNarrative(label, current, previous, dominant, visuals, assets, balance);
 
@@ -4271,9 +4642,11 @@
           ? `Foram usados ${visuals} registro(s) visual(is), mas sem ativos/tickers detectados.`
           : 'Não houve registro visual relevante no período.';
 
-      const point3 = current.sport > 0
-        ? `O corpo apareceu com ${minutesHuman(current.sport)} de atividade física registrada.`
-        : 'O corpo ainda apareceu pouco nos registros deste período.';
+      const point3 = zepp.snapshots.length
+        ? `Zepp registrou ${Math.round(zepp.steps).toLocaleString('pt-BR')} passos, ${minutesHuman(zepp.activeMinutes)} de atividade e sono médio de ${minutesHuman(zepp.avgSleepMinutes)}.`
+        : current.sport > 0
+          ? `O corpo apareceu com ${minutesHuman(current.sport)} de atividade física registrada.`
+          : 'O corpo ainda apareceu pouco nos registros deste período.';
 
       box.innerHTML = `
         <div class="reading-main">${escapeHtml(main)}</div>
