@@ -92,6 +92,10 @@ function cleanText(value) {
   return String(value).trim();
 }
 
+function firstDefined(...values) {
+  return values.find(value => value !== undefined && value !== null && value !== '');
+}
+
 function getClientIp(req) {
   return req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
 }
@@ -592,6 +596,101 @@ async function sendTextToAppsScript({ text, from, profileName, source, raw }) {
       radar_intelligence: intelligence
     }
   });
+}
+
+function normalizeZeppHealthSnapshot(input = {}) {
+  const sleep = input.sleep || input.sleepSession || {};
+  const activity = input.activity || input.dailyActivity || {};
+  const workout = input.workout || input.workoutSession || input.exercise || {};
+  const heart = input.heart || input.heartRate || {};
+  const body = input.body || input.bodyMeasurements || {};
+
+  return {
+    source: cleanText(input.source) || 'zepp_health_connect',
+    deviceId: cleanText(input.deviceId || input.device_id || input.device?.id) || 'amazfit-trex3',
+    deviceModel: cleanText(input.deviceModel || input.device_model || input.device?.model) || 'Amazfit T-Rex 3',
+    date: cleanText(input.date || input.day || input.recordedAt || input.recorded_at) || nowIso(),
+    steps: toNumber(firstDefined(input.steps, activity.steps, input.stepCount)),
+    activeCalories: toNumber(firstDefined(input.activeCalories, activity.activeCalories, input.caloriesOut, activity.caloriesOut)),
+    totalCalories: toNumber(firstDefined(input.totalCalories, activity.totalCalories)),
+    distanceMeters: toNumber(firstDefined(input.distanceMeters, activity.distanceMeters, workout.distanceMeters)),
+    activeMinutes: toNumber(firstDefined(input.activeMinutes, activity.activeMinutes, workout.durationMinutes)),
+    sleepMinutes: toNumber(firstDefined(input.sleepMinutes, sleep.durationMinutes, sleep.totalMinutes)),
+    sleepStart: cleanText(firstDefined(input.sleepStart, sleep.start, sleep.startTime)),
+    sleepEnd: cleanText(firstDefined(input.sleepEnd, sleep.end, sleep.endTime)),
+    deepSleepMinutes: toNumber(firstDefined(input.deepSleepMinutes, sleep.deepMinutes)),
+    remSleepMinutes: toNumber(firstDefined(input.remSleepMinutes, sleep.remMinutes)),
+    awakeMinutes: toNumber(firstDefined(input.awakeMinutes, sleep.awakeMinutes)),
+    restingHeartRate: toNumber(firstDefined(input.restingHeartRate, heart.resting, heart.restingBpm)),
+    avgHeartRate: toNumber(firstDefined(input.avgHeartRate, heart.avg, heart.averageBpm, workout.avgHeartRate)),
+    maxHeartRate: toNumber(firstDefined(input.maxHeartRate, heart.max, heart.maxBpm, workout.maxHeartRate)),
+    workoutType: cleanText(firstDefined(input.workoutType, workout.type, workout.sport)),
+    workoutMinutes: toNumber(firstDefined(input.workoutMinutes, workout.durationMinutes, workout.minutes)),
+    workoutCalories: toNumber(firstDefined(input.workoutCalories, workout.calories)),
+    workoutDistanceMeters: toNumber(firstDefined(input.workoutDistanceMeters, workout.distanceMeters)),
+    weightKg: toNumber(firstDefined(input.weightKg, body.weightKg, input.weight)),
+    spo2: toNumber(firstDefined(input.spo2, input.bloodOxygen, body.spo2)),
+    stress: toNumber(firstDefined(input.stress, body.stress)),
+    raw: input
+  };
+}
+
+function minutesToHoursText(minutes) {
+  const value = toNumber(minutes);
+  if (!value) return '';
+  const h = Math.floor(value / 60);
+  const m = Math.round(value % 60);
+  if (h && m) return `${h}h${String(m).padStart(2, '0')}`;
+  if (h) return `${h}h`;
+  return `${m}min`;
+}
+
+function buildZeppDecisionText(snapshot) {
+  const parts = [`Snapshot Zepp/Amazfit de ${snapshot.date} no ${snapshot.deviceModel}.`];
+
+  if (snapshot.steps) parts.push(`Passos: ${Math.round(snapshot.steps)}.`);
+  if (snapshot.activeMinutes) parts.push(`Atividade do dia: ${Math.round(snapshot.activeMinutes)} minutos.`);
+  if (snapshot.activeCalories) parts.push(`Calorias ativas: ${Math.round(snapshot.activeCalories)} kcal.`);
+  if (snapshot.distanceMeters) parts.push(`Distancia aproximada: ${(snapshot.distanceMeters / 1000).toFixed(2)} km.`);
+  if (snapshot.sleepMinutes) parts.push(`Sono: ${minutesToHoursText(snapshot.sleepMinutes)}${snapshot.sleepStart || snapshot.sleepEnd ? ` (${snapshot.sleepStart || '?'} ate ${snapshot.sleepEnd || '?'})` : ''}.`);
+  if (snapshot.deepSleepMinutes) parts.push(`Sono profundo: ${minutesToHoursText(snapshot.deepSleepMinutes)}.`);
+  if (snapshot.remSleepMinutes) parts.push(`Sono REM: ${minutesToHoursText(snapshot.remSleepMinutes)}.`);
+  if (snapshot.restingHeartRate) parts.push(`Frequencia cardiaca de repouso: ${Math.round(snapshot.restingHeartRate)} bpm.`);
+  if (snapshot.avgHeartRate) parts.push(`Frequencia cardiaca media: ${Math.round(snapshot.avgHeartRate)} bpm.`);
+  if (snapshot.maxHeartRate) parts.push(`Pico cardiaco: ${Math.round(snapshot.maxHeartRate)} bpm.`);
+  if (snapshot.workoutType || snapshot.workoutMinutes) {
+    parts.push(`Treino registrado: ${snapshot.workoutType || 'atividade'} por ${minutesToHoursText(snapshot.workoutMinutes) || 'tempo nao informado'}${snapshot.workoutCalories ? `, ${Math.round(snapshot.workoutCalories)} kcal` : ''}${snapshot.workoutDistanceMeters ? `, ${(snapshot.workoutDistanceMeters / 1000).toFixed(2)} km` : ''}.`);
+  }
+  if (snapshot.weightKg) parts.push(`Peso registrado: ${snapshot.weightKg.toFixed(1)} kg.`);
+  if (snapshot.spo2) parts.push(`SpO2: ${Math.round(snapshot.spo2)}%.`);
+  if (snapshot.stress) parts.push(`Stress registrado: ${Math.round(snapshot.stress)}.`);
+
+  const decisions = [];
+  if (snapshot.sleepMinutes && snapshot.sleepMinutes < 390) {
+    decisions.push('decisao recomendada: preservar recuperacao, evitar treino forte e priorizar dormir cedo');
+  } else if (snapshot.sleepMinutes >= 450 && snapshot.activeMinutes < 30) {
+    decisions.push('decisao recomendada: usar a boa recuperacao para colocar o corpo em movimento');
+  }
+
+  if (snapshot.activeMinutes >= 60 || snapshot.steps >= 9000) {
+    decisions.push('corpo em bom movimento; bom dia para missao dificil se a energia mental estiver estavel');
+  }
+
+  if (snapshot.avgHeartRate >= 120 || snapshot.maxHeartRate >= 165) {
+    decisions.push('houve carga cardiovascular relevante; observar hidratacao, proteina e descanso');
+  }
+
+  if (!snapshot.sleepMinutes) {
+    decisions.push('lacuna: registrar ou sincronizar sono para o Radar decidir melhor sobre energia');
+  }
+
+  if (!snapshot.activeMinutes && !snapshot.steps) {
+    decisions.push('lacuna: registrar passos ou treino para estimar vitalidade do dia');
+  }
+
+  parts.push(`Leitura decisoria do Radar: ${decisions.join('; ') || 'dados recebidos; acompanhar junto de comida, humor e tarefas do dia'}.`);
+
+  return parts.join(' ');
 }
 
 async function createVisualEntryInAppsScript({ from, profileName, originalText, mediaInfo, analysis, raw }) {
@@ -2334,6 +2433,7 @@ app.get('/', (req, res) => {
       analyzeEntry: '/api/analyze-entry',
       personalIntelligence: '/api/personal-intelligence',
       manualEntry: '/api/manual-entry',
+      zeppHealthSnapshot: '/api/zepp-health-snapshot',
       deleteEntry: '/api/delete-entry'
     },
     config: {
@@ -2480,6 +2580,49 @@ app.post('/api/manual-entry', async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: err.message
+    });
+  }
+});
+
+app.post('/api/zepp-health-snapshot', async (req, res) => {
+  if (!requireRadarApiToken(req, res)) return;
+
+  const snapshot = normalizeZeppHealthSnapshot(req.body || {});
+  const text = buildZeppDecisionText(snapshot);
+
+  if (!snapshot.steps && !snapshot.sleepMinutes && !snapshot.activeMinutes && !snapshot.workoutMinutes && !snapshot.avgHeartRate && !snapshot.weightKg) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Snapshot Zepp vazio. Envie pelo menos passos, sono, atividade, treino, batimentos ou peso.',
+      expectedFields: ['steps', 'sleepMinutes', 'activeMinutes', 'avgHeartRate', 'workoutMinutes', 'weightKg']
+    });
+  }
+
+  try {
+    const result = await sendTextToAppsScript({
+      text,
+      from: cleanText(req.body.from) || snapshot.deviceId,
+      profileName: cleanText(req.body.profileName) || 'Zepp Health Bridge',
+      source: 'zepp_health_snapshot',
+      raw: {
+        snapshot,
+        body: req.body,
+        ip: getClientIp(req)
+      }
+    });
+
+    return res.status(result.ok ? 200 : 500).json({
+      ok: Boolean(result.ok),
+      text,
+      snapshot,
+      result
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message,
+      text,
+      snapshot
     });
   }
 });
