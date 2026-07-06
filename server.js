@@ -92,6 +92,15 @@ function cleanText(value) {
   return String(value).trim();
 }
 
+function normalizeText(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function firstDefined(...values) {
   return values.find(value => value !== undefined && value !== null && value !== '');
 }
