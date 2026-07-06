@@ -1610,7 +1610,9 @@ function normalizeRadarIntelligence(intelligence, { text, source, receivedAt }) 
       dueHint: cleanText(mission.dueHint),
       status: cleanText(mission.status) || 'aberta'
     })).filter(mission => mission.title) : [],
-    missionParser: normalizeMissionParser(intelligence.missionParser || intelligence.mission_parser),
+    missionParser: looksLikeMissionText(text)
+      ? normalizeMissionParser(intelligence.missionParser || intelligence.mission_parser)
+      : normalizeMissionParser(),
     questions: uniqueClean(intelligence.questions || []),
     confidence: Math.max(0, Math.min(1, Number(intelligence.confidence) || average(cleanEvents.map(e => e.confidence)) || 0.5))
   };
@@ -1959,7 +1961,7 @@ function buildLocalRadarIntelligence({ text, source, receivedAt }) {
   const hasTask =
     /\b(preciso|devo|tenho que|tarefa|miss[aã]o|missao|prazo|pagar|resolver|comprar|ligar|enviar|fazer|concluir|bloqueado|andamento)\b/i.test(normalizedText);
 
-  const hasMissionIntent = hasTask || looksLikeMissionText(normalizedText);
+  const hasMissionIntent = looksLikeMissionText(normalizedText);
 
   if (hasInvestment) {
     const trade = extractInvestmentTrade(normalizedText, tickers, money);
@@ -2138,7 +2140,7 @@ function buildLocalRadarIntelligence({ text, source, receivedAt }) {
 }
 
 function looksLikeMissionText(text) {
-  return /\b(preciso|devo|tenho que|tarefa|miss[aã]?o|missoes|meta|prazo|resolver|comprar|ligar|enviar|fazer|concluir|conclui|matei|feito|falhei|falha|cancela|pausa|bloqueado|andamento|passo|progresso)\b/i.test(String(text || ''));
+  return /\b(miss[aã]o|miss[aã]oes|missões|missoes)\b/i.test(String(text || ''));
 }
 
 function buildLocalMissionParser(text) {

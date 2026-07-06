@@ -4891,6 +4891,8 @@
     }
 
     function isMissionSignal(entry) {
+      if (!entryHasExplicitMissionWord(entry)) return false;
+
       const missionParser = getMissionParser(entry);
       if (missionParser && missionParser.intencao !== 'NENHUMA') return true;
 
@@ -4902,7 +4904,12 @@
         ...(entry.dimensoes_afetadas || [])
       ].join(' '));
 
-      return /\b(missao|missoes|tarefa|meta|preciso|tenho que|conclui|matei|feito|falhei|deu ruim|cancela|andamento|progresso|passo)\b/.test(text);
+      return /\b(missao|missoes)\b/.test(text);
+    }
+
+    function entryHasExplicitMissionWord(entry) {
+      const text = normalizeMissionText(entry && entry.entrada_original);
+      return /\b(missao|missoes)\b/.test(text);
     }
 
     function parseMissionEntry(entry) {
