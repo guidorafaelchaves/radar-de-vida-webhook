@@ -1436,6 +1436,157 @@
       font-weight: 950;
     }
 
+    .mission-summary .weird-card strong {
+      font-size: 24px;
+    }
+
+    .mission-card {
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .mission-card.active {
+      border-color: #bed8ff;
+      background: linear-gradient(180deg, #fff, #f4f8ff);
+    }
+
+    .mission-card.failed {
+      border-color: #e9c0c8;
+      background: linear-gradient(180deg, #fff, #fff5f7);
+    }
+
+    .mission-card.paused {
+      border-color: #ead8ad;
+      background: linear-gradient(180deg, #fff, #fff9e8);
+    }
+
+    .mission-card.complete h3 {
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      text-decoration-color: rgba(33, 94, 54, .45);
+    }
+
+    .mission-topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .mission-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+      border: 1px solid var(--line);
+    }
+
+    .mission-status-badge.active {
+      background: #eaf6ff;
+      color: #164f8a;
+      border-color: #b9ddff;
+    }
+
+    .mission-status-badge.complete {
+      background: var(--green-soft);
+      color: #215e36;
+      border-color: #b8d9c4;
+    }
+
+    .mission-status-badge.failed {
+      background: #fdecef;
+      color: #7a2437;
+      border-color: #edbdc8;
+    }
+
+    .mission-status-badge.paused {
+      background: #fff4d3;
+      color: #785414;
+      border-color: #e8d091;
+    }
+
+    .mission-decision-strip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: rgba(255,255,255,.76);
+      display: grid;
+      gap: 6px;
+    }
+
+    .mission-decision-strip small {
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      font-size: 10px;
+    }
+
+    .mission-decision-strip p {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    details.mission-progress-history {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255,255,255,.72);
+    }
+
+    details.mission-progress-history summary {
+      cursor: pointer;
+      font-weight: 950;
+      color: var(--text);
+      list-style-position: inside;
+    }
+
+    .mission-empty-state {
+      grid-column: 1 / -1;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(241,245,242,.9));
+    }
+
+    .mission-empty-state strong {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .mission-empty-state p {
+      max-width: 520px;
+      margin: 0 auto;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .mission-empty-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+      margin: 0 auto 14px;
+      display: grid;
+      place-items: center;
+      background: #edf4ef;
+      border: 1px solid var(--line);
+      color: var(--green);
+      font-weight: 950;
+      font-size: 24px;
+    }
+
 
 
     .duplicate-box {
@@ -2694,7 +2845,7 @@
         <div class="panel-header">
           <div>
             <h2>Missoes</h2>
-            <p class="hint">Entradas do WhatsApp com sinais de missao, progresso, atualizacao ou conclusao.</p>
+            <p class="hint">Missões extraídas das frases do WhatsApp: criação, sucesso, falha, pausa e desdobramentos.</p>
           </div>
           <button class="secondary" onclick="loadData()">Atualizar missoes</button>
         </div>
@@ -2706,14 +2857,14 @@
             <p>Em andamento no periodo selecionado.</p>
           </article>
           <article class="weird-card">
-            <small>Concluidas</small>
-            <strong id="missionsDoneCount">0</strong>
-            <p>Marcadas como completas ou com 100%.</p>
+            <small>Taxa de conclusão</small>
+            <strong id="missionsDoneCount">0%</strong>
+            <p>Concluídas sobre concluídas + não cumpridas.</p>
           </article>
           <article class="weird-card">
-            <small>Progresso medio</small>
+            <small>Momentum</small>
             <strong id="missionsAvgProgress">0%</strong>
-            <p>Media estimada a partir dos sinais encontrados.</p>
+            <p>Força operacional das missões no período.</p>
           </article>
           <article class="weird-card">
             <small>Ultimo movimento</small>
@@ -4542,6 +4693,383 @@
           .map(word => word.trim())
           .filter(word => word.length >= 4 && !stop.has(word))
       ).slice(0, 12);
+    }
+
+    function renderMissions() {
+      const box = document.getElementById('missionsBox');
+      if (!box) return;
+
+      const missions = buildMissions(viewEntries);
+      currentMissions = missions;
+      const active = missions.filter(m => ['ativa', 'em_progresso'].includes(m.status));
+      const done = missions.filter(m => m.status === 'concluida');
+      const failed = missions.filter(m => ['nao_cumprida', 'pausada'].includes(m.status));
+      const closed = done.length + failed.length;
+      const completionRate = closed ? Math.round((done.length / closed) * 100) : 0;
+      const momentum = missions.length
+        ? Math.max(0, Math.min(100, Math.round(((done.length * 1.15) + (active.length * .72) - (failed.length * .45)) / missions.length * 100)))
+        : 0;
+      const latestMove = missions
+        .flatMap(m => m.timeline.map(item => ({ ...item, mission: m })))
+        .sort((a, b) => getEntryTimestamp(b.entry) - getEntryTimestamp(a.entry))[0];
+
+      document.getElementById('missionsActiveCount').textContent = String(active.length);
+      document.getElementById('missionsDoneCount').textContent = `${completionRate}%`;
+      document.getElementById('missionsAvgProgress').textContent = `${momentum}%`;
+      document.getElementById('missionsLastUpdate').textContent = latestMove ? missionLastMovementText(latestMove) : '-';
+
+      if (!missions.length) {
+        box.innerHTML = `
+          <div class="mission-empty-state">
+            <div>
+              <div class="mission-empty-icon">GO</div>
+              <strong>O Radar está limpo.</strong>
+              <p>O que vamos conquistar hoje? Envie uma nova missão no WhatsApp para começar.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      box.innerHTML = missions.map(renderMissionCard).join('');
+    }
+
+    function buildMissions(entries) {
+      const missionEntries = entries
+        .filter(isMissionSignal)
+        .map(entry => ({ entry, parsed: parseMissionEntry(entry) }))
+        .sort((a, b) => getEntryTimestamp(a.entry) - getEntryTimestamp(b.entry));
+
+      const missions = [];
+
+      missionEntries.forEach(item => {
+        let mission = findMatchingMission(missions, item.parsed);
+
+        if (!mission) {
+          mission = {
+            key: item.parsed.key,
+            title: item.parsed.title,
+            keywords: new Set(item.parsed.keywords),
+            entries: [],
+            timeline: [],
+            categories: new Set(),
+            dimensions: new Set(),
+            status: 'ativa',
+            priority: item.parsed.priority || 'media',
+            dueHint: item.parsed.dueHint || '',
+            insight: '',
+            nextStep: '',
+            trend: 'neutral',
+            originalEntry: null
+          };
+          missions.push(mission);
+        }
+
+        mission.entries.push(item.entry);
+        if (!mission.originalEntry && item.parsed.intent === 'CRIAR') {
+          mission.originalEntry = item.entry;
+        }
+        item.parsed.keywords.forEach(keyword => mission.keywords.add(keyword));
+        item.parsed.categories.forEach(cat => mission.categories.add(cat));
+        item.parsed.dimensions.forEach(dim => mission.dimensions.add(dim));
+
+        mission.status = applyMissionStatus(mission.status, item.parsed);
+        mission.priority = strongerMissionPriority(mission.priority, item.parsed.priority);
+        mission.dueHint = item.parsed.dueHint || mission.dueHint;
+        if (item.parsed.insight) mission.insight = item.parsed.insight;
+        if (item.parsed.nextStep) mission.nextStep = item.parsed.nextStep;
+        mission.trend = item.parsed.sentiment === 'positive' ? 'positive' : item.parsed.sentiment === 'negative' ? 'negative' : mission.trend;
+        mission.timeline.push({
+          entry: item.entry,
+          sentiment: item.parsed.sentiment,
+          kind: item.parsed.kind,
+          intent: item.parsed.intent,
+          status: item.parsed.status,
+          updateText: item.parsed.updateText,
+          title: item.parsed.title
+        });
+      });
+
+      return missions
+        .map(mission => {
+          const latest = [...mission.entries].sort((a, b) => getEntryTimestamp(b) - getEntryTimestamp(a))[0];
+          return {
+            ...mission,
+            latest,
+            categories: Array.from(mission.categories),
+            dimensions: Array.from(mission.dimensions),
+            keywords: Array.from(mission.keywords),
+            json: buildMissionJson(mission, latest)
+          };
+        })
+        .sort((a, b) => {
+          const order = { ativa: 0, em_progresso: 1, pausada: 2, nao_cumprida: 3, concluida: 4 };
+          if (a.status !== b.status) return (order[a.status] || 9) - (order[b.status] || 9);
+          return getEntryTimestamp(b.latest) - getEntryTimestamp(a.latest);
+        });
+    }
+
+    function isMissionSignal(entry) {
+      const missionParser = getMissionParser(entry);
+      if (missionParser && missionParser.intencao !== 'NENHUMA') return true;
+
+      const text = normalizeMissionText([
+        entry._all_text,
+        entry.entrada_original,
+        entry.tipo_principal,
+        ...(entry.categorias || []),
+        ...(entry.dimensoes_afetadas || [])
+      ].join(' '));
+
+      return /\b(missao|missoes|tarefa|meta|preciso|tenho que|conclui|matei|feito|falhei|deu ruim|cancela|andamento|progresso|passo)\b/.test(text);
+    }
+
+    function parseMissionEntry(entry) {
+      const original = String(entry.entrada_original || '').trim();
+      const missionParser = getMissionParser(entry);
+      const intent = missionParser ? missionParser.intencao : inferMissionIntent(original);
+      const title = (missionParser && missionParser.missao_alvo_aproximada) || extractMissionTitle(original) || 'Missão sem título';
+      const status = missionStatusFromParser(missionParser, intent);
+      const categories = unique([...(entry.categorias || []), entry.tipo_principal, 'missao']).filter(Boolean);
+      const dimensions = unique([...(entry.dimensoes_afetadas || []), 'missao_pessoal']).filter(Boolean);
+      const keywords = extractMissionKeywords([
+        title,
+        original,
+        entry.insight_curto,
+        entry.insight_profundo,
+        entry.tipo_principal,
+        ...categories,
+        ...dimensions
+      ].join(' '));
+
+      return {
+        key: normalizeMissionKey(title),
+        title,
+        intent,
+        status,
+        priority: (missionParser && missionParser.prioridade) || inferMissionPriority(original),
+        dueHint: (missionParser && missionParser.metadados && missionParser.metadados.prazo_sugerido) || extractMissionDueHint(original),
+        sentiment: missionSentiment(intent),
+        categories,
+        dimensions,
+        keywords,
+        insight: entry.insight_curto || entry.insight_profundo || '',
+        nextStep: extractMissionNextStep(original),
+        kind: intent === 'CRIAR' ? 'original' : 'progress',
+        updateText: (missionParser && missionParser.conteudo_atualizacao) || extractMissionUpdateText(original)
+      };
+    }
+
+    function getMissionParser(entry) {
+      const intelligence = entry._radar_intelligence || getRadarIntelligence(entry) || {};
+      const parser = intelligence.missionParser || intelligence.mission_parser;
+      if (!parser || typeof parser !== 'object') return null;
+      const intent = String(parser.intencao || parser.intent || 'NENHUMA').toUpperCase();
+      if (!['CRIAR', 'CONCLUIR', 'FALHAR', 'DESDOBRAR'].includes(intent)) return null;
+      return {
+        intencao: intent,
+        missao_alvo_aproximada: String(parser.missao_alvo_aproximada || parser.targetMission || parser.title || '').trim(),
+        conteudo_atualizacao: String(parser.conteudo_atualizacao || parser.updateText || parser.reason || '').trim(),
+        status_sugerido: String(parser.status_sugerido || parser.suggestedStatus || '').trim(),
+        prioridade: String(parser.prioridade || parser.priority || 'media').trim(),
+        metadados: parser.metadados || parser.metadata || {}
+      };
+    }
+
+    function inferMissionIntent(text) {
+      const clean = normalizeMissionText(text);
+      if (/\b(conclui|concluido|concluida|completei|finalizei|terminei|matei|feito|ta feito|paga|pago)\b/.test(clean)) return 'CONCLUIR';
+      if (/\b(deu ruim|falhei|falha|nao consegui|nao deu|cancela|cancelar|pausei|pausa|bloqueado|travou)\b/.test(clean)) return 'FALHAR';
+      if (/\b(sobre a missao|andamento|mais um passo|progresso|atualizacao|liguei|comprei|enviei|passo na missao)\b/.test(clean)) return 'DESDOBRAR';
+      return 'CRIAR';
+    }
+
+    function missionStatusFromParser(parser, intent) {
+      const suggested = normalizeMissionText(parser && parser.status_sugerido);
+      if (intent === 'CONCLUIR' || /conclu/.test(suggested)) return 'concluida';
+      if (/paus/.test(suggested)) return 'pausada';
+      if (intent === 'FALHAR' || /nao cumprida|falh|cancel/.test(suggested)) return 'nao_cumprida';
+      if (intent === 'DESDOBRAR' || /progresso|andamento/.test(suggested)) return 'em_progresso';
+      return 'ativa';
+    }
+
+    function applyMissionStatus(current, parsed) {
+      if (parsed.status === 'concluida') return 'concluida';
+      if (parsed.status === 'nao_cumprida') return current === 'concluida' ? current : 'nao_cumprida';
+      if (parsed.status === 'pausada') return current === 'concluida' ? current : 'pausada';
+      if (parsed.intent === 'DESDOBRAR') return ['concluida', 'nao_cumprida', 'pausada'].includes(current) ? current : 'em_progresso';
+      return current || 'ativa';
+    }
+
+    function renderMissionCard(mission) {
+      const original = mission.originalEntry || mission.entries[0] || null;
+      const updates = mission.timeline
+        .slice()
+        .filter(update => update.kind !== 'original')
+        .sort((a, b) => getEntryTimestamp(b.entry) - getEntryTimestamp(a.entry));
+      const status = missionStatusUi(mission.status);
+      const tags = unique([
+        status.label,
+        mission.priority ? `prioridade ${mission.priority}` : '',
+        mission.dueHint ? `prazo ${mission.dueHint}` : '',
+        ...mission.categories.slice(0, 5),
+        ...mission.keywords.slice(0, 4)
+      ]).filter(Boolean);
+
+      return `
+        <article class="mission-card ${escapeAttr(status.className)}">
+          <div class="mission-topline">
+            <div>
+              <h3>${escapeHtml(mission.title)}</h3>
+              <div class="mission-meta">
+                ${tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+              </div>
+            </div>
+            <span class="mission-status-badge ${escapeAttr(status.className)}">${escapeHtml(status.icon)} ${escapeHtml(status.label)}</span>
+          </div>
+
+          <div class="mission-decision-strip">
+            <small>Motor de decisão</small>
+            <p>${escapeHtml(buildMissionDecision(mission))}</p>
+          </div>
+
+          ${mission.insight ? `<div class="entry-insight">${escapeHtml(mission.insight)}</div>` : ''}
+          ${mission.nextStep ? `<p class="mission-text"><strong>Próxima ação:</strong> ${escapeHtml(mission.nextStep)}</p>` : ''}
+
+          <div class="mission-original">
+            <span class="mission-section-label">Origem</span>
+            <div class="mission-original-card">
+              ${escapeHtml(original ? original.entrada_original || mission.title : mission.title)}
+            </div>
+          </div>
+
+          <details class="mission-progress-history" ${updates.length ? 'open' : ''}>
+            <summary>Linha do tempo (${updates.length})</summary>
+            <div class="mission-meta">
+              <span class="tag">${escapeHtml(formatEntryDateLine(mission.latest) || 'sem data')}</span>
+              <span class="tag">${escapeHtml(mission.entries.length)} registro(s)</span>
+            </div>
+            <div class="mission-updates">
+              ${updates.map(update => `
+                <div class="mission-update ${escapeAttr(update.sentiment)}">
+                  <strong>
+                    ${escapeHtml(formatEntryDateLine(update.entry) || 'Sem data')}
+                    <span class="mission-delta">${escapeHtml(missionIntentLabel(update.intent))}</span>
+                  </strong><br />
+                  ${escapeHtml(getMissionUpdateText(update))}
+                </div>
+              `).join('') || '<div class="mission-update">Nenhum desdobramento registrado ainda.</div>'}
+            </div>
+          </details>
+
+          <div class="mission-actions">
+            <button class="mission-progress-button" onclick="toggleMissionProgressForm('${escapeAttr(mission.key)}')">Acrescentar andamento</button>
+            ${mission.status !== 'concluida' ? `<button class="secondary" onclick="completeMission('${escapeAttr(mission.key)}')">Dar como concluída</button>` : ''}
+            <button class="danger" onclick="deleteMission('${escapeAttr(mission.key)}')">Excluir missão</button>
+          </div>
+
+          <div id="missionProgressForm-${escapeAttr(mission.key)}" class="mission-progress-form">
+            <strong>Novo andamento</strong>
+            <textarea id="missionProgressText-${escapeAttr(mission.key)}" placeholder="Escreva o novo andamento desta missão..."></textarea>
+            <div class="mission-actions">
+              <button class="progress" onclick="submitMissionProgress('${escapeAttr(mission.key)}')">Salvar andamento</button>
+              <button class="secondary" onclick="toggleMissionProgressForm('${escapeAttr(mission.key)}', false)">Cancelar</button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function missionStatusUi(status) {
+      if (status === 'concluida') return { label: 'Concluída', className: 'complete', icon: '✓' };
+      if (status === 'nao_cumprida') return { label: 'Não cumprida', className: 'failed', icon: '!' };
+      if (status === 'pausada') return { label: 'Pausada', className: 'paused', icon: 'II' };
+      if (status === 'em_progresso') return { label: 'Em progresso', className: 'active', icon: '→' };
+      return { label: 'Ativa', className: 'active', icon: '•' };
+    }
+
+    function missionSentiment(intent) {
+      if (intent === 'CONCLUIR') return 'positive';
+      if (intent === 'FALHAR') return 'negative';
+      if (intent === 'DESDOBRAR') return 'positive';
+      return 'neutral';
+    }
+
+    function missionIntentLabel(intent) {
+      return {
+        CRIAR: 'criação',
+        CONCLUIR: 'sucesso',
+        FALHAR: 'falha',
+        DESDOBRAR: 'log'
+      }[intent] || 'registro';
+    }
+
+    function buildMissionDecision(mission) {
+      if (mission.status === 'concluida') return 'Missão fechada. Preserve o aprendizado e reaproveite o padrão que permitiu concluir.';
+      if (mission.status === 'nao_cumprida') return 'Missão não cumprida. O próximo passo é reduzir escopo, identificar o atrito e decidir se vale retomar.';
+      if (mission.status === 'pausada') return 'Missão pausada. Mantenha fora do foco ativo até haver energia, prazo ou motivo claro para reabrir.';
+      if (mission.timeline.length > 1) return 'Missão em movimento. Continue com uma próxima ação pequena e registre o próximo desdobramento.';
+      return 'Missão ativa. Defina o menor próximo passo observável para transformar intenção em tração.';
+    }
+
+    function missionLastMovementText(move) {
+      const verb = {
+        CRIAR: 'Criou',
+        CONCLUIR: 'Concluiu',
+        FALHAR: 'Registrou falha em',
+        DESDOBRAR: 'Atualizou'
+      }[move.intent] || 'Moveu';
+      return `${formatEntryDateLine(move.entry) || 'Agora'}: ${verb} "${move.mission.title}"`;
+    }
+
+    function strongerMissionPriority(current, next) {
+      const weight = { baixa: 1, media: 2, alta: 3 };
+      return (weight[next] || 0) > (weight[current] || 0) ? next : current;
+    }
+
+    function inferMissionPriority(text) {
+      const clean = normalizeMissionText(text);
+      if (/\b(urgente|importante|alta|hoje|amanha|amanhã|prazo)\b/.test(clean)) return 'alta';
+      if (/\b(algum dia|quando der|baixa)\b/.test(clean)) return 'baixa';
+      return 'media';
+    }
+
+    function extractMissionDueHint(text) {
+      const clean = normalizeMissionText(text);
+      if (/\bhoje\b/.test(clean)) return 'hoje';
+      if (/\bamanha|amanhã\b/.test(clean)) return 'amanha';
+      if (/\bessa semana|esta semana\b/.test(clean)) return 'esta semana';
+      const date = String(text || '').match(/\b(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\b/);
+      return date ? date[1] : '';
+    }
+
+    function buildMissionJson(mission, latest) {
+      return {
+        tipo_input: 'missao',
+        titulo: mission.title,
+        status: mission.status,
+        prioridade: mission.priority,
+        prazo: mission.dueHint,
+        entradas_relacionadas: mission.entries.length,
+        categorias: Array.from(mission.categories || []),
+        dimensoes_afetadas: Array.from(mission.dimensions || []),
+        palavras_chave: Array.from(mission.keywords || []),
+        ultimo_registro: latest ? {
+          id: latest.id || '',
+          data: latest.data_br || isoToBrDate(latest.data_iso) || '',
+          hora: latest.hora_br || '',
+          origem: latest.origem || '',
+          texto: latest.entrada_original || ''
+        } : null,
+        timeline: mission.timeline.map(update => ({
+          intencao: update.intent,
+          status: update.status,
+          texto: getMissionUpdateText(update),
+          data: update.entry.data_br || isoToBrDate(update.entry.data_iso) || ''
+        })),
+        insight: mission.insight || '',
+        proximo_passo_detectado: mission.nextStep || ''
+      };
     }
 
     function renderComparison() {

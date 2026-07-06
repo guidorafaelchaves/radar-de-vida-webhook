@@ -1391,6 +1391,9 @@ function buildRadarIntelligencePrompt({ text, from, profileName, source, receive
     'TAREFAS E MISSOES:',
     'Extraia titulo, categoria, prazo, prioridade, estado, dependencias, proxima_acao, energia_necessaria, impacto, recorrencia e projeto.',
     'Estados: ideia, aberta, em_andamento, bloqueada, concluida, cancelada.',
+    'Para qualquer texto que pareca missao, tarefa, meta, compromisso, progresso, falha ou conclusao, preencha tambem missionParser.',
+    'Padroes de intencao: CRIAR quando o usuario cria ou anuncia uma missao; CONCLUIR quando declara sucesso; FALHAR quando falha, cancela, pausa ou deu ruim; DESDOBRAR quando informa andamento, obstaculo, subtarefa, decisao ou log sobre uma missao existente.',
+    'Mapeie linguagem informal: "matei a missao", "ta feito", "academia paga" = CONCLUIR; "deu ruim", "falhei", "nao consegui", "cancela" = FALHAR; "sobre a missao", "mais um passo", "liguei", "comprei os livros" = DESDOBRAR.',
     '',
     'FORMATO OBRIGATORIO:',
     'Responda somente JSON valido, sem markdown.',
@@ -1462,6 +1465,16 @@ function buildRadarIntelligencePrompt({ text, from, profileName, source, receive
     '  "missions": [',
     '    { "title": "", "reason": "", "priority": "baixa|media|alta", "dueHint": "", "status": "aberta" }',
     '  ],',
+    '  "missionParser": {',
+    '    "categoria": "missao|outro",',
+    '    "intencao": "CRIAR|CONCLUIR|FALHAR|DESDOBRAR|NENHUMA",',
+    '    "missao_alvo_aproximada": "",',
+    '    "conteudo_atualizacao": "",',
+    '    "status_sugerido": "Ativa|Concluida|Nao Cumprida|Pausada|Em Progresso",',
+    '    "prioridade": "baixa|media|alta",',
+    '    "confianca": 0.0,',
+    '    "metadados": { "data_registro": "YYYY-MM-DD", "prazo_sugerido": "YYYY-MM-DD" }',
+    '  },',
     '  "questions": [],',
     '  "confidence": 0.0',
     '}',
@@ -1597,9 +1610,39 @@ function normalizeRadarIntelligence(intelligence, { text, source, receivedAt }) 
       dueHint: cleanText(mission.dueHint),
       status: cleanText(mission.status) || 'aberta'
     })).filter(mission => mission.title) : [],
+    missionParser: normalizeMissionParser(intelligence.missionParser || intelligence.mission_parser),
     questions: uniqueClean(intelligence.questions || []),
     confidence: Math.max(0, Math.min(1, Number(intelligence.confidence) || average(cleanEvents.map(e => e.confidence)) || 0.5))
   };
+}
+
+function normalizeMissionParser(parser = {}) {
+  const intent = canonicalMissionIntent(parser.intencao || parser.intent || parser.action);
+  const category = cleanText(parser.categoria || parser.category) || (intent === 'NENHUMA' ? 'outro' : 'missao');
+  const meta = parser.metadados || parser.metadata || {};
+
+  return {
+    categoria: category === 'missao' ? 'missao' : 'outro',
+    intencao: intent,
+    missao_alvo_aproximada: cleanText(parser.missao_alvo_aproximada || parser.targetMission || parser.title),
+    conteudo_atualizacao: cleanText(parser.conteudo_atualizacao || parser.updateText || parser.reason),
+    status_sugerido: cleanText(parser.status_sugerido || parser.suggestedStatus),
+    prioridade: cleanText(parser.prioridade || parser.priority) || 'media',
+    confianca: Math.max(0, Math.min(1, Number(parser.confianca || parser.confidence) || 0)),
+    metadados: {
+      data_registro: cleanText(meta.data_registro || meta.registeredAt || meta.date),
+      prazo_sugerido: cleanText(meta.prazo_sugerido || meta.dueDate || parser.dueHint)
+    }
+  };
+}
+
+function canonicalMissionIntent(value) {
+  const s = normalizeText(value);
+  if (/concluir|concluida|concluido|done|sucesso/.test(s)) return 'CONCLUIR';
+  if (/falhar|fracasso|cancel|pausar|pausada|nao cumprida|bloque/.test(s)) return 'FALHAR';
+  if (/desdobrar|atualiz|andamento|progresso|log|update/.test(s)) return 'DESDOBRAR';
+  if (/criar|nova|open|abrir|ativa/.test(s)) return 'CRIAR';
+  return 'NENHUMA';
 }
 
 function normalizeLifeEvents(inputLifeEvents, events) {
@@ -1916,6 +1959,8 @@ function buildLocalRadarIntelligence({ text, source, receivedAt }) {
   const hasTask =
     /\b(preciso|devo|tenho que|tarefa|miss[aã]o|missao|prazo|pagar|resolver|comprar|ligar|enviar|fazer|concluir|bloqueado|andamento)\b/i.test(normalizedText);
 
+  const hasMissionIntent = hasTask || looksLikeMissionText(normalizedText);
+
   if (hasInvestment) {
     const trade = extractInvestmentTrade(normalizedText, tickers, money);
     const subtype = /\b(recebi|ganhei|dividendo|dividendos|jcp|rendimento|rendimentos|provento|proventos)\b/i.test(normalizedText)
@@ -2014,7 +2059,7 @@ function buildLocalRadarIntelligence({ text, source, receivedAt }) {
     });
   }
 
-  if (hasTask) {
+  if (hasMissionIntent) {
     events.push({
       idHint: 'missao_tarefa',
       domain: 'tarefas',
@@ -2060,6 +2105,8 @@ function buildLocalRadarIntelligence({ text, source, receivedAt }) {
     return acc;
   }, {});
 
+  const missionParser = hasMissionIntent ? buildLocalMissionParser(normalizedText) : normalizeMissionParser();
+
   return normalizeRadarIntelligence({
     version: RADAR_INTELLIGENCE_VERSION,
     rawText,
@@ -2084,9 +2131,67 @@ function buildLocalRadarIntelligence({ text, source, receivedAt }) {
           status: 'aberta'
         }]
       : [],
+    missionParser,
     questions: uniqueClean(events.flatMap(e => e.missingFields || []).map(field => `Confirmar ${field}`)),
     confidence: average(events.map(e => e.confidence))
   }, { text: rawText, source, receivedAt });
+}
+
+function looksLikeMissionText(text) {
+  return /\b(preciso|devo|tenho que|tarefa|miss[aã]?o|missoes|meta|prazo|resolver|comprar|ligar|enviar|fazer|concluir|conclui|matei|feito|falhei|falha|cancela|pausa|bloqueado|andamento|passo|progresso)\b/i.test(String(text || ''));
+}
+
+function buildLocalMissionParser(text) {
+  const raw = normalizeWhitespace(text);
+  const lower = normalizeText(raw);
+  const intencao = /\b(conclui|concluido|concluida|completei|finalizei|terminei|matei|feito|ta feito|paga|pago)\b/.test(lower)
+    ? 'CONCLUIR'
+    : /\b(deu ruim|falhei|falha|nao consegui|nao deu|cancela|cancelar|pausei|pausa|bloqueado|travou)\b/.test(lower)
+      ? 'FALHAR'
+      : /\b(sobre a missao|andamento|mais um passo|progresso|atualizacao|liguei|comprei|enviei|fiz uma parte|passo na missao)\b/.test(lower)
+        ? 'DESDOBRAR'
+        : 'CRIAR';
+
+  return normalizeMissionParser({
+    categoria: 'missao',
+    intencao,
+    missao_alvo_aproximada: cleanMissionTarget(raw, intencao),
+    conteudo_atualizacao: intencao === 'CRIAR' ? '' : raw,
+    status_sugerido: intencao === 'CONCLUIR'
+      ? 'Concluida'
+      : intencao === 'FALHAR'
+        ? (/cancel|pausa/.test(lower) ? 'Pausada' : 'Nao Cumprida')
+        : intencao === 'DESDOBRAR'
+          ? 'Em Progresso'
+          : 'Ativa',
+    prioridade: /\b(urgente|importante|alta|hoje|amanha)\b/.test(lower) ? 'alta' : 'media',
+    confianca: 0.68,
+    metadados: {
+      data_registro: isoDateOnly(),
+      prazo_sugerido: /\bamanh/.test(lower) ? 'amanha' : /\bhoje\b/.test(lower) ? isoDateOnly() : ''
+    }
+  });
+}
+
+function cleanMissionTarget(text, intencao) {
+  const raw = normalizeWhitespace(text);
+  const patterns = [
+    /\b(?:nova\s+)?miss[aã]?o\s*[:\-–—]?\s*([^.;\n]+)/i,
+    /\bsobre\s+a\s+miss[aã]?o\s+(?:do|da|de)?\s*([^:.;\n]+)/i,
+    /\b(?:conclui|matei|finalizei|terminei|completei)\s+(?:a\s+)?(?:miss[aã]?o\s+)?([^.;\n]+)/i,
+    /\b(?:deu ruim|falhei|nao consegui|não consegui|cancela|cancelar|pausa)\s+(?:a\s+)?(?:miss[aã]?o\s+)?([^.;\n]+)/i,
+    /\b(?:preciso|devo|tenho que|comecar a|começar a|resolver|fazer|enviar|ligar|pagar)\s+([^.;\n]+)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    if (match && match[1]) return cleanText(match[1]).slice(0, 100);
+  }
+
+  return cleanText(raw)
+    .replace(/\b(missao|missão|tarefa|meta|conclui|matei|deu ruim|falhei|cancela|andamento|progresso)\b/ig, '')
+    .trim()
+    .slice(0, 100) || (intencao === 'CRIAR' ? 'Nova missao' : 'Missao mencionada');
 }
 
 function buildLegacyFieldsFromRadarIntelligence(intelligence) {
