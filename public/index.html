@@ -1218,6 +1218,39 @@
       margin-bottom: 16px;
     }
 
+    .mission-quick-input {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff, #f6faf7);
+      padding: 14px;
+      margin-bottom: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .mission-quick-input textarea {
+      min-height: 96px;
+      resize: vertical;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .mission-quick-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .mission-quick-actions small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     .mission-board {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2850,6 +2883,14 @@
           <button class="secondary" onclick="loadData()">Atualizar missoes</button>
         </div>
 
+        <div class="mission-quick-input">
+          <textarea id="missionQuickInput" placeholder="Ex: Nova missão: resolver o projeto X até sexta.&#10;Ex: Sobre a missão do projeto X: liguei para o cliente e ele pediu alteração.&#10;Ex: Matei a missão do inglês."></textarea>
+          <div class="mission-quick-actions">
+            <small>O texto entra no mesmo fluxo do WhatsApp e a IA decide se é criação, conclusão, falha ou desdobramento.</small>
+            <button onclick="submitQuickMission()">Criar missão</button>
+          </div>
+        </div>
+
         <div class="mission-summary">
           <article class="weird-card">
             <small>Missoes ativas</small>
@@ -4324,6 +4365,46 @@
 
     function findCurrentMission(key) {
       return currentMissions.find(mission => mission.key === key);
+    }
+
+    async function submitQuickMission() {
+      const input = document.getElementById('missionQuickInput');
+      const text = input ? input.value.trim() : '';
+
+      if (!text) {
+        toast('Escreva a missão antes de registrar.');
+        if (input) input.focus();
+        return;
+      }
+
+      showLoading('Criando missão...');
+      try {
+        const response = await fetch('/api/manual-entry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: /^miss/i.test(text) || /^nova\s+miss/i.test(text) ? text : `Nova missão: ${text}`,
+            from: 'mission_quick_input',
+            profileName: 'Painel Missoes'
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao criar missão.');
+        }
+
+        if (input) input.value = '';
+        toast('Missão registrada no Radar.');
+        await loadData();
+        switchView('missions');
+      } catch (err) {
+        console.error(err);
+        toast('Erro ao criar missão: ' + err.message);
+      } finally {
+        hideLoading();
+      }
     }
 
     function toggleMissionProgressForm(key, forceOpen) {
