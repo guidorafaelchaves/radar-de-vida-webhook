@@ -4231,6 +4231,10 @@
     }
 
     function findMatchingMission(missions, parsed) {
+      if (parsed && parsed.intent === 'CRIAR') {
+        return missions.find(mission => mission.key === parsed.key) || null;
+      }
+
       let best = null;
       let bestScore = 0;
 
@@ -4242,7 +4246,8 @@
         }
       });
 
-      return bestScore >= 0.30 ? best : null;
+      const threshold = parsed && parsed.intent === 'DESDOBRAR' ? 0.34 : 0.45;
+      return bestScore >= threshold ? best : null;
     }
 
     function missionSimilarity(a, b) {
@@ -4759,7 +4764,7 @@
 
     function extractMissionKeywords(text) {
       const stop = new Set([
-        'missao', 'missoes', 'tenho', 'como', 'sobre', 'para', 'com', 'sem',
+        'missao', 'missoes', 'nova', 'novo', 'tenho', 'como', 'sobre', 'para', 'com', 'sem',
         'uma', 'um', 'uns', 'das', 'dos', 'de', 'da', 'do', 'e', 'o', 'a',
         'os', 'as', 'meu', 'minha', 'meus', 'minhas', 'preciso', 'quero',
         'vou', 'ja', 'foi', 'ser', 'estar', 'estou', 'isso', 'tudo',
