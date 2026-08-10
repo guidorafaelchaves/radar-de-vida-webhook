@@ -1234,6 +1234,47 @@
       gap: 10px;
     }
 
+    .json-importer {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .json-importer h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .json-importer p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .json-importer textarea {
+      min-height: 190px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .json-import-actions {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .json-import-status {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
     textarea {
       width: 100%;
       min-height: 118px;
@@ -2232,6 +2273,7 @@
       .body-command,
       .body-lane-grid,
       .body-index-strip,
+      .json-import-actions,
       .zepp-body-matrix,
       .zepp-kpis {
         grid-template-columns: 1fr;
@@ -2911,6 +2953,36 @@
         <p class="footer-note">
           O registro entra no Google Docs; o painel decide em qual mês ele aparece.
         </p>
+        <div class="json-importer">
+          <div>
+            <h3>Importar JSON do ChatGPT</h3>
+            <p>Cole JSON estruturado de extratos, cartões, investimentos, refeições ou eventos. O Radar transforma cada item em entrada própria e envia pelo mesmo fluxo manual.</p>
+          </div>
+          <textarea id="jsonImportText" spellcheck="false" placeholder='Exemplo:
+{
+  "source": "extrato_bancario",
+  "bank": "Banco XP",
+  "transactions": [
+    {
+      "date": "2026-08-10",
+      "description": "Pagamento restaurante",
+      "amount": -89.90,
+      "category": "alimentacao"
+    },
+    {
+      "date": "2026-08-10",
+      "description": "Rendimento CDB",
+      "amount": 42.15,
+      "category": "renda_passiva"
+    }
+  ]
+}'></textarea>
+          <div class="json-import-actions">
+            <span id="jsonImportStatus" class="json-import-status">Aceita array, objeto único, ou objeto com transactions/entries/events/items.</span>
+            <button class="secondary" onclick="previewJsonImport()">Prever</button>
+            <button id="jsonImportButton" onclick="sendJsonImport()">Importar JSON</button>
+          </div>
+        </div>
       </aside>
 
       <main class="panel">
@@ -8263,6 +8335,196 @@
       } finally {
         hideLoading();
         setTimeout(() => setGoButtonState('', 'GO'), 2600);
+      }
+    }
+
+    function parseJsonImportInput() {
+      const raw = document.getElementById('jsonImportText')?.value.trim() || '';
+      if (!raw) throw new Error('Cole um JSON antes de importar.');
+
+      let payload;
+      try {
+        payload = JSON.parse(raw);
+      } catch (err) {
+        throw new Error('JSON inválido: ' + err.message);
+      }
+
+      const rootMeta = !Array.isArray(payload) && payload && typeof payload === 'object' ? payload : {};
+      const candidates = unwrapJsonImportItems(payload);
+      if (!candidates.length) throw new Error('Nenhum item importável encontrado no JSON.');
+
+      const entries = candidates
+        .map((item, index) => normalizeJsonImportItem(item, index, rootMeta))
+        .filter(Boolean);
+
+      if (!entries.length) throw new Error('O JSON foi lido, mas nenhum item virou entrada útil.');
+      return entries;
+    }
+
+    function unwrapJsonImportItems(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (!payload || typeof payload !== 'object') return [payload];
+
+      const keys = [
+        'transactions', 'transacoes', 'lancamentos', 'movimentacoes',
+        'entries', 'registros', 'events', 'eventos', 'items', 'itens',
+        'data', 'dados', 'records'
+      ];
+
+      for (const key of keys) {
+        if (Array.isArray(payload[key])) return payload[key];
+      }
+
+      return [payload];
+    }
+
+    function jsonFirst(item, keys, fallback = '') {
+      if (!item || typeof item !== 'object') return fallback;
+      for (const key of keys) {
+        if (item[key] !== undefined && item[key] !== null && String(item[key]).trim() !== '') {
+          return item[key];
+        }
+      }
+      return fallback;
+    }
+
+    function jsonAmount(item) {
+      const direct = jsonFirst(item, [
+        'amount', 'valor', 'value', 'total', 'montante', 'preco', 'price',
+        'money', 'valor_total', 'valorTransacao'
+      ], '');
+      if (direct !== '') return parseLocaleNumber(direct);
+
+      const debit = jsonFirst(item, ['debit', 'debito', 'saida', 'withdrawal'], '');
+      const credit = jsonFirst(item, ['credit', 'credito', 'entrada', 'deposit'], '');
+      if (debit !== '') return -Math.abs(parseLocaleNumber(debit));
+      if (credit !== '') return Math.abs(parseLocaleNumber(credit));
+      return 0;
+    }
+
+    function jsonImportKind(item, amount) {
+      const rawType = normalizeStrategicText([
+        jsonFirst(item, ['type', 'tipo', 'natureza', 'kind'], ''),
+        jsonFirst(item, ['category', 'categoria', 'ledger'], ''),
+        jsonFirst(item, ['description', 'descricao', 'historico', 'memo', 'title'], '')
+      ].join(' '));
+
+      if (/ticker|acao|acoes|fii|cdb|tesouro|cripto|etf|aporte|invest|dividendo|jcp|rendimento|provento/.test(rawType)) {
+        if (/dividendo|jcp|rendimento|provento|cupom|yield/.test(rawType)) return 'renda_passiva';
+        return 'investimento';
+      }
+      if (/credito|receb|salario|honorario|deposito|pix recebido|entrada|renda|ganho/.test(rawType) || amount > 0) return 'ganho';
+      if (/debito|compra|pagamento|pix enviado|saida|tarifa|gasto|despesa/.test(rawType) || amount < 0) return 'gasto';
+      return 'evento';
+    }
+
+    function normalizeJsonImportItem(item, index, rootMeta = {}) {
+      if (typeof item === 'string') return `Importação JSON item ${index + 1}: ${item}`;
+      if (!item || typeof item !== 'object') return '';
+
+      const amount = jsonAmount(item);
+      const kind = jsonImportKind(item, amount);
+      const absAmount = Math.abs(amount);
+      const date = jsonFirst(item, ['date', 'data', 'postedAt', 'posted_at', 'data_movimento', 'dataTransacao'], jsonFirst(rootMeta, ['date', 'data', 'periodo'], ''));
+      const description = jsonFirst(item, ['description', 'descricao', 'historico', 'memo', 'title', 'nome', 'merchant', 'estabelecimento'], 'sem descrição');
+      const category = jsonFirst(item, ['category', 'categoria', 'subcategoria', 'ledger'], '');
+      const bank = jsonFirst(item, ['bank', 'banco', 'instituicao'], jsonFirst(rootMeta, ['bank', 'banco', 'instituicao'], ''));
+      const account = jsonFirst(item, ['account', 'conta', 'cartao', 'card'], jsonFirst(rootMeta, ['account', 'conta', 'cartao'], ''));
+      const source = jsonFirst(item, ['source', 'origem'], jsonFirst(rootMeta, ['source', 'origem'], 'json_chatgpt'));
+      const ticker = jsonFirst(item, ['ticker', 'asset', 'ativo', 'symbol', 'codigo'], '');
+      const quantity = jsonFirst(item, ['quantity', 'quantidade', 'qtd', 'shares', 'cotas'], '');
+      const notes = jsonFirst(item, ['notes', 'observacao', 'observações', 'insight', 'comment'], '');
+
+      const parts = ['Importação JSON estruturada.'];
+      if (date) parts.push(`Data: ${date}.`);
+      if (bank || account) parts.push(`Origem: ${[bank, account].filter(Boolean).join(' / ')}.`);
+      parts.push(`Descrição: ${description}.`);
+
+      if (kind === 'gasto') parts.push(`Gasto de R$ ${absAmount.toFixed(2)}.`);
+      else if (kind === 'ganho') parts.push(`Ganho de R$ ${absAmount.toFixed(2)}.`);
+      else if (kind === 'renda_passiva') parts.push(`Renda passiva ou rendimento de R$ ${absAmount.toFixed(2)}.`);
+      else if (kind === 'investimento') parts.push(`Investimento ou aporte de R$ ${absAmount.toFixed(2)}.`);
+      else if (absAmount) parts.push(`Valor de R$ ${absAmount.toFixed(2)}.`);
+
+      if (ticker) parts.push(`Ticker/ativo: ${ticker}.`);
+      if (quantity) parts.push(`Quantidade: ${quantity}.`);
+      if (category) parts.push(`Categoria sugerida: ${category}.`);
+      if (source) parts.push(`Fonte: ${source}.`);
+      if (notes) parts.push(`Observação: ${notes}.`);
+
+      return parts.join(' ');
+    }
+
+    function previewJsonImport() {
+      const status = document.getElementById('jsonImportStatus');
+      try {
+        const entries = parseJsonImportInput();
+        const sample = entries.slice(0, 2).map((entry, i) => `${i + 1}. ${entry.slice(0, 150)}`).join(' | ');
+        status.textContent = `${entries.length} entrada(s) detectada(s). Exemplo: ${sample}`;
+      } catch (err) {
+        status.textContent = err.message;
+        toast(err.message);
+      }
+    }
+
+    async function sendJsonImport() {
+      const status = document.getElementById('jsonImportStatus');
+      const button = document.getElementById('jsonImportButton');
+      let entries;
+      try {
+        entries = parseJsonImportInput();
+      } catch (err) {
+        status.textContent = err.message;
+        toast(err.message);
+        return;
+      }
+
+      if (entries.length > 250) {
+        toast('Importação bloqueada: limite atual de 250 itens por envio.');
+        status.textContent = `Foram detectados ${entries.length} itens. Divida o JSON em partes de até 250.`;
+        return;
+      }
+
+      const ok = confirm(`Importar ${entries.length} entrada(s) para o Radar?\n\nCada item será salvo no Google Docs pelo fluxo manual.`);
+      if (!ok) return;
+
+      showLoading(`Importando JSON: 0/${entries.length}`);
+      button.disabled = true;
+      let saved = 0;
+      let skipped = 0;
+
+      try {
+        for (let i = 0; i < entries.length; i += 1) {
+          const text = entries[i];
+          const duplicate = detectManualDuplicate(text);
+          if (duplicate.exact) {
+            skipped += 1;
+            continue;
+          }
+
+          const response = await fetch('/api/manual-entry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, from: 'json_import_chatgpt' })
+          });
+          const data = await response.json();
+          if (!data || !data.ok) throw new Error((data && data.error) || `Falha no item ${i + 1}.`);
+          if (data.duplicateIgnored) skipped += 1;
+          else saved += 1;
+          showLoading(`Importando JSON: ${i + 1}/${entries.length}`);
+        }
+
+        document.getElementById('jsonImportText').value = '';
+        status.textContent = `Importação concluída: ${saved} salva(s), ${skipped} ignorada(s).`;
+        toast(`JSON importado: ${saved} entrada(s) salva(s).`);
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Erro na importação: ' + err.message;
+        toast('Erro na importação JSON: ' + err.message);
+      } finally {
+        button.disabled = false;
+        hideLoading();
       }
     }
 
