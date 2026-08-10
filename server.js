@@ -30,6 +30,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { buildIngestionPlan } from './life-data/ingestion.js';
 
 const app = express();
 
@@ -43,6 +44,8 @@ const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
 const PORT = process.env.PORT || 3000;
+const RADAR_APP_VERSION = 'v8.0';
+const RADAR_APP_LABEL = `Radar de Vida ${RADAR_APP_VERSION} - Life Data Engine foundation`;
 
 function pickOpenAiTextModelInfo() {
   const explicit = String(process.env.OPENAI_TEXT_MODEL || '').trim();
@@ -82,6 +85,25 @@ const LOG_RAW_WHATSAPP_EMPTY =
 
 const RADAR_API_TOKEN = process.env.RADAR_API_TOKEN || '';
 const RADAR_INTELLIGENCE_VERSION = 'radar_intelligence_v1_2026_06_29';
+
+function envFlag(name, defaultValue = false) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === null || raw === '') return defaultValue;
+  return ['1', 'true', 'yes', 'on'].includes(String(raw).trim().toLowerCase());
+}
+
+const LIFE_DATA_FLAGS = {
+  engine: envFlag('LIFE_DATA_ENGINE_ENABLED'),
+  storage: envFlag('LIFE_DATA_STORAGE_ENABLED'),
+  ingestion: envFlag('LIFE_DATA_INGESTION_ENABLED'),
+  health: envFlag('LIFE_DATA_HEALTH_ENABLED'),
+  semanticMirror: envFlag('LIFE_DATA_SEMANTIC_MIRROR_ENABLED'),
+  dailyAggregates: envFlag('LIFE_DATA_DAILY_AGGREGATES_ENABLED'),
+  insights: envFlag('LIFE_DATA_INSIGHTS_ENABLED'),
+  dashboard: envFlag('LIFE_DATA_DASHBOARD_ENABLED'),
+  writeThrough: envFlag('LIFE_DATA_WRITE_THROUGH_ENABLED'),
+  debugLogs: envFlag('LIFE_DATA_DEBUG_LOGS')
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -133,6 +155,18 @@ function requireRadarApiToken(req, res) {
   });
 
   return false;
+}
+
+function requireStrictRadarApiToken(req, res) {
+  if (!RADAR_API_TOKEN) {
+    res.status(503).json({
+      ok: false,
+      error: 'RADAR_API_TOKEN precisa estar configurado para endpoints experimentais do Life Data.'
+    });
+    return false;
+  }
+
+  return requireRadarApiToken(req, res);
 }
 
 function getByPath(obj, pathExpression) {
@@ -2562,7 +2596,7 @@ app.get('/', (req, res) => {
 
   return res.json({
     ok: true,
-    app: 'Radar de Vida v7.5 — Radar Visual Documental',
+    app: RADAR_APP_LABEL,
     status: 'online',
     now: nowIso(),
     message: 'Backend online, mas public/index.html não foi encontrado.',
@@ -2574,6 +2608,7 @@ app.get('/', (req, res) => {
       analyzeEntry: '/api/analyze-entry',
       personalIntelligence: '/api/personal-intelligence',
       manualEntry: '/api/manual-entry',
+      lifeDataPlan: '/api/life-data/plan',
       zeppHealthSnapshot: '/api/zepp-health-snapshot',
       zeppTextEntry: '/api/zepp-text-entry',
       deleteEntry: '/api/delete-entry'
@@ -2589,7 +2624,8 @@ app.get('/', (req, res) => {
       ignoredLegacyOpenAIModel: OPENAI_TEXT_MODEL_INFO.ignoredLegacyModel,
       openaiAudioModel: OPENAI_AUDIO_MODEL,
       sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
-      logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY
+      logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY,
+      lifeDataFlags: LIFE_DATA_FLAGS
     }
   });
 });
@@ -2597,7 +2633,7 @@ app.get('/', (req, res) => {
 app.get('/health', async (req, res) => {
   const base = {
     ok: true,
-    app: 'Radar de Vida v7.5 — Radar Visual Documental',
+    app: RADAR_APP_LABEL,
     status: 'online',
     now: nowIso(),
     hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
@@ -2611,6 +2647,7 @@ app.get('/health', async (req, res) => {
     openaiAudioModel: OPENAI_AUDIO_MODEL,
     sendWhatsappConfirmation: SEND_WHATSAPP_CONFIRMATION,
     logRawWhatsappEmpty: LOG_RAW_WHATSAPP_EMPTY,
+    lifeDataFlags: LIFE_DATA_FLAGS,
     hasPublicIndex: fs.existsSync(path.join(publicDir, 'index.html'))
   };
 
@@ -2858,6 +2895,39 @@ app.post('/api/analyze-entry', async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: err.message
+    });
+  }
+});
+
+app.post('/api/life-data/plan', (req, res) => {
+  if (!LIFE_DATA_FLAGS.engine || !LIFE_DATA_FLAGS.ingestion) {
+    return res.status(404).json({
+      ok: false,
+      error: 'Life Data ingestion desativado por feature flag.',
+      requiredFlags: {
+        LIFE_DATA_ENGINE_ENABLED: true,
+        LIFE_DATA_INGESTION_ENABLED: true
+      }
+    });
+  }
+
+  if (!requireStrictRadarApiToken(req, res)) return;
+
+  try {
+    const plan = buildIngestionPlan(req.body || {});
+
+    return res.status(200).json({
+      ok: true,
+      mode: 'plan_only_no_storage_write',
+      lifeDataFlags: LIFE_DATA_FLAGS,
+      plan
+    });
+  } catch (err) {
+    return res.status(400).json({
+      ok: false,
+      error: err.message,
+      code: err.code || 'LIFE_DATA_PLAN_ERROR',
+      errors: Array.isArray(err.errors) ? err.errors : []
     });
   }
 });
@@ -3270,7 +3340,7 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Radar de Vida v7.5 — Radar Visual Documental online na porta ${PORT}`);
+  console.log(`${RADAR_APP_LABEL} online na porta ${PORT}`);
   console.log('GOOGLE_DOCS_API_URL configurada:', Boolean(GOOGLE_DOCS_API_URL));
   console.log('OPENAI_API_KEY configurada no Render:', Boolean(OPENAI_API_KEY));
   console.log('WHATSAPP_CLOUD_TOKEN configurado no Render:', Boolean(WHATSAPP_CLOUD_TOKEN));
@@ -3278,5 +3348,6 @@ app.listen(PORT, () => {
   console.log('OPENAI_AUDIO_MODEL:', OPENAI_AUDIO_MODEL);
   console.log('SEND_WHATSAPP_CONFIRMATION:', SEND_WHATSAPP_CONFIRMATION);
   console.log('LOG_RAW_WHATSAPP_EMPTY:', LOG_RAW_WHATSAPP_EMPTY);
+  console.log('LIFE_DATA_FLAGS:', LIFE_DATA_FLAGS);
   console.log('public/index.html encontrado:', fs.existsSync(path.join(publicDir, 'index.html')));
 });

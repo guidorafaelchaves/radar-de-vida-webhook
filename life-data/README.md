@@ -29,6 +29,21 @@ O motor de ingestion atual cria apenas um plano em memoria:
 - nutrition events;
 - mission events.
 
+Endpoint experimental preparado:
+
+```text
+POST /api/life-data/plan
+```
+
+Regras:
+
+- exige `LIFE_DATA_ENGINE_ENABLED=true`;
+- exige `LIFE_DATA_INGESTION_ENABLED=true`;
+- exige `RADAR_API_TOKEN` configurado e enviado;
+- nao grava em banco;
+- nao chama Apps Script;
+- nao substitui nenhum endpoint atual.
+
 Proximo passo tecnico, quando autorizado:
 
 1. escolher Postgres gerenciado;
