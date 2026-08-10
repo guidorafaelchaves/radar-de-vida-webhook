@@ -2813,7 +2813,7 @@
         </div>
 
         <div class="chart-box">
-          <div class="chart-title" id="timeChartTitle">Tempo por dia</div>
+          <div class="chart-title" id="timeChartTitle">Tempo, sono e atividade por dia</div>
           <canvas id="timeChart"></canvas>
         </div>
 
@@ -2823,7 +2823,7 @@
         </div>
 
         <div class="chart-box">
-          <div class="chart-title">Corpo: combustivel, proteina e movimento</div>
+          <div class="chart-title">Zepp: corpo, recuperacao e sinais vitais</div>
           <canvas id="bodyFuelChart"></canvas>
         </div>
 
@@ -3701,6 +3701,66 @@
         avgHeartRate: avgHeartValues.length ? average(avgHeartValues) : 0,
         maxHeartRate: totals.maxHeartRate
       };
+    }
+
+    function getZeppChartRows(entries, periodRows) {
+      const rows = periodRows.map(period => ({
+        label: period.data,
+        key: period.key || period.data,
+        steps: 0,
+        activeMinutes: 0,
+        sleepMinutes: 0,
+        activeCalories: 0,
+        totalCalories: 0,
+        distanceKm: 0,
+        restingHeartRate: 0,
+        avgHeartRate: 0,
+        maxHeartRate: 0,
+        heartRateSamples: 0,
+        snapshotCount: 0
+      }));
+      const byLabel = new Map(rows.map(row => [row.label, row]));
+      const byKey = new Map(rows.map(row => [row.key, row]));
+
+      entries.forEach(entry => {
+        const snapshot = entry._zepp_snapshot;
+        if (!snapshot) return;
+
+        const row = selectedMonthKey === ALL_PERIODS
+          ? byKey.get(entry._month_key || '')
+          : byLabel.get(entry.data_br || isoToBrDate(entry.data_iso) || 'Sem data');
+
+        if (!row) return;
+
+        row.snapshotCount += 1;
+        row.steps = Math.max(row.steps, toNumber(snapshot.steps));
+        row.activeMinutes = Math.max(row.activeMinutes, toNumber(snapshot.activeMinutes));
+        row.sleepMinutes = Math.max(row.sleepMinutes, toNumber(snapshot.sleepMinutes));
+        row.activeCalories = Math.max(row.activeCalories, toNumber(snapshot.activeCalories));
+        row.totalCalories = Math.max(row.totalCalories, toNumber(snapshot.totalCalories));
+        row.distanceKm = Math.max(row.distanceKm, toNumber(snapshot.distanceKm));
+        row.maxHeartRate = Math.max(row.maxHeartRate, toNumber(snapshot.maxHeartRate));
+
+        const resting = toNumber(snapshot.restingHeartRate);
+        if (resting > 0) {
+          row.restingHeartRate = row.restingHeartRate
+            ? Math.round((row.restingHeartRate + resting) / 2)
+            : resting;
+        }
+
+        const avgHr = toNumber(snapshot.avgHeartRate);
+        if (avgHr > 0) {
+          row.avgHeartRate += avgHr;
+          row.heartRateSamples += 1;
+        }
+      });
+
+      return rows.map(row => ({
+        ...row,
+        avgHeartRate: row.heartRateSamples ? Math.round(row.avgHeartRate / row.heartRateSamples) : 0,
+        sleepHours: row.sleepMinutes / 60,
+        stepsK: row.steps / 1000
+      }));
     }
 
     function computeZeppReadiness(summary) {
@@ -6133,12 +6193,16 @@
         : groupNormalizedByDate(viewEntries);
       const byCategory = groupNormalizedByCategory(viewEntries);
       const aiRows = currentPersonalAiAnalysis ? getPersonalAiDateRows(byDate.map(r => r.data)) : [];
+      const zeppRows = getZeppChartRows(
+        selectedMonthKey === ALL_PERIODS ? allEntries : viewEntries,
+        byDate
+      );
 
       document.getElementById('moneyChartTitle').textContent =
         selectedMonthKey === ALL_PERIODS ? 'Dinheiro por mês' : 'Dinheiro por dia';
 
       document.getElementById('timeChartTitle').textContent =
-        selectedMonthKey === ALL_PERIODS ? 'Tempo por mês' : 'Tempo por dia';
+        selectedMonthKey === ALL_PERIODS ? 'Tempo, sono e atividade por mes' : 'Tempo, sono e atividade por dia';
 
       const labels = byDate.map(r => r.data);
       const spent = byDate.map(r => r.dinheiro_gasto);
@@ -6146,7 +6210,6 @@
       const invested = byDate.map(r => r.dinheiro_investido);
       const passiveIncome = byDate.map(r => r.renda_passiva);
       const caloriesIn = byDate.map(r => r.calorias_ingeridas);
-      const caloriesOut = byDate.map(r => r.calorias_gastas);
       const protein = byDate.map(r => r.proteina_g);
       const sport = byDate.map(r => r.esporte_minutos);
       const productive = byDate.map(r => r.produtivo_minutos);
@@ -6155,9 +6218,16 @@
       const aiInvested = aiRows.map(r => r.dinheiro_investido);
       const aiPassiveIncome = aiRows.map(r => r.renda_passiva);
       const aiCaloriesIn = aiRows.map(r => r.calorias_ingeridas);
-      const aiCaloriesOut = aiRows.map(r => r.calorias_gastas);
       const aiProtein = aiRows.map(r => r.proteina_g);
       const aiSport = aiRows.map(r => r.esporte_minutos);
+      const zeppActiveMinutes = zeppRows.map(r => r.activeMinutes);
+      const zeppSleepMinutes = zeppRows.map(r => r.sleepMinutes);
+      const zeppActiveCalories = zeppRows.map(r => r.activeCalories);
+      const zeppStepsK = zeppRows.map(r => Number(r.stepsK.toFixed(1)));
+      const zeppSleepHours = zeppRows.map(r => Number(r.sleepHours.toFixed(1)));
+      const zeppDistanceKm = zeppRows.map(r => Number(r.distanceKm.toFixed(1)));
+      const zeppAvgHeartRate = zeppRows.map(r => r.avgHeartRate);
+      const zeppMaxHeartRate = zeppRows.map(r => r.maxHeartRate);
 
       renderChart('moneyChart', {
         type: 'bar',
@@ -6182,6 +6252,8 @@
           datasets: [
             { label: 'Esporte/atividade', data: sport },
             { label: 'Produtivo', data: productive },
+            { label: 'Atividade Zepp', data: zeppActiveMinutes },
+            { label: 'Sono Zepp', data: zeppSleepMinutes },
             ...(currentPersonalAiAnalysis ? [
               { label: 'Atividade IA', data: aiSport }
             ] : [])
@@ -6213,13 +6285,16 @@
         data: {
           labels,
           datasets: [
+            { label: 'Passos Zepp (mil)', data: zeppStepsK },
+            { label: 'Sono Zepp (h)', data: zeppSleepHours },
+            { label: 'Distancia Zepp (km)', data: zeppDistanceKm },
+            { label: 'FC media Zepp', data: zeppAvgHeartRate },
+            { label: 'FC pico Zepp', data: zeppMaxHeartRate },
+            { label: 'Calorias ativas Zepp', data: zeppActiveCalories },
             { label: 'Calorias ingeridas', data: caloriesIn },
-            { label: 'Calorias gastas', data: caloriesOut },
             { label: 'Proteina (g)', data: protein },
-            { label: 'Atividade (min)', data: sport },
             ...(currentPersonalAiAnalysis ? [
               { label: 'Calorias IA', data: aiCaloriesIn },
-              { label: 'Calorias gastas IA', data: aiCaloriesOut },
               { label: 'Proteina IA', data: aiProtein }
             ] : [])
           ]
