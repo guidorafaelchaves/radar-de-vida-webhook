@@ -978,6 +978,168 @@
       line-height: 1;
     }
 
+    .body-command {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .body-command-main {
+      border: 1px solid rgba(22,52,40,.12);
+      border-radius: 8px;
+      background: linear-gradient(135deg, #10251c, #1f6b49);
+      color: #fff;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      min-height: 228px;
+    }
+
+    .body-command-main small {
+      color: rgba(255,255,255,.68);
+      text-transform: uppercase;
+      font-weight: 950;
+      letter-spacing: .06em;
+    }
+
+    .body-command-main h2 {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: .96;
+    }
+
+    .body-command-main p {
+      margin: 0;
+      color: rgba(255,255,255,.78);
+      max-width: 720px;
+      line-height: 1.45;
+    }
+
+    .body-index-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .body-index-card {
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      padding: 10px;
+    }
+
+    .body-index-card strong {
+      display: block;
+      color: #fff;
+      font-size: 24px;
+      line-height: 1;
+      margin-top: 4px;
+    }
+
+    .body-index-card span {
+      display: block;
+      color: rgba(255,255,255,.72);
+      font-size: 11px;
+      margin-top: 5px;
+      line-height: 1.25;
+    }
+
+    .body-command-side {
+      display: grid;
+      gap: 10px;
+    }
+
+    .body-decision {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .body-decision small {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 950;
+      font-size: 10px;
+      letter-spacing: .05em;
+    }
+
+    .body-decision strong {
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .body-decision p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .body-lane-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .body-lane {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.88);
+      padding: 13px;
+      display: grid;
+      gap: 10px;
+      min-height: 188px;
+    }
+
+    .body-lane h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .body-lane ul {
+      margin: 0;
+      padding-left: 17px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .body-lane .zepp-meter {
+      margin-top: auto;
+    }
+
+    .body-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .body-table th,
+    .body-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .body-table th {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .05em;
+    }
+
+    .body-table td:last-child,
+    .body-table th:last-child {
+      text-align: right;
+    }
+
     .strategy-card {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -1880,9 +2042,15 @@
       .weird-grid,
       .compare-grid,
       .strategy-board,
+      .body-command,
       .zepp-body-matrix,
       .zepp-kpis {
         grid-template-columns: repeat(2, 1fr);
+      }
+
+      .body-lane-grid,
+      .body-index-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .reading-points {
@@ -2061,6 +2229,9 @@
       }
 
       .zepp-score-row,
+      .body-command,
+      .body-lane-grid,
+      .body-index-strip,
       .zepp-body-matrix,
       .zepp-kpis {
         grid-template-columns: 1fr;
@@ -2523,6 +2694,7 @@
 
     <nav class="view-tabs" aria-label="Navegacao principal">
       <button id="overviewTab" class="view-tab active" onclick="switchView('overview')">Visao geral</button>
+      <button id="bodyTab" class="view-tab" onclick="switchView('body')">Corpo</button>
       <button id="missionsTab" class="view-tab" onclick="switchView('missions')">Missoes</button>
     </nav>
 
@@ -2945,6 +3117,81 @@
     </section>
     </div>
 
+    <div id="bodyView" class="view-pane">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Corpo</h2>
+            <p class="hint">Unificacao de sono, movimento, recuperacao, nutricao, hidratacao, peso, sinais vitais e dados Zepp/Health Connect.</p>
+          </div>
+          <button class="secondary" onclick="loadData()">Atualizar corpo</button>
+        </div>
+
+        <div id="bodyCommandBox" class="body-command">
+          <div class="empty">Aguardando dados corporais...</div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Mapa corporal do periodo</h2>
+            <p class="hint">Indices de decisao para entender se o corpo pede expansao, manutencao ou recuperacao.</p>
+          </div>
+        </div>
+        <div id="bodyLaneBox" class="body-lane-grid">
+          <div class="empty">Calculando mapa corporal...</div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Graficos do corpo</h2>
+            <p class="hint">Serie temporal de recuperacao, carga, sono, sinais vitais, nutricao e profundidade de captura.</p>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="chart-box full">
+            <div class="chart-title">Indices corporais: recuperacao, carga, combustivel e cardio</div>
+            <canvas id="bodyIndexChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Sono: total, profundo e REM</div>
+            <canvas id="bodySleepChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Movimento: passos, atividade e distancia</div>
+            <canvas id="bodyMovementChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Sinais vitais: HRV, respiracao e batimentos</div>
+            <canvas id="bodyVitalsChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Combustivel: hidratacao, proteina e calorias</div>
+            <canvas id="bodyFuelDeepChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Qualidade da captura Health Connect</div>
+            <canvas id="bodyDataDepthChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Ultimas leituras corporais</h2>
+            <p class="hint">Snapshots recentes usados pelo Radar para gerar decisoes.</p>
+          </div>
+        </div>
+        <div id="bodySnapshotTableBox">
+          <div class="empty">Nenhum snapshot corporal encontrado.</div>
+        </div>
+      </section>
+    </div>
+
     <div id="missionsView" class="view-pane">
       <section class="panel">
         <div class="panel-header">
@@ -3077,15 +3324,19 @@
     }
 
     function switchView(view) {
-      activeView = view === 'missions' ? 'missions' : 'overview';
+      activeView = ['overview', 'body', 'missions'].includes(view) ? view : 'overview';
 
       document.getElementById('overviewView').classList.toggle('active', activeView === 'overview');
+      document.getElementById('bodyView').classList.toggle('active', activeView === 'body');
       document.getElementById('missionsView').classList.toggle('active', activeView === 'missions');
       document.getElementById('overviewTab').classList.toggle('active', activeView === 'overview');
+      document.getElementById('bodyTab').classList.toggle('active', activeView === 'body');
       document.getElementById('missionsTab').classList.toggle('active', activeView === 'missions');
 
       if (activeView === 'missions') {
         renderMissions();
+      } else if (activeView === 'body') {
+        renderBodyDashboard();
       } else if (rawData && allEntries.length) {
         renderCharts();
       }
@@ -3186,6 +3437,7 @@
       renderMarketHeader();
       renderCards();
       renderZeppDashboard();
+      renderBodyDashboard();
       renderRecurringIntelligence();
       renderComparison();
       renderMonthReading();
@@ -3198,6 +3450,8 @@
       renderPersonalDossierPanel();
       if (activeView === 'overview') {
         renderCharts();
+      } else if (activeView === 'body') {
+        renderBodyCharts();
       }
     }
 
@@ -4421,6 +4675,288 @@
           </div>
         ` : ''}
       `;
+    }
+
+    function bodyDecisionText(summary, readiness) {
+      if (!summary.snapshots.length) {
+        return {
+          title: 'Sem telemetria corporal',
+          body: 'O Radar ainda depende dos registros manuais. Sincronize o Zepp Bridge para liberar leitura de sono, movimento e sinais vitais.'
+        };
+      }
+      if (readiness >= 78) {
+        return {
+          title: 'Corpo apto para expansao',
+          body: 'Use energia para treino bem escolhido, missao dificil e decisoes de alto retorno. Evite dispersar esse estado em tarefas pequenas.'
+        };
+      }
+      if (readiness >= 60) {
+        return {
+          title: 'Energia boa, mas precisa direcao',
+          body: 'O corpo permite produtividade consistente. Priorize uma missao principal, proteina, agua e fechamento de pendencias.'
+        };
+      }
+      if (readiness >= 42) {
+        return {
+          title: 'Dia de manutencao inteligente',
+          body: 'A melhor decisao e manter ritmo moderado: movimento leve, alimentacao limpa e pouca friccao cognitiva.'
+        };
+      }
+      return {
+        title: 'Recuperacao como estrategia',
+        body: 'O corpo pede preservacao. Sono, hidratacao e tarefas simples podem gerar mais retorno que forcar intensidade.'
+      };
+    }
+
+    function renderBodyDashboard() {
+      const commandBox = document.getElementById('bodyCommandBox');
+      const laneBox = document.getElementById('bodyLaneBox');
+      const tableBox = document.getElementById('bodySnapshotTableBox');
+      if (!commandBox || !laneBox || !tableBox) return;
+
+      const summary = summarizeZeppSnapshots(viewEntries);
+      if (!summary.snapshots.length) {
+        commandBox.innerHTML = '<div class="empty">Nenhum dado corporal no periodo. Quando o Zepp Bridge sincronizar, esta aba vira o centro de decisao do corpo.</div>';
+        laneBox.innerHTML = '<div class="empty">Sem dados suficientes para mapa corporal.</div>';
+        tableBox.innerHTML = '<div class="empty">Nenhum snapshot corporal encontrado.</div>';
+        if (activeView === 'body') renderBodyCharts();
+        return;
+      }
+
+      const readiness = computeZeppReadiness(summary);
+      const decision = bodyDecisionText(summary, readiness);
+      const insights = buildZeppInsights(summary, readiness);
+      const gaps = buildZeppDataGaps(summary);
+      const latest = summary.latest || {};
+      const metric = (label, value, hint) => `
+        <div class="body-index-card">
+          <small>${escapeHtml(label)}</small>
+          <strong>${escapeHtml(value)}</strong>
+          <span>${escapeHtml(hint)}</span>
+        </div>
+      `;
+
+      commandBox.innerHTML = `
+        <div class="body-command-main">
+          <small>Body Command Center</small>
+          <h2>${readiness}</h2>
+          <p><strong>${escapeHtml(decision.title)}</strong>. ${escapeHtml(decision.body)}</p>
+          <div class="body-index-strip">
+            ${metric('Recuperacao', String(summary.recoveryScore), `${minutesHuman(summary.avgSleepMinutes)} sono medio`)}
+            ${metric('Carga', String(summary.loadScore), `${minutesHuman(summary.activeMinutes)} ativos`)}
+            ${metric('Combustivel', String(summary.fuelScore), `${summary.hydrationLiters ? summary.hydrationLiters.toFixed(1) + ' L agua' : 'agua ausente'}`)}
+            ${metric('Cardio', String(summary.cardioScore), `${Math.round(summary.avgHeartRate || 0)} bpm medio`)}
+          </div>
+        </div>
+        <div class="body-command-side">
+          <div class="body-decision">
+            <small>Ultima leitura</small>
+            <strong>${escapeHtml(latest.date || latest.entry?.data_br || 'sem data')}</strong>
+            <p>${Math.round(toNumber(latest.steps) || 0).toLocaleString('pt-BR')} passos; ${minutesHuman(toNumber(latest.activeMinutes))} de atividade; ${minutesHuman(toNumber(latest.sleepMinutes))} de sono.</p>
+          </div>
+          ${insights.map(([title, body]) => `
+            <div class="body-decision">
+              <small>${escapeHtml(title)}</small>
+              <strong>${escapeHtml(body.split('.')[0] || body)}</strong>
+              <p>${escapeHtml(body.split('.').slice(1).join('.').trim() || body)}</p>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      const lanes = [
+        {
+          title: 'Sono e recuperacao',
+          score: summary.recoveryScore,
+          items: [
+            `Sono total: ${minutesHuman(summary.sleepMinutes)} no periodo`,
+            `Sono medio: ${minutesHuman(summary.avgSleepMinutes)}`,
+            `Profundo/REM: ${minutesHuman(summary.deepSleepMinutes)} / ${minutesHuman(summary.remSleepMinutes)}`,
+            `HRV medio: ${Math.round(summary.avgHrvRmssdMs || 0)} ms`
+          ]
+        },
+        {
+          title: 'Movimento e carga',
+          score: summary.loadScore,
+          items: [
+            `Passos: ${Math.round(summary.steps).toLocaleString('pt-BR')}`,
+            `Atividade: ${minutesHuman(summary.activeMinutes)}`,
+            `Distancia: ${summary.distanceKm.toFixed(1)} km`,
+            `Elevacao/pisos: ${Math.round(summary.elevationGainedMeters || 0)} m / ${Math.round(summary.floorsClimbed || 0)}`
+          ]
+        },
+        {
+          title: 'Nutricao e combustivel',
+          score: summary.fuelScore,
+          items: [
+            `Agua HC: ${summary.hydrationLiters ? summary.hydrationLiters.toFixed(1) + ' L' : 'nao registrada'}`,
+            `Proteina HC: ${Math.round(summary.nutritionProteinGrams || 0)} g`,
+            `Calorias HC: ${Math.round(summary.nutritionCalories || 0)} kcal`,
+            `Calorias ativas: ${Math.round(summary.activeCalories || 0)} kcal`
+          ]
+        },
+        {
+          title: 'Sinais, peso e captura',
+          score: summary.dataDepthScore,
+          items: [
+            `FC media/pico: ${Math.round(summary.avgHeartRate || 0)} / ${Math.round(summary.maxHeartRate || 0)} bpm`,
+            `Respiracao: ${summary.avgRespiratoryRate ? summary.avgRespiratoryRate.toFixed(1) + ' rpm' : 'ausente'}`,
+            `Peso/gordura: ${summary.latestWeightKg ? summary.latestWeightKg.toFixed(1) + ' kg' : 'ausente'} / ${summary.latestBodyFatPercent ? summary.latestBodyFatPercent.toFixed(1) + '%' : 'ausente'}`,
+            `Permissoes: ${summary.grantedPermissionsCount || 0}/${summary.requestedPermissionsCount || 0}`
+          ]
+        }
+      ];
+
+      laneBox.innerHTML = lanes.map(lane => `
+        <article class="body-lane">
+          <h3>${escapeHtml(lane.title)}</h3>
+          <strong>${Math.round(lane.score || 0)}</strong>
+          <div class="zepp-meter" aria-hidden="true"><span style="--value:${Math.round(lane.score || 0)}"></span></div>
+          <ul>${lane.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+        </article>
+      `).join('') + (gaps.length ? `
+        <article class="body-lane">
+          <h3>Lacunas de inteligencia</h3>
+          <strong>${gaps.length}</strong>
+          <p class="hint">Campos que tornariam as decisoes corporais mais precisas.</p>
+          <div class="zepp-gap-list">${gaps.map(gap => `<span class="zepp-gap">${escapeHtml(gap)}</span>`).join('')}</div>
+        </article>
+      ` : '');
+
+      tableBox.innerHTML = renderBodySnapshotTable(summary.snapshots);
+      if (activeView === 'body') renderBodyCharts();
+    }
+
+    function renderBodySnapshotTable(snapshots) {
+      const rows = snapshots.slice(-12).reverse();
+      if (!rows.length) return '<div class="empty">Nenhum snapshot corporal encontrado.</div>';
+      return `
+        <table class="body-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Movimento</th>
+              <th>Sono</th>
+              <th>Sinais</th>
+              <th>Combustivel</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(item => `
+              <tr>
+                <td>${escapeHtml(item.date || item.entry?.data_br || '-')}</td>
+                <td>${Math.round(toNumber(item.steps)).toLocaleString('pt-BR')} passos<br>${minutesHuman(item.activeMinutes)} ativos<br>${toNumber(item.distanceKm).toFixed(1)} km</td>
+                <td>${minutesHuman(item.sleepMinutes)}<br>prof. ${minutesHuman(item.deepSleepMinutes)}<br>REM ${minutesHuman(item.remSleepMinutes)}</td>
+                <td>${Math.round(toNumber(item.avgHeartRate))} bpm<br>HRV ${Math.round(toNumber(item.hrvRmssdMs))} ms<br>${toNumber(item.respiratoryRate).toFixed(1)} rpm</td>
+                <td>${toNumber(item.hydrationLiters).toFixed(1)} L<br>${Math.round(toNumber(item.nutritionProteinGrams))} g prot.<br>${Math.round(toNumber(item.nutritionCalories))} kcal</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function getBodyChartRows() {
+      const byDate = selectedMonthKey === ALL_PERIODS
+        ? groupNormalizedByMonth(allEntries)
+        : groupNormalizedByDate(viewEntries);
+      return {
+        labels: byDate.map(row => row.data),
+        rows: getZeppChartRows(selectedMonthKey === ALL_PERIODS ? allEntries : viewEntries, byDate),
+        byDate
+      };
+    }
+
+    function renderBodyCharts() {
+      if (!document.getElementById('bodyIndexChart')) return;
+      const { labels, rows, byDate } = getBodyChartRows();
+      const caloriesIn = byDate.map(r => r.calorias_ingeridas);
+      const protein = byDate.map(r => r.proteina_g);
+
+      renderChart('bodyIndexChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Recuperacao', data: rows.map(r => r.recoveryScore) },
+            { label: 'Carga corporal', data: rows.map(r => r.loadScore) },
+            { label: 'Combustivel', data: rows.map(r => r.fuelScore) },
+            { label: 'Cardio', data: rows.map(r => r.cardioScore) },
+            { label: 'Dados liberados', data: rows.map(r => r.dataDepthScore) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('bodySleepChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Sono total', data: rows.map(r => r.sleepMinutes) },
+            { label: 'Sono profundo', data: rows.map(r => r.deepSleepMinutes) },
+            { label: 'Sono REM', data: rows.map(r => r.remSleepMinutes) }
+          ]
+        },
+        options: baseChartOptions('min')
+      });
+
+      renderChart('bodyMovementChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Passos (mil)', data: rows.map(r => Number(r.stepsK.toFixed(1))) },
+            { label: 'Atividade (min)', data: rows.map(r => r.activeMinutes) },
+            { label: 'Distancia (km)', data: rows.map(r => Number(r.distanceKm.toFixed(1))) },
+            { label: 'Elevacao (m)', data: rows.map(r => Math.round(r.elevationGainedMeters || 0)) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('bodyVitalsChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'FC media', data: rows.map(r => r.avgHeartRate) },
+            { label: 'FC pico', data: rows.map(r => r.maxHeartRate) },
+            { label: 'HRV RMSSD', data: rows.map(r => r.hrvRmssdMs) },
+            { label: 'Respiracao', data: rows.map(r => r.respiratoryRate) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('bodyFuelDeepChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Agua HC (L)', data: rows.map(r => Number(r.hydrationLiters.toFixed(1))) },
+            { label: 'Proteina HC (g)', data: rows.map(r => r.nutritionProteinGrams) },
+            { label: 'Calorias HC', data: rows.map(r => r.nutritionCalories) },
+            { label: 'Calorias manuais/IA', data: caloriesIn },
+            { label: 'Proteina manual/IA', data: protein }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('bodyDataDepthChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Profundidade dos dados', data: rows.map(r => r.dataDepthScore) },
+            { label: 'Snapshots', data: rows.map(r => r.snapshotCount) },
+            { label: 'VO2 max', data: rows.map(r => r.vo2Max) },
+            { label: 'Gordura corporal (%)', data: rows.map(r => r.bodyFatPercent) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
     }
 
     function renderMoneyLists() {
