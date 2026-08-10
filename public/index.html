@@ -910,6 +910,74 @@
       margin-bottom: 4px;
     }
 
+    .zepp-body-matrix {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .zepp-signal-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+      padding: 12px;
+      min-height: 126px;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .zepp-signal-card h3 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .zepp-signal-card strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .zepp-signal-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .zepp-meter {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2ece6;
+      overflow: hidden;
+    }
+
+    .zepp-meter span {
+      display: block;
+      height: 100%;
+      width: calc(var(--value, 0) * 1%);
+      background: linear-gradient(90deg, #163428, #37c17f);
+    }
+
+    .zepp-gap-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .zepp-gap {
+      border: 1px solid rgba(22,52,40,.14);
+      border-radius: 999px;
+      background: rgba(226,236,230,.72);
+      color: var(--muted);
+      padding: 5px 8px;
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1;
+    }
+
     .strategy-card {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -1812,6 +1880,7 @@
       .weird-grid,
       .compare-grid,
       .strategy-board,
+      .zepp-body-matrix,
       .zepp-kpis {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -1992,6 +2061,7 @@
       }
 
       .zepp-score-row,
+      .zepp-body-matrix,
       .zepp-kpis {
         grid-template-columns: 1fr;
       }
@@ -2823,7 +2893,7 @@
         </div>
 
         <div class="chart-box">
-          <div class="chart-title">Zepp: corpo, recuperacao e sinais vitais</div>
+          <div class="chart-title">Zepp: indices de recuperacao, carga e combustivel</div>
           <canvas id="bodyFuelChart"></canvas>
         </div>
 
@@ -3326,6 +3396,18 @@
         return 0;
       };
 
+      const minutesAfter = patterns => {
+        for (const pattern of patterns) {
+          const match = raw.match(pattern);
+          if (!match) continue;
+          if (match[2] !== undefined) {
+            return (toNumber(match[1]) * 60) + toNumber(match[2]);
+          }
+          return parseLocaleNumber(match[1]);
+        }
+        return 0;
+      };
+
       const sleepText = raw.match(/sono\s*:\s*([0-9]+)\s*h\s*([0-9]{1,2})?/i);
       const sleepMinutes = sleepText
         ? (toNumber(sleepText[1]) * 60) + toNumber(sleepText[2])
@@ -3344,9 +3426,9 @@
         maxHeartRate: numberAfter([/pico cardiaco\s*:\s*([0-9.,]+)\s*bpm/i, /maxHeartRate["']?\s*:\s*([0-9.]+)/i]),
         weightKg: numberAfter([/peso registrado\s*:\s*([0-9.,]+)\s*kg/i, /weightKg["']?\s*:\s*([0-9.]+)/i]),
         spo2: numberAfter([/spo2\s*:\s*([0-9.,]+)%/i, /spo2["']?\s*:\s*([0-9.]+)/i]),
-        deepSleepMinutes: numberAfter([/sono profundo\s*:\s*([0-9.,]+)\s*min/i, /deepSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
-        remSleepMinutes: numberAfter([/sono rem\s*:\s*([0-9.,]+)\s*min/i, /remSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
-        lightSleepMinutes: numberAfter([/sono leve\s*:\s*([0-9.,]+)\s*min/i, /lightSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
+        deepSleepMinutes: minutesAfter([/sono profundo\s*:\s*([0-9]+)\s*h\s*([0-9]{1,2})?/i, /sono profundo\s*:\s*([0-9.,]+)\s*min/i, /deepSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
+        remSleepMinutes: minutesAfter([/sono rem\s*:\s*([0-9]+)\s*h\s*([0-9]{1,2})?/i, /sono rem\s*:\s*([0-9.,]+)\s*min/i, /remSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
+        lightSleepMinutes: minutesAfter([/sono leve\s*:\s*([0-9]+)\s*h\s*([0-9]{1,2})?/i, /sono leve\s*:\s*([0-9.,]+)\s*min/i, /lightSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
         hrvRmssdMs: numberAfter([/hrv rmssd(?: medio)?\s*:\s*([0-9.,]+)\s*ms/i, /hrvRmssdMs["']?\s*:\s*([0-9.]+)/i]),
         respiratoryRate: numberAfter([/frequencia respiratoria(?: media)?\s*:\s*([0-9.,]+)/i, /respiratoryRate["']?\s*:\s*([0-9.]+)/i]),
         floorsClimbed: numberAfter([/(?:andares|pisos) subidos\s*:\s*([0-9.,]+)/i, /floorsClimbed["']?\s*:\s*([0-9.]+)/i]),
@@ -3686,8 +3768,33 @@
         acc.totalCalories += toNumber(item.totalCalories);
         acc.distanceKm += toNumber(item.distanceKm);
         acc.sleepMinutes += toNumber(item.sleepMinutes);
+        acc.deepSleepMinutes += toNumber(item.deepSleepMinutes);
+        acc.remSleepMinutes += toNumber(item.remSleepMinutes);
+        acc.lightSleepMinutes += toNumber(item.lightSleepMinutes);
+        acc.awakeMinutes += toNumber(item.awakeMinutes);
+        acc.hydrationLiters += toNumber(item.hydrationLiters);
+        acc.nutritionCalories += toNumber(item.nutritionCalories);
+        acc.nutritionProteinGrams += toNumber(item.nutritionProteinGrams);
+        acc.nutritionCarbsGrams += toNumber(item.nutritionCarbsGrams);
+        acc.nutritionFatGrams += toNumber(item.nutritionFatGrams);
+        acc.floorsClimbed += toNumber(item.floorsClimbed);
+        acc.elevationGainedMeters += toNumber(item.elevationGainedMeters);
+        acc.basalCalories += toNumber(item.basalCalories);
         acc.avgHeartRateValues.push(toNumber(item.avgHeartRate));
+        acc.restingHeartRateValues.push(toNumber(item.restingHeartRate));
+        acc.hrvValues.push(toNumber(item.hrvRmssdMs));
+        acc.respiratoryValues.push(toNumber(item.respiratoryRate));
+        acc.spo2Values.push(toNumber(item.spo2));
+        acc.speedValues.push(toNumber(item.avgSpeedKmh));
+        acc.powerValues.push(toNumber(item.avgPowerWatts));
+        acc.stepsCadenceValues.push(toNumber(item.avgStepsCadence));
+        acc.cyclingCadenceValues.push(toNumber(item.avgCyclingCadenceRpm));
+        acc.vo2Values.push(toNumber(item.vo2Max));
+        acc.weightValues.push(toNumber(item.weightKg));
+        acc.bodyFatValues.push(toNumber(item.bodyFatPercent));
         acc.maxHeartRate = Math.max(acc.maxHeartRate, toNumber(item.maxHeartRate));
+        acc.grantedPermissionsCount = Math.max(acc.grantedPermissionsCount, toNumber(item.grantedPermissionsCount));
+        acc.requestedPermissionsCount = Math.max(acc.requestedPermissionsCount, toNumber(item.requestedPermissionsCount));
         return acc;
       }, {
         steps: 0,
@@ -3696,14 +3803,50 @@
         totalCalories: 0,
         distanceKm: 0,
         sleepMinutes: 0,
+        deepSleepMinutes: 0,
+        remSleepMinutes: 0,
+        lightSleepMinutes: 0,
+        awakeMinutes: 0,
+        hydrationLiters: 0,
+        nutritionCalories: 0,
+        nutritionProteinGrams: 0,
+        nutritionCarbsGrams: 0,
+        nutritionFatGrams: 0,
+        floorsClimbed: 0,
+        elevationGainedMeters: 0,
+        basalCalories: 0,
         avgHeartRateValues: [],
+        restingHeartRateValues: [],
+        hrvValues: [],
+        respiratoryValues: [],
+        spo2Values: [],
+        speedValues: [],
+        powerValues: [],
+        stepsCadenceValues: [],
+        cyclingCadenceValues: [],
+        vo2Values: [],
+        weightValues: [],
+        bodyFatValues: [],
+        grantedPermissionsCount: 0,
+        requestedPermissionsCount: 0,
         maxHeartRate: 0
       });
 
       const days = Math.max(1, snapshots.length);
       const avgHeartValues = totals.avgHeartRateValues.filter(Boolean);
+      const restingValues = totals.restingHeartRateValues.filter(Boolean);
+      const hrvValues = totals.hrvValues.filter(Boolean);
+      const respiratoryValues = totals.respiratoryValues.filter(Boolean);
+      const spo2Values = totals.spo2Values.filter(Boolean);
+      const speedValues = totals.speedValues.filter(Boolean);
+      const powerValues = totals.powerValues.filter(Boolean);
+      const stepsCadenceValues = totals.stepsCadenceValues.filter(Boolean);
+      const cyclingCadenceValues = totals.cyclingCadenceValues.filter(Boolean);
+      const vo2Values = totals.vo2Values.filter(Boolean);
+      const weightValues = totals.weightValues.filter(Boolean);
+      const bodyFatValues = totals.bodyFatValues.filter(Boolean);
 
-      return {
+      const summary = {
         snapshots,
         latest,
         days,
@@ -3716,9 +3859,143 @@
         distanceKm: totals.distanceKm,
         sleepMinutes: totals.sleepMinutes,
         avgSleepMinutes: totals.sleepMinutes / days,
+        deepSleepMinutes: totals.deepSleepMinutes,
+        remSleepMinutes: totals.remSleepMinutes,
+        lightSleepMinutes: totals.lightSleepMinutes,
+        awakeMinutes: totals.awakeMinutes,
+        avgDeepSleepMinutes: totals.deepSleepMinutes / days,
+        avgRemSleepMinutes: totals.remSleepMinutes / days,
+        avgLightSleepMinutes: totals.lightSleepMinutes / days,
+        hydrationLiters: totals.hydrationLiters,
+        avgHydrationLiters: totals.hydrationLiters / days,
+        nutritionCalories: totals.nutritionCalories,
+        nutritionProteinGrams: totals.nutritionProteinGrams,
+        nutritionCarbsGrams: totals.nutritionCarbsGrams,
+        nutritionFatGrams: totals.nutritionFatGrams,
+        floorsClimbed: totals.floorsClimbed,
+        elevationGainedMeters: totals.elevationGainedMeters,
+        basalCalories: totals.basalCalories,
         avgHeartRate: avgHeartValues.length ? average(avgHeartValues) : 0,
-        maxHeartRate: totals.maxHeartRate
+        restingHeartRate: restingValues.length ? average(restingValues) : 0,
+        maxHeartRate: totals.maxHeartRate,
+        avgHrvRmssdMs: hrvValues.length ? average(hrvValues) : 0,
+        avgRespiratoryRate: respiratoryValues.length ? average(respiratoryValues) : 0,
+        avgSpo2: spo2Values.length ? average(spo2Values) : 0,
+        avgSpeedKmh: speedValues.length ? average(speedValues) : 0,
+        avgPowerWatts: powerValues.length ? average(powerValues) : 0,
+        avgStepsCadence: stepsCadenceValues.length ? average(stepsCadenceValues) : 0,
+        avgCyclingCadenceRpm: cyclingCadenceValues.length ? average(cyclingCadenceValues) : 0,
+        avgVo2Max: vo2Values.length ? average(vo2Values) : 0,
+        latestWeightKg: weightValues.length ? weightValues[weightValues.length - 1] : 0,
+        latestBodyFatPercent: bodyFatValues.length ? bodyFatValues[bodyFatValues.length - 1] : 0,
+        grantedPermissionsCount: totals.grantedPermissionsCount,
+        requestedPermissionsCount: totals.requestedPermissionsCount
       };
+
+      return {
+        ...summary,
+        dataDepthScore: computeZeppDataDepthScore(summary),
+        recoveryScore: computeZeppRecoveryScore(summary),
+        loadScore: computeZeppLoadScore(summary),
+        fuelScore: computeZeppFuelScore(summary),
+        cardioScore: computeZeppCardioScore(summary)
+      };
+    }
+
+    function clamp(value, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, toNumber(value)));
+    }
+
+    function scoreAgainstTarget(value, target, cap = 100) {
+      if (!toNumber(value) || !toNumber(target)) return 0;
+      return clamp((toNumber(value) / toNumber(target)) * cap);
+    }
+
+    function latestMetric(summary, key) {
+      const latest = summary?.latest || {};
+      return toNumber(latest[key]) || toNumber(summary?.[key]) || 0;
+    }
+
+    function computeZeppDataDepthScore(summary) {
+      if (!summary || !summary.snapshots?.length) return 0;
+      const families = [
+        summary.steps || summary.activeMinutes,
+        summary.sleepMinutes,
+        summary.avgHeartRate || summary.maxHeartRate || summary.restingHeartRate,
+        summary.avgHrvRmssdMs || summary.avgRespiratoryRate || summary.avgSpo2,
+        summary.hydrationLiters,
+        summary.nutritionCalories || summary.nutritionProteinGrams,
+        summary.latestWeightKg || summary.latestBodyFatPercent || summary.avgVo2Max,
+        summary.floorsClimbed || summary.elevationGainedMeters || summary.avgPowerWatts
+      ];
+      const familyScore = families.filter(value => toNumber(value) > 0).length / families.length;
+      const permissionScore = summary.requestedPermissionsCount
+        ? clamp(summary.grantedPermissionsCount / summary.requestedPermissionsCount * 100) / 100
+        : 0.45;
+      const continuityScore = clamp(summary.snapshots.length / 7 * 100) / 100;
+      return Math.round(clamp((familyScore * 65) + (permissionScore * 20) + (continuityScore * 15)));
+    }
+
+    function computeZeppRecoveryScore(summary) {
+      if (!summary || !summary.snapshots?.length) return 0;
+      const sleep = latestMetric(summary, 'sleepMinutes') || summary.avgSleepMinutes;
+      const deep = latestMetric(summary, 'deepSleepMinutes') || summary.avgDeepSleepMinutes;
+      const rem = latestMetric(summary, 'remSleepMinutes') || summary.avgRemSleepMinutes;
+      const hrv = latestMetric(summary, 'hrvRmssdMs') || summary.avgHrvRmssdMs;
+      const resting = latestMetric(summary, 'restingHeartRate') || summary.restingHeartRate;
+      const respiratory = latestMetric(summary, 'respiratoryRate') || summary.avgRespiratoryRate;
+      let score = 30;
+      score += scoreAgainstTarget(sleep, 450, 34);
+      score += scoreAgainstTarget(deep + rem, 150, 16);
+      if (hrv) score += hrv >= 55 ? 12 : hrv >= 35 ? 8 : 2;
+      if (resting) score += resting <= 62 ? 8 : resting <= 75 ? 5 : -4;
+      if (respiratory) score += respiratory >= 10 && respiratory <= 20 ? 6 : -4;
+      return Math.round(clamp(score));
+    }
+
+    function computeZeppLoadScore(summary) {
+      if (!summary || !summary.snapshots?.length) return 0;
+      const active = latestMetric(summary, 'activeMinutes') || summary.avgActiveMinutes;
+      const steps = latestMetric(summary, 'steps') || summary.avgSteps;
+      const calories = latestMetric(summary, 'activeCalories') || summary.activeCalories / summary.days;
+      const elevation = latestMetric(summary, 'elevationGainedMeters') || summary.elevationGainedMeters / summary.days;
+      const maxHr = latestMetric(summary, 'maxHeartRate') || summary.maxHeartRate;
+      let score = 0;
+      score += scoreAgainstTarget(active, 75, 30);
+      score += scoreAgainstTarget(steps, 9000, 25);
+      score += scoreAgainstTarget(calories, 550, 20);
+      score += scoreAgainstTarget(elevation, 180, 10);
+      if (maxHr >= 150) score += 10;
+      else if (maxHr >= 120) score += 5;
+      return Math.round(clamp(score));
+    }
+
+    function computeZeppFuelScore(summary) {
+      if (!summary || !summary.snapshots?.length) return 0;
+      const hydration = latestMetric(summary, 'hydrationLiters') || summary.avgHydrationLiters;
+      const protein = latestMetric(summary, 'nutritionProteinGrams') || summary.nutritionProteinGrams / summary.days;
+      const nutritionCalories = latestMetric(summary, 'nutritionCalories') || summary.nutritionCalories / summary.days;
+      const activeCalories = latestMetric(summary, 'activeCalories') || summary.activeCalories / summary.days;
+      let score = 35;
+      score += scoreAgainstTarget(hydration, 2.4, 20);
+      score += scoreAgainstTarget(protein, 120, 20);
+      if (nutritionCalories) score += nutritionCalories >= activeCalories ? 12 : 6;
+      else score -= 6;
+      return Math.round(clamp(score));
+    }
+
+    function computeZeppCardioScore(summary) {
+      if (!summary || !summary.snapshots?.length) return 0;
+      const avgHr = latestMetric(summary, 'avgHeartRate') || summary.avgHeartRate;
+      const resting = latestMetric(summary, 'restingHeartRate') || summary.restingHeartRate;
+      const vo2 = latestMetric(summary, 'vo2Max') || summary.avgVo2Max;
+      const spo2 = latestMetric(summary, 'spo2') || summary.avgSpo2;
+      let score = 45;
+      if (avgHr) score += avgHr <= 88 ? 10 : avgHr <= 105 ? 5 : -8;
+      if (resting) score += resting <= 62 ? 12 : resting <= 75 ? 7 : -6;
+      if (vo2) score += vo2 >= 45 ? 16 : vo2 >= 35 ? 10 : 4;
+      if (spo2) score += spo2 >= 96 ? 8 : spo2 >= 93 ? 3 : -6;
+      return Math.round(clamp(score));
     }
 
     function getZeppChartRows(entries, periodRows) {
@@ -3731,6 +4008,22 @@
         activeCalories: 0,
         totalCalories: 0,
         distanceKm: 0,
+        deepSleepMinutes: 0,
+        remSleepMinutes: 0,
+        hydrationLiters: 0,
+        nutritionCalories: 0,
+        nutritionProteinGrams: 0,
+        floorsClimbed: 0,
+        elevationGainedMeters: 0,
+        hrvRmssdMs: 0,
+        hrvSamples: 0,
+        respiratoryRate: 0,
+        respiratorySamples: 0,
+        spo2: 0,
+        spo2Samples: 0,
+        vo2Max: 0,
+        bodyFatPercent: 0,
+        dataDepthScore: 0,
         restingHeartRate: 0,
         avgHeartRate: 0,
         maxHeartRate: 0,
@@ -3757,6 +4050,15 @@
         row.activeCalories = Math.max(row.activeCalories, toNumber(snapshot.activeCalories));
         row.totalCalories = Math.max(row.totalCalories, toNumber(snapshot.totalCalories));
         row.distanceKm = Math.max(row.distanceKm, toNumber(snapshot.distanceKm));
+        row.deepSleepMinutes = Math.max(row.deepSleepMinutes, toNumber(snapshot.deepSleepMinutes));
+        row.remSleepMinutes = Math.max(row.remSleepMinutes, toNumber(snapshot.remSleepMinutes));
+        row.hydrationLiters = Math.max(row.hydrationLiters, toNumber(snapshot.hydrationLiters));
+        row.nutritionCalories = Math.max(row.nutritionCalories, toNumber(snapshot.nutritionCalories));
+        row.nutritionProteinGrams = Math.max(row.nutritionProteinGrams, toNumber(snapshot.nutritionProteinGrams));
+        row.floorsClimbed = Math.max(row.floorsClimbed, toNumber(snapshot.floorsClimbed));
+        row.elevationGainedMeters = Math.max(row.elevationGainedMeters, toNumber(snapshot.elevationGainedMeters));
+        row.vo2Max = Math.max(row.vo2Max, toNumber(snapshot.vo2Max));
+        row.bodyFatPercent = Math.max(row.bodyFatPercent, toNumber(snapshot.bodyFatPercent));
         row.maxHeartRate = Math.max(row.maxHeartRate, toNumber(snapshot.maxHeartRate));
 
         const resting = toNumber(snapshot.restingHeartRate);
@@ -3771,14 +4073,77 @@
           row.avgHeartRate += avgHr;
           row.heartRateSamples += 1;
         }
+
+        const hrv = toNumber(snapshot.hrvRmssdMs);
+        if (hrv > 0) {
+          row.hrvRmssdMs += hrv;
+          row.hrvSamples += 1;
+        }
+
+        const respiratory = toNumber(snapshot.respiratoryRate);
+        if (respiratory > 0) {
+          row.respiratoryRate += respiratory;
+          row.respiratorySamples += 1;
+        }
+
+        const spo2 = toNumber(snapshot.spo2);
+        if (spo2 > 0) {
+          row.spo2 += spo2;
+          row.spo2Samples += 1;
+        }
       });
 
-      return rows.map(row => ({
-        ...row,
-        avgHeartRate: row.heartRateSamples ? Math.round(row.avgHeartRate / row.heartRateSamples) : 0,
-        sleepHours: row.sleepMinutes / 60,
-        stepsK: row.steps / 1000
-      }));
+      return rows.map(row => {
+        const normalized = {
+          ...row,
+          avgHeartRate: row.heartRateSamples ? Math.round(row.avgHeartRate / row.heartRateSamples) : 0,
+          hrvRmssdMs: row.hrvSamples ? Math.round(row.hrvRmssdMs / row.hrvSamples) : 0,
+          respiratoryRate: row.respiratorySamples ? Number((row.respiratoryRate / row.respiratorySamples).toFixed(1)) : 0,
+          spo2: row.spo2Samples ? Number((row.spo2 / row.spo2Samples).toFixed(1)) : 0,
+          sleepHours: row.sleepMinutes / 60,
+          stepsK: row.steps / 1000
+        };
+        const periodSummary = {
+          snapshots: new Array(normalized.snapshotCount || 0),
+          latest: normalized,
+          days: Math.max(1, normalized.snapshotCount || 1),
+          steps: normalized.steps,
+          avgSteps: normalized.steps,
+          activeMinutes: normalized.activeMinutes,
+          avgActiveMinutes: normalized.activeMinutes,
+          activeCalories: normalized.activeCalories,
+          totalCalories: normalized.totalCalories,
+          distanceKm: normalized.distanceKm,
+          sleepMinutes: normalized.sleepMinutes,
+          avgSleepMinutes: normalized.sleepMinutes,
+          deepSleepMinutes: normalized.deepSleepMinutes,
+          remSleepMinutes: normalized.remSleepMinutes,
+          avgDeepSleepMinutes: normalized.deepSleepMinutes,
+          avgRemSleepMinutes: normalized.remSleepMinutes,
+          hydrationLiters: normalized.hydrationLiters,
+          avgHydrationLiters: normalized.hydrationLiters,
+          nutritionCalories: normalized.nutritionCalories,
+          nutritionProteinGrams: normalized.nutritionProteinGrams,
+          floorsClimbed: normalized.floorsClimbed,
+          elevationGainedMeters: normalized.elevationGainedMeters,
+          avgHeartRate: normalized.avgHeartRate,
+          restingHeartRate: normalized.restingHeartRate,
+          maxHeartRate: normalized.maxHeartRate,
+          avgHrvRmssdMs: normalized.hrvRmssdMs,
+          avgRespiratoryRate: normalized.respiratoryRate,
+          avgSpo2: normalized.spo2,
+          avgVo2Max: normalized.vo2Max,
+          latestBodyFatPercent: normalized.bodyFatPercent
+        };
+        return {
+          ...normalized,
+          recoveryScore: computeZeppRecoveryScore(periodSummary),
+          loadScore: computeZeppLoadScore(periodSummary),
+          fuelScore: computeZeppFuelScore(periodSummary),
+          cardioScore: computeZeppCardioScore(periodSummary),
+          dataDepthScore: computeZeppDataDepthScore(periodSummary)
+        };
+      });
     }
 
     function computeZeppReadiness(summary) {
@@ -3790,6 +4155,9 @@
       const active = toNumber(latest.activeMinutes) || summary.avgActiveMinutes;
       const steps = toNumber(latest.steps) || summary.avgSteps;
       const avgHr = toNumber(latest.avgHeartRate) || summary.avgHeartRate;
+      const hrv = toNumber(latest.hrvRmssdMs) || summary.avgHrvRmssdMs;
+      const respiratory = toNumber(latest.respiratoryRate) || summary.avgRespiratoryRate;
+      const hydration = toNumber(latest.hydrationLiters) || summary.avgHydrationLiters;
 
       if (sleep >= 420) score += 18;
       else if (sleep >= 360) score += 10;
@@ -3802,7 +4170,16 @@
       if (avgHr > 0 && avgHr <= 90) score += 8;
       if (avgHr >= 115) score -= 10;
 
+      if (hrv >= 50) score += 7;
+      else if (hrv > 0 && hrv < 28) score -= 6;
+
+      if (respiratory >= 10 && respiratory <= 20) score += 5;
+      else if (respiratory > 24) score -= 5;
+
+      if (hydration >= 2) score += 4;
+
       if (summary.snapshots.length >= 3) score += 8;
+      score += Math.round((summary.dataDepthScore || 0) / 20);
 
       return Math.max(0, Math.min(100, Math.round(score)));
     }
@@ -3847,6 +4224,107 @@
       return insights.slice(0, 4);
     }
 
+    function buildZeppInsights(summary, score) {
+      const latest = summary.latest || {};
+      const insights = [];
+      const sleep = toNumber(latest.sleepMinutes) || summary.avgSleepMinutes;
+      const active = toNumber(latest.activeMinutes) || summary.avgActiveMinutes;
+      const steps = toNumber(latest.steps) || summary.avgSteps;
+      const maxHr = toNumber(latest.maxHeartRate) || summary.maxHeartRate;
+      const hrv = toNumber(latest.hrvRmssdMs) || summary.avgHrvRmssdMs;
+      const respiratory = toNumber(latest.respiratoryRate) || summary.avgRespiratoryRate;
+      const hydration = toNumber(latest.hydrationLiters) || summary.avgHydrationLiters;
+      const protein = toNumber(latest.nutritionProteinGrams) || summary.nutritionProteinGrams / summary.days;
+      const vo2 = toNumber(latest.vo2Max) || summary.avgVo2Max;
+
+      if (sleep && sleep < 390) {
+        insights.push(['Recuperacao', 'Sono abaixo do ideal. Trate o dia como energia limitada: menos treino forte, mais agua, comida simples e sono cedo.']);
+      } else if (sleep >= 420) {
+        insights.push(['Recuperacao', 'Sono suficiente para sustentar decisoes mais ambiciosas, desde que alimentacao e agenda acompanhem.']);
+      }
+
+      if (active >= 60 || steps >= 9000) {
+        insights.push(['Movimento', 'O corpo ja entregou volume relevante. Bom sinal para humor, metabolismo e foco, mas vale proteger proteina e descanso.']);
+      } else if (summary.snapshots.length) {
+        insights.push(['Movimento', 'Movimento ainda discreto no periodo. Uma caminhada curta pode ter alto retorno decisorio.']);
+      }
+
+      if (maxHr >= 160) {
+        insights.push(['Carga', 'Houve pico cardiovascular alto. O proximo bloco deve observar recuperacao, agua e sinais de fadiga.']);
+      }
+
+      if (hrv && hrv < 30) {
+        insights.push(['Sistema nervoso', 'HRV baixo pede menos atrito: decisao curta, treino leve e fechamento de pendencias simples.']);
+      } else if (hrv >= 50) {
+        insights.push(['Sistema nervoso', 'HRV favoravel. Bom terreno para concentracao, treino com qualidade e decisoes que exigem coragem.']);
+      }
+
+      if (respiratory > 0 && (respiratory < 10 || respiratory > 22)) {
+        insights.push(['Respiracao', 'Frequencia respiratoria fora da faixa usual. Observe sono, estresse, cafeina e recuperacao antes de forcar carga.']);
+      }
+
+      if (hydration > 0 && hydration < 1.8) {
+        insights.push(['Combustivel', 'Hidratacao registrada baixa. Antes de aumentar cafe, treino ou trabalho pesado, regular agua pode render mais.']);
+      } else if (!hydration && summary.dataDepthScore < 70) {
+        insights.push(['Captura', 'Health Connect ainda nao trouxe hidratacao/nutricao. Quando isso entrar, o Radar cruza energia, fome, treino e sono com mais fidelidade.']);
+      }
+
+      if (protein > 0 && protein < 80 && active >= 45) {
+        insights.push(['Proteina', 'Houve movimento relevante com pouca proteina registrada. A prioridade pratica e proteger massa magra e saciedade.']);
+      }
+
+      if (vo2 >= 40) {
+        insights.push(['Capacidade', 'VO2 registrado em boa faixa. Use como indicador de folego estrategico: carga progressiva, nao excesso disperso.']);
+      }
+
+      if (score >= 78) {
+        insights.push(['Decisao', 'Use a energia para uma missao importante, nao para espalhar esforco em tarefas pequenas demais.']);
+      } else if (score < 42) {
+        insights.push(['Decisao', 'O melhor ganho hoje pode ser preservar o sistema: sono, comida simples e menos atrito.']);
+      }
+
+      return insights.slice(0, 4);
+    }
+
+    function buildZeppSignalCards(summary) {
+      return [
+        {
+          title: 'Recuperacao',
+          score: summary.recoveryScore,
+          body: `${minutesHuman(summary.avgSleepMinutes)} sono medio; ${summary.avgHrvRmssdMs ? `${Math.round(summary.avgHrvRmssdMs)} ms HRV` : 'HRV ausente'}; ${summary.avgRespiratoryRate ? `${summary.avgRespiratoryRate.toFixed(1)} rpm` : 'respiracao ausente'}.`
+        },
+        {
+          title: 'Carga corporal',
+          score: summary.loadScore,
+          body: `${minutesHuman(summary.activeMinutes)} ativos; ${Math.round(summary.steps).toLocaleString('pt-BR')} passos; ${Math.round(summary.elevationGainedMeters || 0)} m elevacao.`
+        },
+        {
+          title: 'Combustivel',
+          score: summary.fuelScore,
+          body: `${summary.hydrationLiters ? `${summary.hydrationLiters.toFixed(1)} L agua` : 'agua nao registrada'}; ${summary.nutritionProteinGrams ? `${Math.round(summary.nutritionProteinGrams)} g proteina` : 'proteina nao registrada'}.`
+        },
+        {
+          title: 'Sinais e captura',
+          score: summary.dataDepthScore,
+          body: `${summary.avgVo2Max ? `VO2 ${summary.avgVo2Max.toFixed(1)}` : 'VO2 ausente'}; ${summary.latestBodyFatPercent ? `gordura ${summary.latestBodyFatPercent.toFixed(1)}%` : 'composicao ausente'}; ${summary.grantedPermissionsCount || 0}/${summary.requestedPermissionsCount || 0} permissoes.`
+        }
+      ];
+    }
+
+    function buildZeppDataGaps(summary) {
+      const gaps = [];
+      if (!summary.sleepMinutes) gaps.push('sono');
+      if (!summary.avgHrvRmssdMs) gaps.push('HRV');
+      if (!summary.avgRespiratoryRate) gaps.push('respiracao');
+      if (!summary.hydrationLiters) gaps.push('hidratacao');
+      if (!summary.nutritionProteinGrams && !summary.nutritionCalories) gaps.push('nutricao');
+      if (!summary.latestWeightKg && !summary.latestBodyFatPercent) gaps.push('composicao');
+      if (summary.requestedPermissionsCount && summary.grantedPermissionsCount < summary.requestedPermissionsCount) {
+        gaps.push('permissoes pendentes');
+      }
+      return gaps.slice(0, 7);
+    }
+
     function renderZeppDashboard() {
       const box = document.getElementById('zeppDashboardBox');
       if (!box) return;
@@ -3882,6 +4360,66 @@
             <div class="zepp-insight"><strong>${escapeHtml(title)}</strong>${escapeHtml(body)}</div>
           `).join('') || '<div class="zepp-insight"><strong>Leitura</strong>Dados recebidos; o Radar precisa de mais dias para gerar tendência.</div>'}
         </div>
+      `;
+    }
+
+    function renderZeppDashboard() {
+      const box = document.getElementById('zeppDashboardBox');
+      if (!box) return;
+
+      const summary = summarizeZeppSnapshots(viewEntries);
+      if (!summary.snapshots.length) {
+        box.innerHTML = '<div class="empty">Nenhum snapshot Zepp/Health Connect no periodo. Quando o app Android sincronizar, passos, sono, batimentos e sinais corporais aparecerao aqui.</div>';
+        return;
+      }
+
+      const score = computeZeppReadiness(summary);
+      const latest = summary.latest || {};
+      const insights = buildZeppInsights(summary, score);
+      const signalCards = buildZeppSignalCards(summary);
+      const gaps = buildZeppDataGaps(summary);
+
+      box.innerHTML = `
+        <div class="zepp-readiness">
+          <div class="zepp-score-row">
+            <div class="zepp-score" style="--score:${score}"><span>${score}</span></div>
+            <div class="zepp-decision">
+              <strong>${escapeHtml(zeppDecisionLabel(score))}</strong>
+              <p>${escapeHtml(summary.snapshots.length)} snapshot(s) no periodo. Ultima leitura: ${escapeHtml(latest.date || latest.entry?.data_br || 'sem data')}.</p>
+            </div>
+          </div>
+          <div class="zepp-kpis">
+            <div class="zepp-kpi"><small>Passos</small><strong>${Math.round(summary.steps).toLocaleString('pt-BR')}</strong><span>${Math.round(summary.avgSteps).toLocaleString('pt-BR')}/dia</span></div>
+            <div class="zepp-kpi"><small>Atividade</small><strong>${minutesHuman(summary.activeMinutes)}</strong><span>${Math.round(summary.avgActiveMinutes)} min/dia</span></div>
+            <div class="zepp-kpi"><small>Sono medio</small><strong>${minutesHuman(summary.avgSleepMinutes)}</strong><span>${latest.sleepMinutes ? `ultimo ${minutesHuman(latest.sleepMinutes)}` : 'sem sono no ultimo'}</span></div>
+            <div class="zepp-kpi"><small>Batimentos</small><strong>${Math.round(summary.avgHeartRate || 0)} bpm</strong><span>pico ${Math.round(summary.maxHeartRate || 0)} bpm</span></div>
+            <div class="zepp-kpi"><small>HRV</small><strong>${Math.round(summary.avgHrvRmssdMs || 0)} ms</strong><span>RMSSD medio</span></div>
+            <div class="zepp-kpi"><small>Respiracao</small><strong>${summary.avgRespiratoryRate ? summary.avgRespiratoryRate.toFixed(1) : '0'} rpm</strong><span>media do periodo</span></div>
+            <div class="zepp-kpi"><small>Hidratacao</small><strong>${summary.hydrationLiters ? summary.hydrationLiters.toFixed(1) : '0'} L</strong><span>registrado no HC</span></div>
+            <div class="zepp-kpi"><small>Proteina HC</small><strong>${Math.round(summary.nutritionProteinGrams || 0)} g</strong><span>nutricao importada</span></div>
+          </div>
+        </div>
+        <div class="zepp-insights">
+          ${insights.map(([title, body]) => `
+            <div class="zepp-insight"><strong>${escapeHtml(title)}</strong>${escapeHtml(body)}</div>
+          `).join('') || '<div class="zepp-insight"><strong>Leitura</strong>Dados recebidos; o Radar precisa de mais dias para gerar tendencia.</div>'}
+        </div>
+        <div class="zepp-body-matrix">
+          ${signalCards.map(card => `
+            <div class="zepp-signal-card">
+              <h3>${escapeHtml(card.title)}</h3>
+              <strong>${Math.round(card.score || 0)}</strong>
+              <div class="zepp-meter" aria-hidden="true"><span style="--value:${Math.round(card.score || 0)}"></span></div>
+              <p>${escapeHtml(card.body)}</p>
+            </div>
+          `).join('')}
+        </div>
+        ${gaps.length ? `
+          <div class="zepp-insight" style="grid-column:1/-1">
+            <strong>Lacunas que aumentariam a inteligencia</strong>
+            <div class="zepp-gap-list">${gaps.map(gap => `<span class="zepp-gap">${escapeHtml(gap)}</span>`).join('')}</div>
+          </div>
+        ` : ''}
       `;
     }
 
@@ -6246,6 +6784,13 @@
       const zeppDistanceKm = zeppRows.map(r => Number(r.distanceKm.toFixed(1)));
       const zeppAvgHeartRate = zeppRows.map(r => r.avgHeartRate);
       const zeppMaxHeartRate = zeppRows.map(r => r.maxHeartRate);
+      const zeppDeepSleepMinutes = zeppRows.map(r => r.deepSleepMinutes);
+      const zeppRemSleepMinutes = zeppRows.map(r => r.remSleepMinutes);
+      const zeppRecoveryScore = zeppRows.map(r => r.recoveryScore);
+      const zeppLoadScore = zeppRows.map(r => r.loadScore);
+      const zeppFuelScore = zeppRows.map(r => r.fuelScore);
+      const zeppCardioScore = zeppRows.map(r => r.cardioScore);
+      const zeppDataDepthScore = zeppRows.map(r => r.dataDepthScore);
 
       renderChart('moneyChart', {
         type: 'bar',
@@ -6272,6 +6817,8 @@
             { label: 'Produtivo', data: productive },
             { label: 'Atividade Zepp', data: zeppActiveMinutes },
             { label: 'Sono Zepp', data: zeppSleepMinutes },
+            { label: 'Sono profundo Zepp', data: zeppDeepSleepMinutes },
+            { label: 'Sono REM Zepp', data: zeppRemSleepMinutes },
             ...(currentPersonalAiAnalysis ? [
               { label: 'Atividade IA', data: aiSport }
             ] : [])
@@ -6303,12 +6850,11 @@
         data: {
           labels,
           datasets: [
-            { label: 'Passos Zepp (mil)', data: zeppStepsK },
-            { label: 'Sono Zepp (h)', data: zeppSleepHours },
-            { label: 'Distancia Zepp (km)', data: zeppDistanceKm },
-            { label: 'FC media Zepp', data: zeppAvgHeartRate },
-            { label: 'FC pico Zepp', data: zeppMaxHeartRate },
-            { label: 'Calorias ativas Zepp', data: zeppActiveCalories },
+            { label: 'Recuperacao', data: zeppRecoveryScore },
+            { label: 'Carga corporal', data: zeppLoadScore },
+            { label: 'Combustivel', data: zeppFuelScore },
+            { label: 'Cardio', data: zeppCardioScore },
+            { label: 'Profundidade dos dados', data: zeppDataDepthScore },
             { label: 'Calorias ingeridas', data: caloriesIn },
             { label: 'Proteina (g)', data: protein },
             ...(currentPersonalAiAnalysis ? [
