@@ -30,7 +30,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { processLifeDataIngestion } from './life-data/engine.js';
+import { buildLifeDataPlanHttpResponse } from './life-data/http.js';
 
 const app = express();
 
@@ -2913,25 +2913,10 @@ app.post('/api/life-data/plan', async (req, res) => {
 
   if (!requireStrictRadarApiToken(req, res)) return;
 
-  try {
-    const result = await processLifeDataIngestion(req.body || {});
-
-    return res.status(200).json({
-      ok: true,
-      mode: result.mode,
-      persisted: result.persisted,
-      lifeDataFlags: LIFE_DATA_FLAGS,
-      storage: result.storage,
-      plan: result.plan
-    });
-  } catch (err) {
-    return res.status(400).json({
-      ok: false,
-      error: err.message,
-      code: err.code || 'LIFE_DATA_PLAN_ERROR',
-      errors: Array.isArray(err.errors) ? err.errors : []
-    });
-  }
+  const response = await buildLifeDataPlanHttpResponse(req.body || {}, {
+    lifeDataFlags: LIFE_DATA_FLAGS
+  });
+  return res.status(response.status).json(response.body);
 });
 
 app.post('/api/personal-intelligence', async (req, res) => {

@@ -9,6 +9,7 @@ Estado atual:
 - normalizadores canonicos isolados;
 - ingestion canonica em memoria;
 - orquestrador de ingestion canonica com feature flags;
+- contrato HTTP isolado para `/api/life-data/plan`;
 - repository transacional isolado para cliente Postgres generico;
 - testes sinteticos;
 - importacao pelo `server.js` somente no endpoint experimental `/api/life-data/plan`;
@@ -47,6 +48,13 @@ O orquestrador `processLifeDataIngestion` une ingestion plan e repository:
 - se `LIFE_DATA_FAIL_ON_STORAGE_ERROR=true`, falhas de storage viram erro.
 
 Ele e usado apenas pelo endpoint experimental `/api/life-data/plan`.
+
+O contrato HTTP `buildLifeDataPlanHttpResponse` padroniza a resposta do endpoint:
+
+- sucesso retorna `mode`, `persisted`, `storage` e `plan`;
+- ingestion desligada retorna `404` com flags exigidas;
+- erro de validacao retorna `400` com `code` e `errors`;
+- pode ser testado sem iniciar Express nem abrir porta.
 
 O executor de migrations atual tambem e manual e isolado. Ele:
 
