@@ -6,7 +6,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test:life-data": "node --test life-data/*.test.js"
+    "test:life-data": "node --test life-data/*.test.js",
+    "life-data:migrations:plan": "node life-data/cli.js migrations:plan",
+    "life-data:migrations:dry-run": "node life-data/cli.js migrations:dry-run",
+    "life-data:migrations:run": "node life-data/cli.js migrations:run"
   },
   "engines": {
     "node": ">=18"

@@ -45,6 +45,23 @@ O executor de migrations atual tambem e manual e isolado. Ele:
 - executa cada migration pendente dentro de `begin`/`commit`;
 - faz `rollback` da migration atual quando houver erro.
 
+Comandos preparados para quando houver um Postgres descartavel:
+
+```powershell
+$env:LIFE_DATA_DATABASE_URL="postgres://usuario:senha@host:5432/banco"
+npm run life-data:migrations:plan
+npm run life-data:migrations:dry-run
+$env:LIFE_DATA_CONFIRM_RUN="yes"
+npm run life-data:migrations:run
+```
+
+Notas:
+
+- estes comandos exigem o pacote opcional `pg`;
+- nao rode contra o banco de producao antes de validar em banco descartavel;
+- `migrations:run` se recusa a executar sem `LIFE_DATA_CONFIRM_RUN=yes`;
+- estes comandos nao iniciam o servidor e nao alteram o fluxo atual do Radar.
+
 Endpoint experimental preparado:
 
 ```text
@@ -64,8 +81,9 @@ Proximo passo tecnico, quando autorizado:
 
 1. escolher Postgres gerenciado;
 2. configurar `LIFE_DATA_DATABASE_URL` no ambiente;
-3. testar o executor de migrations contra um banco descartavel;
-4. testar o repository contra um banco descartavel;
-5. criar feature flag separada para escrita canonica real;
-6. manter `LIFE_DATA_ENGINE_ENABLED=false` ate o storage estar validado;
-7. espelhar dados do Radar atual somente com `LIFE_DATA_SEMANTIC_MIRROR_ENABLED=true`.
+3. instalar `pg` apenas no ambiente de teste de storage;
+4. testar o executor de migrations contra um banco descartavel;
+5. testar o repository contra um banco descartavel;
+6. criar feature flag separada para escrita canonica real;
+7. manter `LIFE_DATA_ENGINE_ENABLED=false` ate o storage estar validado;
+8. espelhar dados do Radar atual somente com `LIFE_DATA_SEMANTIC_MIRROR_ENABLED=true`.
