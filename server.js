@@ -1,5 +1,5 @@
 /**
- * Radar de Vida v7.5 — server.js
+ * Radar de Vida v8.0 — server.js
  * Render + Express + Google Docs Apps Script + Radar Visual Documental
  *
  * Mantém tudo que já está funcionando:
@@ -11,7 +11,7 @@
  * - /api/manual-entry
  * - /webhook/whatsapp
  *
- * Novo em v7.5:
+ * Novo em v8.0:
  * - Prompt visual/documental muito mais forte.
  * - Melhor leitura de prints financeiros, recibos, extratos, comprovantes e apps de investimento.
  * - Extração de datas, valores, tickers, nomes, eventos, proventos e somatórios.
@@ -2594,6 +2594,9 @@ app.get('/', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
 
   if (fs.existsSync(indexPath)) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     return res.sendFile(indexPath);
   }
 
@@ -3176,7 +3179,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
   }
 
   /**
-   * Fluxo visual v7.5:
+   * Fluxo visual v8.0:
    * Foto analisada com prompt documental e salva diretamente pelo Apps Script.
    */
   if (incoming.media) {

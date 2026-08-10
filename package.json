@@ -1,7 +1,7 @@
 {
   "name": "radar-whatsapp-webhook",
   "version": "0.1.0",
-  "description": "Radar de Vida v7.3 - Render bridge + painel estático + Radar Visual",
+  "description": "Radar de Vida v8.0 - Life Data Engine foundation",
   "type": "module",
   "main": "server.js",
   "scripts": {
