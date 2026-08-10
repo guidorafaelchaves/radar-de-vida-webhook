@@ -8,6 +8,7 @@ Estado atual:
 - executor de migrations isolado, com checksum e transacao por arquivo;
 - normalizadores canonicos isolados;
 - ingestion canonica em memoria;
+- orquestrador de ingestion canonica com feature flags;
 - repository transacional isolado para cliente Postgres generico;
 - testes sinteticos;
 - nenhuma importacao pelo `server.js`;
@@ -35,6 +36,17 @@ O repository atual persiste esse plano somente quando chamado explicitamente com
 cliente externo que exponha `query(sql, params)` ou `connect()`. Ele foi criado
 como contrato transacional para testes e futura integracao, mas ainda nao e
 importado pelo `server.js` nem executado pelos endpoints vivos.
+
+O orquestrador `processLifeDataIngestion` une ingestion plan e repository:
+
+- exige `LIFE_DATA_ENGINE_ENABLED=true`;
+- exige `LIFE_DATA_INGESTION_ENABLED=true`;
+- por padrao retorna somente `plan_only`;
+- so tenta storage com `LIFE_DATA_STORAGE_ENABLED=true` e `LIFE_DATA_WRITE_THROUGH_ENABLED=true`;
+- se `LIFE_DATA_FAIL_ON_STORAGE_ERROR=false`, falhas de storage voltam como aviso sem quebrar o plano;
+- se `LIFE_DATA_FAIL_ON_STORAGE_ERROR=true`, falhas de storage viram erro.
+
+Ele tambem ainda nao e importado pelo `server.js`.
 
 O executor de migrations atual tambem e manual e isolado. Ele:
 
@@ -84,6 +96,6 @@ Proximo passo tecnico, quando autorizado:
 3. instalar `pg` apenas no ambiente de teste de storage;
 4. testar o executor de migrations contra um banco descartavel;
 5. testar o repository contra um banco descartavel;
-6. criar feature flag separada para escrita canonica real;
-7. manter `LIFE_DATA_ENGINE_ENABLED=false` ate o storage estar validado;
+6. testar `processLifeDataIngestion` contra banco descartavel;
+7. manter `LIFE_DATA_ENGINE_ENABLED=false` no runtime principal ate o storage estar validado;
 8. espelhar dados do Radar atual somente com `LIFE_DATA_SEMANTIC_MIRROR_ENABLED=true`.
