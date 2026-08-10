@@ -5,7 +5,8 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:life-data": "node --test life-data/*.test.js"
   },
   "engines": {
     "node": ">=18"
