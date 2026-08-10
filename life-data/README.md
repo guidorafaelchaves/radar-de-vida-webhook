@@ -11,7 +11,7 @@ Estado atual:
 - orquestrador de ingestion canonica com feature flags;
 - repository transacional isolado para cliente Postgres generico;
 - testes sinteticos;
-- nenhuma importacao pelo `server.js`;
+- importacao pelo `server.js` somente no endpoint experimental `/api/life-data/plan`;
 - nenhuma escrita real em banco no runtime atual;
 - nenhuma alteracao no fluxo WhatsApp, Zepp, Apps Script ou dashboard atual.
 
@@ -46,7 +46,7 @@ O orquestrador `processLifeDataIngestion` une ingestion plan e repository:
 - se `LIFE_DATA_FAIL_ON_STORAGE_ERROR=false`, falhas de storage voltam como aviso sem quebrar o plano;
 - se `LIFE_DATA_FAIL_ON_STORAGE_ERROR=true`, falhas de storage viram erro.
 
-Ele tambem ainda nao e importado pelo `server.js`.
+Ele e usado apenas pelo endpoint experimental `/api/life-data/plan`.
 
 O executor de migrations atual tambem e manual e isolado. Ele:
 
@@ -88,6 +88,7 @@ Regras:
 - nao grava em banco;
 - nao chama Apps Script;
 - nao substitui nenhum endpoint atual.
+- usa `processLifeDataIngestion` e, por padrao, retorna `plan_only`.
 
 Proximo passo tecnico, quando autorizado:
 

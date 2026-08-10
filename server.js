@@ -30,7 +30,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { buildIngestionPlan } from './life-data/ingestion.js';
+import { processLifeDataIngestion } from './life-data/engine.js';
 
 const app = express();
 
@@ -2899,7 +2899,7 @@ app.post('/api/analyze-entry', async (req, res) => {
   }
 });
 
-app.post('/api/life-data/plan', (req, res) => {
+app.post('/api/life-data/plan', async (req, res) => {
   if (!LIFE_DATA_FLAGS.engine || !LIFE_DATA_FLAGS.ingestion) {
     return res.status(404).json({
       ok: false,
@@ -2914,13 +2914,15 @@ app.post('/api/life-data/plan', (req, res) => {
   if (!requireStrictRadarApiToken(req, res)) return;
 
   try {
-    const plan = buildIngestionPlan(req.body || {});
+    const result = await processLifeDataIngestion(req.body || {});
 
     return res.status(200).json({
       ok: true,
-      mode: 'plan_only_no_storage_write',
+      mode: result.mode,
+      persisted: result.persisted,
       lifeDataFlags: LIFE_DATA_FLAGS,
-      plan
+      storage: result.storage,
+      plan: result.plan
     });
   } catch (err) {
     return res.status(400).json({
