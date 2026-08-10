@@ -30,7 +30,10 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { buildLifeDataPlanHttpResponse } from './life-data/http.js';
+import {
+  buildLifeDataPlanHttpResponse,
+  buildLifeDataStatusHttpResponse
+} from './life-data/http.js';
 
 const app = express();
 
@@ -2608,6 +2611,7 @@ app.get('/', (req, res) => {
       analyzeEntry: '/api/analyze-entry',
       personalIntelligence: '/api/personal-intelligence',
       manualEntry: '/api/manual-entry',
+      lifeDataStatus: '/api/life-data/status',
       lifeDataPlan: '/api/life-data/plan',
       zeppHealthSnapshot: '/api/zepp-health-snapshot',
       zeppTextEntry: '/api/zepp-text-entry',
@@ -2897,6 +2901,16 @@ app.post('/api/analyze-entry', async (req, res) => {
       error: err.message
     });
   }
+});
+
+app.get('/api/life-data/status', (req, res) => {
+  if (!requireStrictRadarApiToken(req, res)) return;
+
+  const response = buildLifeDataStatusHttpResponse({
+    lifeDataFlags: LIFE_DATA_FLAGS,
+    siteUrl: 'https://radar-de-vida-webhook.onrender.com'
+  });
+  return res.status(response.status).json(response.body);
 });
 
 app.post('/api/life-data/plan', async (req, res) => {

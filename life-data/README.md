@@ -9,7 +9,7 @@ Estado atual:
 - normalizadores canonicos isolados;
 - ingestion canonica em memoria;
 - orquestrador de ingestion canonica com feature flags;
-- contrato HTTP isolado para `/api/life-data/plan`;
+- contratos HTTP isolados para `/api/life-data/status` e `/api/life-data/plan`;
 - repository transacional isolado para cliente Postgres generico;
 - testes sinteticos;
 - importacao pelo `server.js` somente no endpoint experimental `/api/life-data/plan`;
@@ -49,6 +49,14 @@ O orquestrador `processLifeDataIngestion` une ingestion plan e repository:
 
 Ele e usado apenas pelo endpoint experimental `/api/life-data/plan`.
 
+O contrato HTTP `buildLifeDataStatusHttpResponse` informa o estado seguro do motor:
+
+- modo atual: `disabled`, `plan_only` ou `write_through_armed`;
+- flags ativas;
+- se existe URL de banco configurada, sem vazar a URL;
+- comandos locais de teste e migrations;
+- caminho atual de escrita: desativado/plano ou write-through armado.
+
 O contrato HTTP `buildLifeDataPlanHttpResponse` padroniza a resposta do endpoint:
 
 - sucesso retorna `mode`, `persisted`, `storage` e `plan`;
@@ -85,15 +93,19 @@ Notas:
 Endpoint experimental preparado:
 
 ```text
+GET /api/life-data/status
 POST /api/life-data/plan
 ```
 
 Regras:
 
+- ambos exigem `RADAR_API_TOKEN` configurado e enviado;
 - exige `LIFE_DATA_ENGINE_ENABLED=true`;
 - exige `LIFE_DATA_INGESTION_ENABLED=true`;
-- exige `RADAR_API_TOKEN` configurado e enviado;
-- nao grava em banco;
+- `/api/life-data/status` nao exige flags do motor, apenas informa o estado;
+- `/api/life-data/plan` exige flags do motor;
+- status nao grava em banco;
+- plan nao grava em banco sem `LIFE_DATA_STORAGE_ENABLED=true` e `LIFE_DATA_WRITE_THROUGH_ENABLED=true`;
 - nao chama Apps Script;
 - nao substitui nenhum endpoint atual.
 - usa `processLifeDataIngestion` e, por padrao, retorna `plan_only`.
