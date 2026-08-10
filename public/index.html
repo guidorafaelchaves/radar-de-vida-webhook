@@ -3153,15 +3153,15 @@
         </div>
         <div class="charts">
           <div class="chart-box full">
-            <div class="chart-title">Indices corporais: recuperacao, carga, combustivel e cardio</div>
+            <div class="chart-title">Corpo primeiro: peso, gordura, VO2 e qualidade da composicao</div>
             <canvas id="bodyIndexChart"></canvas>
           </div>
           <div class="chart-box">
-            <div class="chart-title">Sono: total, profundo e REM</div>
+            <div class="chart-title">Indices apos composicao: recuperacao, carga e combustivel</div>
             <canvas id="bodySleepChart"></canvas>
           </div>
           <div class="chart-box">
-            <div class="chart-title">Movimento: passos, atividade e distancia</div>
+            <div class="chart-title">Sono: total, profundo e REM</div>
             <canvas id="bodyMovementChart"></canvas>
           </div>
           <div class="chart-box">
@@ -3697,6 +3697,7 @@
         nutritionProteinGrams: numberAfter([/proteina\s*([0-9.,]+)\s*g/i, /nutritionProteinGrams["']?\s*:\s*([0-9.]+)/i]),
         bloodGlucoseMgDl: numberAfter([/glicose(?: registrada)?\s*:\s*([0-9.,]+)\s*mg\/dl/i, /bloodGlucoseMgDl["']?\s*:\s*([0-9.]+)/i]),
         bodyFatPercent: numberAfter([/gordura corporal\s*:\s*([0-9.,]+)%/i, /bodyFatPercent["']?\s*:\s*([0-9.]+)/i]),
+        heightMeters: numberAfter([/altura(?: registrada)?\s*:\s*([0-9.,]+)\s*m/i, /heightMeters["']?\s*:\s*([0-9.]+)/i]),
         vo2Max: numberAfter([/vo2 max(?: registrado)?\s*:\s*([0-9.,]+)/i, /vo2Max["']?\s*:\s*([0-9.]+)/i])
       };
 
@@ -4046,6 +4047,7 @@
         acc.vo2Values.push(toNumber(item.vo2Max));
         acc.weightValues.push(toNumber(item.weightKg));
         acc.bodyFatValues.push(toNumber(item.bodyFatPercent));
+        acc.heightValues.push(toNumber(item.heightMeters));
         acc.maxHeartRate = Math.max(acc.maxHeartRate, toNumber(item.maxHeartRate));
         acc.grantedPermissionsCount = Math.max(acc.grantedPermissionsCount, toNumber(item.grantedPermissionsCount));
         acc.requestedPermissionsCount = Math.max(acc.requestedPermissionsCount, toNumber(item.requestedPermissionsCount));
@@ -4081,6 +4083,7 @@
         vo2Values: [],
         weightValues: [],
         bodyFatValues: [],
+        heightValues: [],
         grantedPermissionsCount: 0,
         requestedPermissionsCount: 0,
         maxHeartRate: 0
@@ -4099,6 +4102,7 @@
       const vo2Values = totals.vo2Values.filter(Boolean);
       const weightValues = totals.weightValues.filter(Boolean);
       const bodyFatValues = totals.bodyFatValues.filter(Boolean);
+      const heightValues = totals.heightValues.filter(Boolean);
 
       const summary = {
         snapshots,
@@ -4142,6 +4146,7 @@
         avgVo2Max: vo2Values.length ? average(vo2Values) : 0,
         latestWeightKg: weightValues.length ? weightValues[weightValues.length - 1] : 0,
         latestBodyFatPercent: bodyFatValues.length ? bodyFatValues[bodyFatValues.length - 1] : 0,
+        latestHeightMeters: heightValues.length ? heightValues[heightValues.length - 1] : 0,
         grantedPermissionsCount: totals.grantedPermissionsCount,
         requestedPermissionsCount: totals.requestedPermissionsCount
       };
@@ -4276,7 +4281,9 @@
         spo2: 0,
         spo2Samples: 0,
         vo2Max: 0,
+        weightKg: 0,
         bodyFatPercent: 0,
+        heightMeters: 0,
         dataDepthScore: 0,
         restingHeartRate: 0,
         avgHeartRate: 0,
@@ -4312,7 +4319,9 @@
         row.floorsClimbed = Math.max(row.floorsClimbed, toNumber(snapshot.floorsClimbed));
         row.elevationGainedMeters = Math.max(row.elevationGainedMeters, toNumber(snapshot.elevationGainedMeters));
         row.vo2Max = Math.max(row.vo2Max, toNumber(snapshot.vo2Max));
+        row.weightKg = Math.max(row.weightKg, toNumber(snapshot.weightKg));
         row.bodyFatPercent = Math.max(row.bodyFatPercent, toNumber(snapshot.bodyFatPercent));
+        row.heightMeters = Math.max(row.heightMeters, toNumber(snapshot.heightMeters));
         row.maxHeartRate = Math.max(row.maxHeartRate, toNumber(snapshot.maxHeartRate));
 
         const resting = toNumber(snapshot.restingHeartRate);
@@ -4387,6 +4396,7 @@
           avgRespiratoryRate: normalized.respiratoryRate,
           avgSpo2: normalized.spo2,
           avgVo2Max: normalized.vo2Max,
+          latestWeightKg: normalized.weightKg,
           latestBodyFatPercent: normalized.bodyFatPercent
         };
         return {
@@ -4708,6 +4718,50 @@
       };
     }
 
+    function computeBodyProfile(summary) {
+      const weight = toNumber(summary.latestWeightKg);
+      const fat = toNumber(summary.latestBodyFatPercent);
+      const height = toNumber(summary.latestHeightMeters);
+      const bmi = weight && height ? weight / (height * height) : 0;
+      const leanMass = weight && fat ? weight * (1 - (fat / 100)) : 0;
+      const fatMass = weight && fat ? weight * (fat / 100) : 0;
+      const compositionScore = Math.round(clamp(
+        (weight ? 25 : 0) +
+        (fat ? 25 : 0) +
+        (height ? 15 : 0) +
+        (summary.avgVo2Max ? 15 : 0) +
+        (summary.latestBodyFatPercent || summary.latestWeightKg ? 10 : 0) +
+        (summary.requestedPermissionsCount ? Math.min(10, summary.grantedPermissionsCount / Math.max(1, summary.requestedPermissionsCount) * 10) : 0)
+      ));
+
+      return { weight, fat, height, bmi, leanMass, fatMass, compositionScore };
+    }
+
+    function bodyProfileDecision(profile, summary) {
+      if (!profile.weight && !profile.fat) {
+        return {
+          title: 'Composicao corporal ainda invisivel',
+          body: 'O Radar ja ve movimento e sono, mas ainda nao tem peso, gordura ou massa magra suficientes. Registrar peso e liberar composicao no Health Connect muda a qualidade da leitura.'
+        };
+      }
+      if (profile.fat && profile.leanMass) {
+        return {
+          title: 'Corpo materializado no Radar',
+          body: `Peso ${profile.weight.toFixed(1)} kg, gordura ${profile.fat.toFixed(1)}%, massa magra estimada ${profile.leanMass.toFixed(1)} kg. A partir daqui treino, proteina e sono deixam de ser eventos soltos e viram manutencao de estrutura.`
+        };
+      }
+      if (profile.weight) {
+        return {
+          title: 'Peso capturado, composicao pendente',
+          body: `Peso atual registrado em ${profile.weight.toFixed(1)} kg. Falta gordura corporal/massa magra para o Radar separar perda util de simples oscilacao de agua, comida e glicogenio.`
+        };
+      }
+      return {
+        title: 'Composicao parcial',
+        body: 'Ha algum sinal corporal, mas ainda falta peso ou gordura para formar uma linha de base confiavel.'
+      };
+    }
+
     function renderBodyDashboard() {
       const commandBox = document.getElementById('bodyCommandBox');
       const laneBox = document.getElementById('bodyLaneBox');
@@ -4725,6 +4779,8 @@
 
       const readiness = computeZeppReadiness(summary);
       const decision = bodyDecisionText(summary, readiness);
+      const profile = computeBodyProfile(summary);
+      const profileDecision = bodyProfileDecision(profile, summary);
       const insights = buildZeppInsights(summary, readiness);
       const gaps = buildZeppDataGaps(summary);
       const latest = summary.latest || {};
@@ -4738,21 +4794,26 @@
 
       commandBox.innerHTML = `
         <div class="body-command-main">
-          <small>Body Command Center</small>
-          <h2>${readiness}</h2>
-          <p><strong>${escapeHtml(decision.title)}</strong>. ${escapeHtml(decision.body)}</p>
+          <small>Perfil corporal primeiro</small>
+          <h2>${profile.weight ? `${profile.weight.toFixed(1)} kg` : 'Corpo'}</h2>
+          <p><strong>${escapeHtml(profileDecision.title)}</strong>. ${escapeHtml(profileDecision.body)}</p>
           <div class="body-index-strip">
-            ${metric('Recuperacao', String(summary.recoveryScore), `${minutesHuman(summary.avgSleepMinutes)} sono medio`)}
-            ${metric('Carga', String(summary.loadScore), `${minutesHuman(summary.activeMinutes)} ativos`)}
-            ${metric('Combustivel', String(summary.fuelScore), `${summary.hydrationLiters ? summary.hydrationLiters.toFixed(1) + ' L agua' : 'agua ausente'}`)}
-            ${metric('Cardio', String(summary.cardioScore), `${Math.round(summary.avgHeartRate || 0)} bpm medio`)}
+            ${metric('Gordura', profile.fat ? `${profile.fat.toFixed(1)}%` : 'n/a', profile.fatMass ? `${profile.fatMass.toFixed(1)} kg massa gorda` : 'aguardando composicao')}
+            ${metric('Massa magra', profile.leanMass ? `${profile.leanMass.toFixed(1)} kg` : 'n/a', 'estimativa por peso + gordura')}
+            ${metric('IMC', profile.bmi ? profile.bmi.toFixed(1) : 'n/a', profile.height ? `altura ${profile.height.toFixed(2)} m` : 'altura ausente')}
+            ${metric('Composicao', String(profile.compositionScore), `${summary.avgVo2Max ? `VO2 ${summary.avgVo2Max.toFixed(1)}` : 'VO2 ausente'}`)}
           </div>
         </div>
         <div class="body-command-side">
           <div class="body-decision">
+            <small>Depois do corpo: prontidao</small>
+            <strong>${readiness} - ${escapeHtml(decision.title)}</strong>
+            <p>${escapeHtml(decision.body)}</p>
+          </div>
+          <div class="body-decision">
             <small>Ultima leitura</small>
             <strong>${escapeHtml(latest.date || latest.entry?.data_br || 'sem data')}</strong>
-            <p>${Math.round(toNumber(latest.steps) || 0).toLocaleString('pt-BR')} passos; ${minutesHuman(toNumber(latest.activeMinutes))} de atividade; ${minutesHuman(toNumber(latest.sleepMinutes))} de sono.</p>
+            <p>Peso ${profile.weight ? profile.weight.toFixed(1) + ' kg' : 'ausente'}; gordura ${profile.fat ? profile.fat.toFixed(1) + '%' : 'ausente'}; depois: ${Math.round(toNumber(latest.steps) || 0).toLocaleString('pt-BR')} passos, ${minutesHuman(toNumber(latest.activeMinutes))} ativos.</p>
           </div>
           ${insights.map(([title, body]) => `
             <div class="body-decision">
@@ -4765,6 +4826,16 @@
       `;
 
       const lanes = [
+        {
+          title: 'Peso e composicao corporal',
+          score: profile.compositionScore,
+          items: [
+            `Peso atual: ${profile.weight ? profile.weight.toFixed(1) + ' kg' : 'ausente'}`,
+            `Gordura corporal: ${profile.fat ? profile.fat.toFixed(1) + '%' : 'ausente'}`,
+            `Massa magra/gorda: ${profile.leanMass ? profile.leanMass.toFixed(1) + ' kg' : 'n/a'} / ${profile.fatMass ? profile.fatMass.toFixed(1) + ' kg' : 'n/a'}`,
+            `IMC: ${profile.bmi ? profile.bmi.toFixed(1) : 'altura ausente'}`
+          ]
+        },
         {
           title: 'Sono e recuperacao',
           score: summary.recoveryScore,
@@ -4835,6 +4906,7 @@
           <thead>
             <tr>
               <th>Data</th>
+              <th>Corpo</th>
               <th>Movimento</th>
               <th>Sono</th>
               <th>Sinais</th>
@@ -4845,6 +4917,7 @@
             ${rows.map(item => `
               <tr>
                 <td>${escapeHtml(item.date || item.entry?.data_br || '-')}</td>
+                <td>${toNumber(item.weightKg).toFixed(1)} kg<br>${toNumber(item.bodyFatPercent).toFixed(1)}% gordura<br>VO2 ${toNumber(item.vo2Max).toFixed(1)}</td>
                 <td>${Math.round(toNumber(item.steps)).toLocaleString('pt-BR')} passos<br>${minutesHuman(item.activeMinutes)} ativos<br>${toNumber(item.distanceKm).toFixed(1)} km</td>
                 <td>${minutesHuman(item.sleepMinutes)}<br>prof. ${minutesHuman(item.deepSleepMinutes)}<br>REM ${minutesHuman(item.remSleepMinutes)}</td>
                 <td>${Math.round(toNumber(item.avgHeartRate))} bpm<br>HRV ${Math.round(toNumber(item.hrvRmssdMs))} ms<br>${toNumber(item.respiratoryRate).toFixed(1)} rpm</td>
@@ -4874,6 +4947,25 @@
       const protein = byDate.map(r => r.proteina_g);
 
       renderChart('bodyIndexChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Peso (kg)', data: rows.map(r => r.weightKg) },
+            { label: 'Gordura corporal (%)', data: rows.map(r => r.bodyFatPercent) },
+            { label: 'VO2 max', data: rows.map(r => r.vo2Max) },
+            { label: 'Qualidade composicao', data: rows.map(r => {
+              const weight = toNumber(r.weightKg);
+              const fat = toNumber(r.bodyFatPercent);
+              const vo2 = toNumber(r.vo2Max);
+              return Math.round(clamp((weight ? 35 : 0) + (fat ? 35 : 0) + (vo2 ? 20 : 0) + (r.dataDepthScore ? 10 : 0)));
+            }) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('bodySleepChart', {
         type: 'line',
         data: {
           labels,
@@ -4888,7 +4980,7 @@
         options: baseChartOptions('')
       });
 
-      renderChart('bodySleepChart', {
+      renderChart('bodyMovementChart', {
         type: 'bar',
         data: {
           labels,
@@ -4899,20 +4991,6 @@
           ]
         },
         options: baseChartOptions('min')
-      });
-
-      renderChart('bodyMovementChart', {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Passos (mil)', data: rows.map(r => Number(r.stepsK.toFixed(1))) },
-            { label: 'Atividade (min)', data: rows.map(r => r.activeMinutes) },
-            { label: 'Distancia (km)', data: rows.map(r => Number(r.distanceKm.toFixed(1))) },
-            { label: 'Elevacao (m)', data: rows.map(r => Math.round(r.elevationGainedMeters || 0)) }
-          ]
-        },
-        options: baseChartOptions('')
       });
 
       renderChart('bodyVitalsChart', {
