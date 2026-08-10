@@ -3343,7 +3343,25 @@
         avgHeartRate: numberAfter([/cardiaca media\s*:\s*([0-9.,]+)\s*bpm/i, /avgHeartRate["']?\s*:\s*([0-9.]+)/i]),
         maxHeartRate: numberAfter([/pico cardiaco\s*:\s*([0-9.,]+)\s*bpm/i, /maxHeartRate["']?\s*:\s*([0-9.]+)/i]),
         weightKg: numberAfter([/peso registrado\s*:\s*([0-9.,]+)\s*kg/i, /weightKg["']?\s*:\s*([0-9.]+)/i]),
-        spo2: numberAfter([/spo2\s*:\s*([0-9.,]+)%/i, /spo2["']?\s*:\s*([0-9.]+)/i])
+        spo2: numberAfter([/spo2\s*:\s*([0-9.,]+)%/i, /spo2["']?\s*:\s*([0-9.]+)/i]),
+        deepSleepMinutes: numberAfter([/sono profundo\s*:\s*([0-9.,]+)\s*min/i, /deepSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
+        remSleepMinutes: numberAfter([/sono rem\s*:\s*([0-9.,]+)\s*min/i, /remSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
+        lightSleepMinutes: numberAfter([/sono leve\s*:\s*([0-9.,]+)\s*min/i, /lightSleepMinutes["']?\s*:\s*([0-9.]+)/i]),
+        hrvRmssdMs: numberAfter([/hrv rmssd(?: medio)?\s*:\s*([0-9.,]+)\s*ms/i, /hrvRmssdMs["']?\s*:\s*([0-9.]+)/i]),
+        respiratoryRate: numberAfter([/frequencia respiratoria(?: media)?\s*:\s*([0-9.,]+)/i, /respiratoryRate["']?\s*:\s*([0-9.]+)/i]),
+        floorsClimbed: numberAfter([/(?:andares|pisos) subidos\s*:\s*([0-9.,]+)/i, /floorsClimbed["']?\s*:\s*([0-9.]+)/i]),
+        elevationGainedMeters: numberAfter([/elevacao acumulada\s*:\s*([0-9.,]+)\s*m/i, /elevationGainedMeters["']?\s*:\s*([0-9.]+)/i]),
+        avgStepsCadence: numberAfter([/cadencia media de passos\s*:\s*([0-9.,]+)/i, /avgStepsCadence["']?\s*:\s*([0-9.]+)/i]),
+        avgSpeedKmh: numberAfter([/velocidade media(?: registrada)?\s*:\s*([0-9.,]+)\s*km\/h/i, /avgSpeedKmh["']?\s*:\s*([0-9.]+)/i]),
+        avgPowerWatts: numberAfter([/potencia media(?: registrada)?\s*:\s*([0-9.,]+)\s*w/i, /avgPowerWatts["']?\s*:\s*([0-9.]+)/i]),
+        avgCyclingCadenceRpm: numberAfter([/cadencia media de pedal\s*:\s*([0-9.,]+)\s*rpm/i, /avgCyclingCadenceRpm["']?\s*:\s*([0-9.]+)/i]),
+        basalCalories: numberAfter([/metabolismo basal estimado(?: no dia)?\s*:\s*([0-9.,]+)\s*kcal/i, /basalCalories["']?\s*:\s*([0-9.]+)/i]),
+        hydrationLiters: numberAfter([/hidratacao registrada\s*:\s*([0-9.,]+)\s*l/i, /hydrationLiters["']?\s*:\s*([0-9.]+)/i]),
+        nutritionCalories: numberAfter([/nutricao health connect\s*:\s*([0-9.,]+)\s*kcal/i, /nutritionCalories["']?\s*:\s*([0-9.]+)/i]),
+        nutritionProteinGrams: numberAfter([/proteina\s*([0-9.,]+)\s*g/i, /nutritionProteinGrams["']?\s*:\s*([0-9.]+)/i]),
+        bloodGlucoseMgDl: numberAfter([/glicose(?: registrada)?\s*:\s*([0-9.,]+)\s*mg\/dl/i, /bloodGlucoseMgDl["']?\s*:\s*([0-9.]+)/i]),
+        bodyFatPercent: numberAfter([/gordura corporal\s*:\s*([0-9.,]+)%/i, /bodyFatPercent["']?\s*:\s*([0-9.]+)/i]),
+        vo2Max: numberAfter([/vo2 max(?: registrado)?\s*:\s*([0-9.,]+)/i, /vo2Max["']?\s*:\s*([0-9.]+)/i])
       };
 
       const hasMetric = Object.entries(snapshot)

@@ -666,17 +666,55 @@ function normalizeZeppHealthSnapshot(input = {}) {
     sleepEnd: cleanText(firstDefined(input.sleepEnd, sleep.end, sleep.endTime)),
     deepSleepMinutes: toNumber(firstDefined(input.deepSleepMinutes, sleep.deepMinutes)),
     remSleepMinutes: toNumber(firstDefined(input.remSleepMinutes, sleep.remMinutes)),
-    awakeMinutes: toNumber(firstDefined(input.awakeMinutes, sleep.awakeMinutes)),
+    lightSleepMinutes: toNumber(firstDefined(input.lightSleepMinutes, sleep.lightMinutes)),
+    awakeMinutes: toNumber(firstDefined(input.awakeMinutes, input.awakeSleepMinutes, sleep.awakeMinutes)),
     restingHeartRate: toNumber(firstDefined(input.restingHeartRate, heart.resting, heart.restingBpm)),
     avgHeartRate: toNumber(firstDefined(input.avgHeartRate, heart.avg, heart.averageBpm, workout.avgHeartRate)),
     maxHeartRate: toNumber(firstDefined(input.maxHeartRate, heart.max, heart.maxBpm, workout.maxHeartRate)),
     workoutType: cleanText(firstDefined(input.workoutType, workout.type, workout.sport)),
     workoutMinutes: toNumber(firstDefined(input.workoutMinutes, workout.durationMinutes, workout.minutes)),
+    workoutCount: toNumber(firstDefined(input.workoutCount, workout.count)),
     workoutCalories: toNumber(firstDefined(input.workoutCalories, workout.calories)),
     workoutDistanceMeters: toNumber(firstDefined(input.workoutDistanceMeters, workout.distanceMeters)),
     weightKg: toNumber(firstDefined(input.weightKg, body.weightKg, input.weight)),
     spo2: toNumber(firstDefined(input.spo2, input.bloodOxygen, body.spo2)),
     stress: toNumber(firstDefined(input.stress, body.stress)),
+    floorsClimbed: toNumber(firstDefined(input.floorsClimbed, activity.floorsClimbed)),
+    elevationGainedMeters: toNumber(firstDefined(input.elevationGainedMeters, activity.elevationGainedMeters)),
+    avgStepsCadence: toNumber(firstDefined(input.avgStepsCadence, activity.avgStepsCadence)),
+    maxStepsCadence: toNumber(firstDefined(input.maxStepsCadence, activity.maxStepsCadence)),
+    avgSpeedKmh: toNumber(firstDefined(input.avgSpeedKmh, activity.avgSpeedKmh, workout.avgSpeedKmh)),
+    maxSpeedKmh: toNumber(firstDefined(input.maxSpeedKmh, activity.maxSpeedKmh, workout.maxSpeedKmh)),
+    avgPowerWatts: toNumber(firstDefined(input.avgPowerWatts, workout.avgPowerWatts)),
+    maxPowerWatts: toNumber(firstDefined(input.maxPowerWatts, workout.maxPowerWatts)),
+    avgCyclingCadenceRpm: toNumber(firstDefined(input.avgCyclingCadenceRpm, workout.avgCyclingCadenceRpm)),
+    maxCyclingCadenceRpm: toNumber(firstDefined(input.maxCyclingCadenceRpm, workout.maxCyclingCadenceRpm)),
+    hrvRmssdMs: toNumber(firstDefined(input.hrvRmssdMs, heart.hrvRmssdMs, heart.hrv)),
+    respiratoryRate: toNumber(firstDefined(input.respiratoryRate, body.respiratoryRate)),
+    basalCalories: toNumber(firstDefined(input.basalCalories, body.basalCalories)),
+    hydrationLiters: toNumber(firstDefined(input.hydrationLiters, body.hydrationLiters)),
+    nutritionCalories: toNumber(firstDefined(input.nutritionCalories, input.caloriesIn, body.nutritionCalories)),
+    nutritionProteinGrams: toNumber(firstDefined(input.nutritionProteinGrams, body.nutritionProteinGrams)),
+    nutritionCarbsGrams: toNumber(firstDefined(input.nutritionCarbsGrams, body.nutritionCarbsGrams)),
+    nutritionFatGrams: toNumber(firstDefined(input.nutritionFatGrams, body.nutritionFatGrams)),
+    nutritionSugarGrams: toNumber(firstDefined(input.nutritionSugarGrams, body.nutritionSugarGrams)),
+    nutritionSodiumMilligrams: toNumber(firstDefined(input.nutritionSodiumMilligrams, body.nutritionSodiumMilligrams)),
+    bloodPressureSystolic: toNumber(firstDefined(input.bloodPressureSystolic, body.bloodPressureSystolic)),
+    bloodPressureDiastolic: toNumber(firstDefined(input.bloodPressureDiastolic, body.bloodPressureDiastolic)),
+    bloodGlucoseMgDl: toNumber(firstDefined(input.bloodGlucoseMgDl, body.bloodGlucoseMgDl)),
+    bodyFatPercent: toNumber(firstDefined(input.bodyFatPercent, body.bodyFatPercent)),
+    bodyWaterKg: toNumber(firstDefined(input.bodyWaterKg, body.bodyWaterKg)),
+    boneMassKg: toNumber(firstDefined(input.boneMassKg, body.boneMassKg)),
+    leanBodyMassKg: toNumber(firstDefined(input.leanBodyMassKg, body.leanBodyMassKg)),
+    heightMeters: toNumber(firstDefined(input.heightMeters, body.heightMeters)),
+    bodyTemperatureCelsius: toNumber(firstDefined(input.bodyTemperatureCelsius, body.bodyTemperatureCelsius)),
+    skinTemperatureDeltaCelsius: toNumber(firstDefined(input.skinTemperatureDeltaCelsius, body.skinTemperatureDeltaCelsius)),
+    vo2Max: toNumber(firstDefined(input.vo2Max, body.vo2Max)),
+    mindfulnessMinutes: toNumber(firstDefined(input.mindfulnessMinutes, body.mindfulnessMinutes)),
+    wheelchairPushes: toNumber(firstDefined(input.wheelchairPushes, activity.wheelchairPushes)),
+    grantedPermissionsCount: toNumber(input.grantedPermissionsCount),
+    requestedPermissionsCount: toNumber(input.requestedPermissionsCount),
+    recordCounts: input.recordCounts && typeof input.recordCounts === 'object' ? input.recordCounts : {},
     raw: input
   };
 }
@@ -701,15 +739,44 @@ function buildZeppDecisionText(snapshot) {
   if (snapshot.sleepMinutes) parts.push(`Sono: ${minutesToHoursText(snapshot.sleepMinutes)}${snapshot.sleepStart || snapshot.sleepEnd ? ` (${snapshot.sleepStart || '?'} ate ${snapshot.sleepEnd || '?'})` : ''}.`);
   if (snapshot.deepSleepMinutes) parts.push(`Sono profundo: ${minutesToHoursText(snapshot.deepSleepMinutes)}.`);
   if (snapshot.remSleepMinutes) parts.push(`Sono REM: ${minutesToHoursText(snapshot.remSleepMinutes)}.`);
+  if (snapshot.lightSleepMinutes) parts.push(`Sono leve: ${minutesToHoursText(snapshot.lightSleepMinutes)}.`);
+  if (snapshot.awakeMinutes) parts.push(`Tempo acordado na janela de sono: ${minutesToHoursText(snapshot.awakeMinutes)}.`);
   if (snapshot.restingHeartRate) parts.push(`Frequencia cardiaca de repouso: ${Math.round(snapshot.restingHeartRate)} bpm.`);
   if (snapshot.avgHeartRate) parts.push(`Frequencia cardiaca media: ${Math.round(snapshot.avgHeartRate)} bpm.`);
   if (snapshot.maxHeartRate) parts.push(`Pico cardiaco: ${Math.round(snapshot.maxHeartRate)} bpm.`);
+  if (snapshot.hrvRmssdMs) parts.push(`HRV RMSSD: ${snapshot.hrvRmssdMs.toFixed(1)} ms.`);
+  if (snapshot.respiratoryRate) parts.push(`Frequencia respiratoria: ${snapshot.respiratoryRate.toFixed(1)} rpm.`);
   if (snapshot.workoutType || snapshot.workoutMinutes) {
     parts.push(`Treino registrado: ${snapshot.workoutType || 'atividade'} por ${minutesToHoursText(snapshot.workoutMinutes) || 'tempo nao informado'}${snapshot.workoutCalories ? `, ${Math.round(snapshot.workoutCalories)} kcal` : ''}${snapshot.workoutDistanceMeters ? `, ${(snapshot.workoutDistanceMeters / 1000).toFixed(2)} km` : ''}.`);
   }
+  if (snapshot.workoutCount > 1) parts.push(`Total de treinos/sessoes: ${Math.round(snapshot.workoutCount)}.`);
+  if (snapshot.floorsClimbed) parts.push(`Pisos subidos: ${snapshot.floorsClimbed.toFixed(1)}.`);
+  if (snapshot.elevationGainedMeters) parts.push(`Elevacao acumulada: ${Math.round(snapshot.elevationGainedMeters)} m.`);
+  if (snapshot.avgStepsCadence) parts.push(`Cadencia media de passos: ${snapshot.avgStepsCadence.toFixed(1)} passos/min.`);
+  if (snapshot.avgSpeedKmh) parts.push(`Velocidade media: ${snapshot.avgSpeedKmh.toFixed(1)} km/h.`);
+  if (snapshot.avgPowerWatts) parts.push(`Potencia media: ${Math.round(snapshot.avgPowerWatts)} W.`);
+  if (snapshot.avgCyclingCadenceRpm) parts.push(`Cadencia media de pedal: ${Math.round(snapshot.avgCyclingCadenceRpm)} rpm.`);
+  if (snapshot.basalCalories) parts.push(`Metabolismo basal estimado: ${Math.round(snapshot.basalCalories)} kcal.`);
+  if (snapshot.hydrationLiters) parts.push(`Hidratacao registrada: ${snapshot.hydrationLiters.toFixed(2)} L.`);
+  if (snapshot.nutritionCalories || snapshot.nutritionProteinGrams) {
+    parts.push(`Nutricao Health Connect: ${Math.round(snapshot.nutritionCalories)} kcal, proteina ${Math.round(snapshot.nutritionProteinGrams)} g, carboidratos ${Math.round(snapshot.nutritionCarbsGrams)} g, gorduras ${Math.round(snapshot.nutritionFatGrams)} g.`);
+  }
+  if (snapshot.bloodPressureSystolic && snapshot.bloodPressureDiastolic) parts.push(`Pressao arterial media: ${Math.round(snapshot.bloodPressureSystolic)}/${Math.round(snapshot.bloodPressureDiastolic)} mmHg.`);
+  if (snapshot.bloodGlucoseMgDl) parts.push(`Glicose: ${Math.round(snapshot.bloodGlucoseMgDl)} mg/dL.`);
   if (snapshot.weightKg) parts.push(`Peso registrado: ${snapshot.weightKg.toFixed(1)} kg.`);
+  if (snapshot.bodyFatPercent) parts.push(`Gordura corporal: ${snapshot.bodyFatPercent.toFixed(1)}%.`);
+  if (snapshot.leanBodyMassKg) parts.push(`Massa magra: ${snapshot.leanBodyMassKg.toFixed(1)} kg.`);
+  if (snapshot.bodyWaterKg) parts.push(`Agua corporal: ${snapshot.bodyWaterKg.toFixed(1)} kg.`);
+  if (snapshot.boneMassKg) parts.push(`Massa ossea: ${snapshot.boneMassKg.toFixed(1)} kg.`);
+  if (snapshot.heightMeters) parts.push(`Altura registrada: ${snapshot.heightMeters.toFixed(2)} m.`);
+  if (snapshot.bodyTemperatureCelsius) parts.push(`Temperatura corporal: ${snapshot.bodyTemperatureCelsius.toFixed(1)} C.`);
+  if (snapshot.skinTemperatureDeltaCelsius) parts.push(`Variacao de temperatura da pele: ${snapshot.skinTemperatureDeltaCelsius.toFixed(2)} C.`);
+  if (snapshot.vo2Max) parts.push(`VO2 max: ${snapshot.vo2Max.toFixed(1)}.`);
+  if (snapshot.mindfulnessMinutes) parts.push(`Mindfulness/respiracao consciente: ${minutesToHoursText(snapshot.mindfulnessMinutes)}.`);
+  if (snapshot.wheelchairPushes) parts.push(`Impulsos de cadeira de rodas: ${Math.round(snapshot.wheelchairPushes)}.`);
   if (snapshot.spo2) parts.push(`SpO2: ${Math.round(snapshot.spo2)}%.`);
   if (snapshot.stress) parts.push(`Stress registrado: ${Math.round(snapshot.stress)}.`);
+  if (snapshot.requestedPermissionsCount) parts.push(`Permissoes Health Connect liberadas: ${snapshot.grantedPermissionsCount} de ${snapshot.requestedPermissionsCount}.`);
 
   const decisions = [];
   if (snapshot.sleepMinutes && snapshot.sleepMinutes < 390) {
@@ -737,6 +804,30 @@ function buildZeppDecisionText(snapshot) {
   parts.push(`Leitura decisoria do Radar: ${decisions.join('; ') || 'dados recebidos; acompanhar junto de comida, humor e tarefas do dia'}.`);
 
   return parts.join(' ');
+}
+
+function hasZeppSnapshotMetric(snapshot = {}) {
+  return [
+    'steps',
+    'sleepMinutes',
+    'activeMinutes',
+    'workoutMinutes',
+    'avgHeartRate',
+    'maxHeartRate',
+    'weightKg',
+    'spo2',
+    'hrvRmssdMs',
+    'respiratoryRate',
+    'hydrationLiters',
+    'nutritionCalories',
+    'bloodPressureSystolic',
+    'bloodGlucoseMgDl',
+    'bodyFatPercent',
+    'vo2Max',
+    'floorsClimbed',
+    'elevationGainedMeters',
+    'mindfulnessMinutes'
+  ].some((field) => toNumber(snapshot[field]) > 0);
 }
 
 function looksLikeZeppText(text) {
@@ -2776,11 +2867,11 @@ app.post('/api/zepp-health-snapshot', async (req, res) => {
   const snapshot = normalizeZeppHealthSnapshot(req.body || {});
   const text = buildZeppDecisionText(snapshot);
 
-  if (!snapshot.steps && !snapshot.sleepMinutes && !snapshot.activeMinutes && !snapshot.workoutMinutes && !snapshot.avgHeartRate && !snapshot.weightKg) {
+  if (!hasZeppSnapshotMetric(snapshot)) {
     return res.status(400).json({
       ok: false,
       error: 'Snapshot Zepp vazio. Envie pelo menos passos, sono, atividade, treino, batimentos ou peso.',
-      expectedFields: ['steps', 'sleepMinutes', 'activeMinutes', 'avgHeartRate', 'workoutMinutes', 'weightKg']
+      expectedFields: ['steps', 'sleepMinutes', 'activeMinutes', 'avgHeartRate', 'workoutMinutes', 'weightKg', 'hrvRmssdMs', 'hydrationLiters', 'vo2Max']
     });
   }
 
@@ -2819,16 +2910,7 @@ app.post('/api/zepp-text-entry', async (req, res) => {
     cleanText(req.body.message) ||
     cleanText(req.body.frase);
   const snapshot = normalizeZeppHealthSnapshot(req.body || {});
-  const hasSnapshotMetric = Boolean(
-    snapshot.steps ||
-    snapshot.sleepMinutes ||
-    snapshot.activeMinutes ||
-    snapshot.workoutMinutes ||
-    snapshot.avgHeartRate ||
-    snapshot.maxHeartRate ||
-    snapshot.weightKg ||
-    snapshot.spo2
-  );
+  const hasSnapshotMetric = hasZeppSnapshotMetric(snapshot);
   const text = explicitText || (hasSnapshotMetric ? buildZeppDecisionText(snapshot) : '');
 
   if (!looksLikeZeppText(text)) {
