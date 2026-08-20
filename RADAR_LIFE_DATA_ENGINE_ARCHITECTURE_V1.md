@@ -444,6 +444,60 @@ Constraint:
 
 - unique(source_id, workout_key).
 
+### 7.9.1 body_activities
+
+Camada canonica para atividades corporais estruturadas, começando por corridas. Diferente de `health_daily`, que resume o dia, esta tabela preserva uma sessão específica e suas métricas de performance, mecânica, cardio e carga.
+
+Campos:
+
+- id uuid pk;
+- raw_record_id uuid null;
+- source_id uuid;
+- device_id uuid null;
+- activity_key text;
+- activity_type text;
+- subtype text;
+- title text;
+- date date;
+- start_time timestamptz;
+- end_time timestamptz;
+- timezone text;
+- distance_m double precision;
+- duration_seconds int;
+- average_pace_sec_km double precision;
+- best_pace_sec_km double precision;
+- average_speed_kmh double precision;
+- max_speed_kmh double precision;
+- average_cadence_spm double precision;
+- max_cadence_spm double precision;
+- average_stride_cm double precision;
+- vertical_oscillation_cm double precision;
+- vertical_ratio_percent double precision;
+- ground_contact_time_ms double precision;
+- steps int;
+- calories_kcal double precision;
+- average_heart_rate_bpm double precision;
+- max_heart_rate_bpm double precision;
+- min_heart_rate_bpm double precision;
+- aerobic_training_effect double precision;
+- anaerobic_training_effect double precision;
+- training_load double precision;
+- aerobic_efficiency double precision;
+- quality_status text;
+- metadata jsonb.
+
+Regra de interpretação:
+
+- pace menor é melhor;
+- eficiência aeróbica V1 = velocidade média km/h dividida por frequência cardíaca média;
+- evolução positiva = pace melhor com frequência cardíaca estável/menor ou eficiência maior;
+- conclusões devem ser longitudinais e pessoais, não baseadas em “padrões ideais” genéricos;
+- nunca gerar diagnóstico médico.
+
+Constraint:
+
+- unique(source_id, activity_key).
+
 ### 7.10 semantic_events
 
 Eventos narrativos do Radar atual, normalizados para o Life Data Engine.
@@ -704,6 +758,51 @@ Contrato para espelhar entradas atuais do Radar sem depender de Google Docs.
 }
 ```
 
+### 8.4 Body Activity V1 - Running
+
+Contrato para treinos vindos de JSON criado pelo ChatGPT, screenshot do Zepp/Amazfit, Health Connect ou parser visual.
+
+```json
+{
+  "source": "zepp_screenshot",
+  "sourceRecordId": "run-2026-08-10",
+  "recordType": "body_activity",
+  "device": {
+    "id": "amazfit-trex3-guido",
+    "model": "Amazfit T-Rex 3",
+    "manufacturer": "Amazfit"
+  },
+  "date": "2026-08-10",
+  "timezone": "America/Recife",
+  "payload": {
+    "activity_type": "running",
+    "distance_km": 5.02,
+    "duration_seconds": 3252,
+    "duration_display": "54:12",
+    "average_pace_sec_km": 647,
+    "average_pace_display": "10:47",
+    "best_pace_sec_km": 532,
+    "best_pace_display": "08:52",
+    "average_speed_kmh": 5.56,
+    "max_speed_kmh": 6.77,
+    "average_cadence_spm": 134,
+    "max_cadence_spm": 178,
+    "average_stride_cm": 69,
+    "vertical_oscillation_cm": 7.9,
+    "vertical_ratio_percent": 11.4,
+    "ground_contact_time_ms": 292,
+    "steps": 7271,
+    "calories_kcal": 637,
+    "average_heart_rate_bpm": 138,
+    "max_heart_rate_bpm": 160,
+    "min_heart_rate_bpm": 83,
+    "aerobic_training_effect": 3.1,
+    "anaerobic_training_effect": 1.5,
+    "training_load": 86
+  }
+}
+```
+
 ## 9. Idempotencia
 
 Regras:
@@ -958,4 +1057,3 @@ Criar Fase 2 em um branch ou commit pequeno:
 - define deduplicacao;
 - define caminho para storage paralelo;
 - permite implementar Fase 2 sem redesenhar tudo.
-

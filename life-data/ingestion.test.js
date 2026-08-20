@@ -76,6 +76,36 @@ test('buildIngestionPlan creates semantic, financial and mission drafts', () => 
   assert.equal(plan.canonical.missionEvents[0].missionKey, 'pagar-guia-do-cartorio');
 });
 
+test('buildIngestionPlan creates canonical running body activity', () => {
+  const plan = buildIngestionPlan({
+    source: 'zepp_screenshot',
+    recordType: 'body_activity',
+    sourceRecordId: 'run-2026-08-10',
+    device: {
+      id: 'amazfit-trex3-guido',
+      model: 'Amazfit T-Rex 3'
+    },
+    payload: {
+      activity_type: 'running',
+      date: '2026-08-10',
+      distance_km: 5.02,
+      duration_seconds: 3252,
+      average_pace_sec_km: 647,
+      average_speed_kmh: 5.56,
+      average_heart_rate_bpm: 138,
+      average_cadence_spm: 134,
+      training_load: 86
+    }
+  });
+
+  assert.equal(plan.operations.bodyActivities, 1);
+  assert.equal(plan.canonical.bodyActivities[0].activityType, 'running');
+  assert.equal(plan.canonical.bodyActivities[0].metrics.distanceMeters, 5020);
+  assert.equal(plan.canonical.bodyActivities[0].metrics.durationSeconds, 3252);
+  assert.equal(plan.canonical.bodyActivities[0].metrics.averagePaceSecKm, 647);
+  assert.equal(Number(plan.canonical.bodyActivities[0].metrics.aerobicEfficiency.toFixed(4)), 0.0403);
+});
+
 test('buildIngestionPlan rejects unsupported record type', () => {
   assert.throws(
     () => buildIngestionPlan({ source: 'x', recordType: 'unknown_type', payload: {} }),
@@ -93,4 +123,3 @@ test('serializeIngestionPlan is deterministic for the same plan', () => {
 
   assert.equal(serializeIngestionPlan(plan), serializeIngestionPlan(plan));
 });
-

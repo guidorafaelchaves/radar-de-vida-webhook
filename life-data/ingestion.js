@@ -5,12 +5,14 @@ import {
   buildDailySummary,
   buildRawRecordFingerprint,
   cleanText,
+  normalizeBodyActivity,
   normalizeHealthSnapshot,
   stableStringify,
   toNumber
 } from './normalizers.js';
 
 export const SUPPORTED_INGESTION_TYPES = new Set([
+  'body_activity',
   'health_daily_snapshot',
   'semantic_event'
 ]);
@@ -113,6 +115,10 @@ export function buildCanonicalDrafts(envelope) {
     return buildHealthCanonicalDrafts(envelope);
   }
 
+  if (envelope.recordType === 'body_activity') {
+    return buildBodyActivityCanonicalDrafts(envelope);
+  }
+
   if (envelope.recordType === 'semantic_event') {
     return buildSemanticCanonicalDrafts(envelope);
   }
@@ -120,6 +126,7 @@ export function buildCanonicalDrafts(envelope) {
   return {
     healthMeasurements: [],
     healthDaily: null,
+    bodyActivities: [],
     semanticEvents: [],
     financialEvents: [],
     nutritionEvents: [],
@@ -143,6 +150,32 @@ export function buildHealthCanonicalDrafts(envelope) {
     healthSnapshot: snapshot,
     healthMeasurements: buildCanonicalMeasurements(snapshot),
     healthDaily: buildDailySummary(snapshot),
+    bodyActivities: [],
+    semanticEvents: [],
+    financialEvents: [],
+    nutritionEvents: [],
+    missionEvents: []
+  };
+}
+
+export function buildBodyActivityCanonicalDrafts(envelope) {
+  const activity = normalizeBodyActivity({
+    ...envelope.payload,
+    source: envelope.source,
+    sourceRecordId: envelope.sourceRecordId,
+    deviceId: envelope.device.id,
+    deviceModel: envelope.device.model,
+    deviceManufacturer: envelope.device.manufacturer,
+    date: envelope.date || envelope.payload.date,
+    startTime: envelope.startTime || envelope.payload.startTime || envelope.payload.start_time,
+    endTime: envelope.endTime || envelope.payload.endTime || envelope.payload.end_time,
+    timezone: envelope.timezone
+  });
+
+  return {
+    healthMeasurements: [],
+    healthDaily: null,
+    bodyActivities: [activity],
     semanticEvents: [],
     financialEvents: [],
     nutritionEvents: [],
@@ -187,6 +220,7 @@ export function buildSemanticCanonicalDrafts(envelope) {
   return {
     healthMeasurements: [],
     healthDaily: null,
+    bodyActivities: [],
     semanticEvents: [semanticEvent],
     financialEvents: buildFinancialEvents(semanticEvent),
     nutritionEvents: buildNutritionEvents(semanticEvent),
@@ -199,6 +233,7 @@ export function summarizePlannedOperations(rawRecord, canonical) {
     rawRecords: rawRecord ? 1 : 0,
     healthMeasurements: canonical.healthMeasurements?.length || 0,
     healthDaily: canonical.healthDaily ? 1 : 0,
+    bodyActivities: canonical.bodyActivities?.length || 0,
     semanticEvents: canonical.semanticEvents?.length || 0,
     financialEvents: canonical.financialEvents?.length || 0,
     nutritionEvents: canonical.nutritionEvents?.length || 0,
@@ -207,6 +242,16 @@ export function summarizePlannedOperations(rawRecord, canonical) {
 }
 
 function inferRecordType(payload = {}) {
+  if (
+    payload.activityType === 'running' ||
+    payload.activity_type === 'running' ||
+    payload.type === 'running' ||
+    payload.distance_km !== undefined ||
+    payload.average_pace_sec_km !== undefined
+  ) {
+    return 'body_activity';
+  }
+
   if (
     payload.steps !== undefined ||
     payload.sleep !== undefined ||
@@ -327,4 +372,3 @@ function buildMissionEvents(semanticEvent, intelligence = {}) {
 export function serializeIngestionPlan(plan) {
   return stableStringify(plan);
 }
-

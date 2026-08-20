@@ -1140,6 +1140,16 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
     '- Não atribua tempo produtivo, esporte ou estudo apenas porque a imagem parece importante.',
     '- Se a imagem mostrar app de exercício, smartband, treino, corrida, passos, calorias ou frequência cardíaca, extraia os números visíveis e estime tempo apenas se houver duração visível.',
     '',
+    'ETAPA 5.1 — CORRIDAS, TREINOS E APPS DE SAÚDE:',
+    'Quando a imagem for de Zepp, Amazfit, Strava, Health Connect, Garmin, Apple Fitness, Samsung Health ou tela de corrida/treino:',
+    '- Classifique tipo_documento_visual como app_saude.',
+    '- Se houver corrida, preencha body_activity.activity_type como running.',
+    '- Extraia distância em km, duração, pace médio, melhor pace, velocidade média, velocidade máxima, cadência média/máxima, passada, oscilação vertical, ratio vertical, tempo de contato com solo, passos, calorias, frequência cardíaca média/máxima/mínima, efeito aeróbico, efeito anaeróbico e carga de treino quando estiverem visíveis.',
+    '- Converta pace mm:ss/km para segundos por km.',
+    '- Converta duração hh:mm:ss ou mm:ss para duration_seconds.',
+    '- Não invente métrica ausente. Use 0 quando não estiver visível.',
+    '- Insight deve comparar apenas com histórico longitudinal do usuário quando houver contexto; se não houver, diga que é uma linha de base.',
+    '',
     'ETAPA 6 — INTERPRETAÇÃO:',
     '- Depois dos dados objetivos, gere insight_curto e insight_profundo.',
     '- Diferencie fato de hipótese.',
@@ -1168,6 +1178,33 @@ async function analyzeImageWithOpenAI({ imageDataUrl, caption, from, profileName
     '  "metricas_detectadas": [',
     '    { "nome": "ex.: passos, calorias, km, batimentos, rendimento", "valor": 0, "unidade": "", "confianca": "alta|media|baixa" }',
     '  ],',
+    '  "body_activity": {',
+    '    "activity_type": "running|walking|cycling|strength|other|none",',
+    '    "date": "",',
+    '    "distance_km": 0,',
+    '    "duration_seconds": 0,',
+    '    "duration_display": "",',
+    '    "average_pace_sec_km": 0,',
+    '    "average_pace_display": "",',
+    '    "best_pace_sec_km": 0,',
+    '    "best_pace_display": "",',
+    '    "average_speed_kmh": 0,',
+    '    "max_speed_kmh": 0,',
+    '    "average_cadence_spm": 0,',
+    '    "max_cadence_spm": 0,',
+    '    "average_stride_cm": 0,',
+    '    "vertical_oscillation_cm": 0,',
+    '    "vertical_ratio_percent": 0,',
+    '    "ground_contact_time_ms": 0,',
+    '    "steps": 0,',
+    '    "calories_kcal": 0,',
+    '    "average_heart_rate_bpm": 0,',
+    '    "max_heart_rate_bpm": 0,',
+    '    "min_heart_rate_bpm": 0,',
+    '    "aerobic_training_effect": 0,',
+    '    "anaerobic_training_effect": 0,',
+    '    "training_load": 0',
+    '  },',
     '  "hipotese_de_contexto": "interpretação prudente do que isso pode representar",',
     '  "categorias": ["..."],',
     '  "projetos_detectados": ["..."],',
@@ -1291,7 +1328,41 @@ function normalizeVisualAnalysisNumbers(analysis) {
     confianca: cleanText(item.confianca) || 'media'
   }));
 
+  a.body_activity = normalizeVisualBodyActivity(a.body_activity);
+
   return a;
+}
+
+function normalizeVisualBodyActivity(activity = {}) {
+  const a = activity && typeof activity === 'object' ? activity : {};
+  const type = cleanText(a.activity_type || a.activityType || a.type || 'none');
+  return {
+    activity_type: type || 'none',
+    date: cleanText(a.date || a.data),
+    distance_km: toNumber(a.distance_km || a.distanceKm),
+    duration_seconds: toNumber(a.duration_seconds || a.durationSeconds),
+    duration_display: cleanText(a.duration_display || a.durationDisplay),
+    average_pace_sec_km: toNumber(a.average_pace_sec_km || a.averagePaceSecKm),
+    average_pace_display: cleanText(a.average_pace_display || a.averagePaceDisplay),
+    best_pace_sec_km: toNumber(a.best_pace_sec_km || a.bestPaceSecKm),
+    best_pace_display: cleanText(a.best_pace_display || a.bestPaceDisplay),
+    average_speed_kmh: toNumber(a.average_speed_kmh || a.averageSpeedKmh),
+    max_speed_kmh: toNumber(a.max_speed_kmh || a.maxSpeedKmh),
+    average_cadence_spm: toNumber(a.average_cadence_spm || a.averageCadenceSpm),
+    max_cadence_spm: toNumber(a.max_cadence_spm || a.maxCadenceSpm),
+    average_stride_cm: toNumber(a.average_stride_cm || a.averageStrideCm),
+    vertical_oscillation_cm: toNumber(a.vertical_oscillation_cm || a.verticalOscillationCm),
+    vertical_ratio_percent: toNumber(a.vertical_ratio_percent || a.verticalRatioPercent),
+    ground_contact_time_ms: toNumber(a.ground_contact_time_ms || a.groundContactTimeMs),
+    steps: toNumber(a.steps || a.passos),
+    calories_kcal: toNumber(a.calories_kcal || a.caloriesKcal),
+    average_heart_rate_bpm: toNumber(a.average_heart_rate_bpm || a.averageHeartRateBpm),
+    max_heart_rate_bpm: toNumber(a.max_heart_rate_bpm || a.maxHeartRateBpm),
+    min_heart_rate_bpm: toNumber(a.min_heart_rate_bpm || a.minHeartRateBpm),
+    aerobic_training_effect: toNumber(a.aerobic_training_effect || a.aerobicTrainingEffect),
+    anaerobic_training_effect: toNumber(a.anaerobic_training_effect || a.anaerobicTrainingEffect),
+    training_load: toNumber(a.training_load || a.trainingLoad)
+  };
 }
 
 function enhanceVisualAnalysisForAutoSave(analysis) {
@@ -1323,6 +1394,12 @@ function enhanceVisualAnalysisForAutoSave(analysis) {
     categorias.push('carteira');
   }
 
+  if (a.body_activity && a.body_activity.activity_type && a.body_activity.activity_type !== 'none') {
+    categorias.push('corpo');
+    categorias.push('atividade_fisica');
+    categorias.push(a.body_activity.activity_type === 'running' ? 'corrida' : 'treino');
+  }
+
   const dimensoes = Array.isArray(a.dimensoes_afetadas) ? [...a.dimensoes_afetadas] : [];
   dimensoes.push('memoria_visual');
 
@@ -1332,6 +1409,11 @@ function enhanceVisualAnalysisForAutoSave(analysis) {
 
   if ((a.ativos_detectados || []).length || (a.itens_detectados || []).some(i => i.ticker)) {
     dimensoes.push('investimentos');
+  }
+
+  if (a.body_activity && a.body_activity.activity_type && a.body_activity.activity_type !== 'none') {
+    dimensoes.push('corpo_saude');
+    dimensoes.push('atividade_fisica');
   }
 
   return {
@@ -1365,6 +1447,13 @@ function buildFallbackVisualPhrase(a) {
 
   if (a.dinheiro_investido > 0) {
     return `Registrei um investimento de ${formatMoneyForText(a.dinheiro_investido)} a partir de uma imagem.`;
+  }
+
+  if (a.body_activity && a.body_activity.activity_type === 'running') {
+    const distance = a.body_activity.distance_km ? `${a.body_activity.distance_km.toFixed(2)} km` : 'distancia nao lida';
+    const duration = a.body_activity.duration_display || `${Math.round(a.body_activity.duration_seconds / 60)} min`;
+    const pace = a.body_activity.average_pace_display || '';
+    return `Registrei uma corrida de ${distance}, duracao ${duration}${pace ? `, pace medio ${pace}` : ''}.`;
   }
 
   return (

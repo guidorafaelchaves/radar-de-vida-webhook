@@ -1120,6 +1120,139 @@
       font-size: 12px;
     }
 
+    .running-command {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .running-hero {
+      border: 1px solid rgba(22,52,40,.14);
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0f241c, #1b6a51 62%, #2e8c68);
+      color: #fff;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      min-height: 250px;
+    }
+
+    .running-hero small,
+    .running-tile small,
+    .running-pr strong,
+    .running-compare small {
+      text-transform: uppercase;
+      font-weight: 950;
+      letter-spacing: .05em;
+    }
+
+    .running-hero small,
+    .running-tile small {
+      color: rgba(255,255,255,.68);
+      font-size: 10px;
+    }
+
+    .running-hero h2 {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(30px, 4vw, 50px);
+      line-height: .95;
+    }
+
+    .running-hero p {
+      margin: 0;
+      color: rgba(255,255,255,.78);
+      line-height: 1.45;
+    }
+
+    .running-hero-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .running-tile {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      padding: 9px;
+    }
+
+    .running-tile strong {
+      display: block;
+      color: #fff;
+      font-size: 20px;
+      line-height: 1.05;
+      margin-top: 4px;
+    }
+
+    .running-side {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .running-pr,
+    .running-compare,
+    .running-list-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.92);
+      padding: 13px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .running-pr strong,
+    .running-compare small {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .running-pr b {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .running-pr span,
+    .running-compare p,
+    .running-list-card p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .running-comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .running-selects {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .running-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .running-list-card h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .running-list-card .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
     .body-table th,
     .body-table td {
       border-bottom: 1px solid var(--line);
@@ -2084,6 +2217,10 @@
       .compare-grid,
       .strategy-board,
       .body-command,
+      .running-command,
+      .running-side,
+      .running-comparison-grid,
+      .running-list,
       .zepp-body-matrix,
       .zepp-kpis {
         grid-template-columns: repeat(2, 1fr);
@@ -2222,6 +2359,18 @@
       .compare-grid {
         grid-template-columns: 1fr 1fr;
         gap: 8px;
+      }
+
+      .running-command,
+      .running-side,
+      .running-comparison-grid,
+      .running-selects,
+      .running-list {
+        grid-template-columns: 1fr;
+      }
+
+      .running-hero-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .compare-mini {
@@ -3219,6 +3368,46 @@
       <section class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
+            <h2>Corridas</h2>
+            <p class="hint">Modulo canônico para treinos de corrida: pace, frequência cardíaca, carga, mecânica, progresso e decisão prática.</p>
+          </div>
+        </div>
+        <div id="runningDashboardBox" class="running-command">
+          <div class="empty">Aguardando corridas importadas por JSON, print, frase manual ou Health Connect.</div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Comparação de corridas</h2>
+            <p class="hint">Compare treinos contra você mesmo. O Radar procura eficiência: pace melhor com FC controlada e carga sustentável.</p>
+          </div>
+        </div>
+        <div class="running-selects">
+          <select id="runCompareA" class="select" onchange="renderRunningComparison()"></select>
+          <select id="runCompareB" class="select" onchange="renderRunningComparison()"></select>
+        </div>
+        <div id="runningComparisonBox" class="running-comparison-grid">
+          <div class="empty">Selecione duas corridas para comparar.</div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Histórico de corridas</h2>
+            <p class="hint">Cada treino vira uma peça da sua evolução longitudinal, sem depender de médias genéricas.</p>
+          </div>
+        </div>
+        <div id="runningListBox" class="running-list">
+          <div class="empty">Nenhuma corrida reconhecida ainda.</div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
             <h2>Graficos do corpo</h2>
             <p class="hint">Serie temporal de recuperacao, carga, sono, sinais vitais, nutricao e profundidade de captura.</p>
           </div>
@@ -3247,6 +3436,22 @@
           <div class="chart-box">
             <div class="chart-title">Qualidade da captura Health Connect</div>
             <canvas id="bodyDataDepthChart"></canvas>
+          </div>
+          <div class="chart-box full">
+            <div class="chart-title">Corrida: pace, frequência cardíaca e eficiência aeróbica</div>
+            <canvas id="runningPaceHrChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Corrida: distância e duração</div>
+            <canvas id="runningDistanceChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Corrida: cadência, passada e contato com solo</div>
+            <canvas id="runningMechanicsChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Corrida: carga, calorias e efeito de treino</div>
+            <canvas id="runningLoadChart"></canvas>
           </div>
         </div>
       </section>
@@ -3510,6 +3715,7 @@
       renderCards();
       renderZeppDashboard();
       renderBodyDashboard();
+      renderRunningDashboard();
       renderRecurringIntelligence();
       renderComparison();
       renderMonthReading();
@@ -3524,6 +3730,7 @@
         renderCharts();
       } else if (activeView === 'body') {
         renderBodyCharts();
+        renderRunningCharts();
       }
     }
 
@@ -4834,6 +5041,386 @@
       };
     }
 
+    function paceDisplay(seconds) {
+      const value = Math.round(toNumber(seconds));
+      if (!value) return 'n/a';
+      const min = Math.floor(value / 60);
+      const sec = value % 60;
+      return `${min}:${String(sec).padStart(2, '0')}/km`;
+    }
+
+    function durationDisplay(seconds) {
+      const value = Math.round(toNumber(seconds));
+      if (!value) return '0min';
+      const h = Math.floor(value / 3600);
+      const m = Math.floor((value % 3600) / 60);
+      const s = value % 60;
+      if (h) return `${h}h${String(m).padStart(2, '0')}min`;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function parseDurationSeconds(value) {
+      const text = String(value || '').trim();
+      if (!text) return 0;
+      const parts = text.split(':').map(part => Number(part));
+      if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0] * 60 + parts[1];
+      const h = text.match(/(\d+(?:[,.]\d+)?)\s*h/i);
+      const m = text.match(/(\d+(?:[,.]\d+)?)\s*(?:min|m)\b/i);
+      const s = text.match(/(\d+(?:[,.]\d+)?)\s*s\b/i);
+      return Math.round(parseLocaleNumber(h?.[1]) * 3600 + parseLocaleNumber(m?.[1]) * 60 + parseLocaleNumber(s?.[1]));
+    }
+
+    function parsePaceSeconds(value) {
+      const text = String(value || '').trim();
+      if (!text) return 0;
+      const match = text.match(/(\d{1,2})[:h](\d{2})/);
+      if (match) return Number(match[1]) * 60 + Number(match[2]);
+      return 0;
+    }
+
+    function firstRunningNumber(text, patterns) {
+      for (const pattern of patterns) {
+        const match = String(text || '').match(pattern);
+        if (match) return parseLocaleNumber(match[1]);
+      }
+      return 0;
+    }
+
+    function firstRunningDuration(text, patterns) {
+      for (const pattern of patterns) {
+        const match = String(text || '').match(pattern);
+        if (match) return parseDurationSeconds(match[1]);
+      }
+      return 0;
+    }
+
+    function firstRunningPace(text, patterns) {
+      for (const pattern of patterns) {
+        const match = String(text || '').match(pattern);
+        if (match) return parsePaceSeconds(match[1]);
+      }
+      return 0;
+    }
+
+    function normalizeRunningActivityObject(raw = {}, entry = {}, index = 0) {
+      if (!raw || typeof raw !== 'object') return null;
+      const typeText = normalizeStrategicText(raw.activity_type || raw.activityType || raw.type || raw.sport || raw.subtype || '');
+      const looksRunning = /running|corrida|run\b|correr/.test(typeText);
+      const distanceKm = parseLocaleNumber(raw.distance_km ?? raw.distanceKm ?? raw.distance ?? raw.distancia_km);
+      const durationSeconds = toNumber(raw.duration_seconds ?? raw.durationSeconds) || parseDurationSeconds(raw.duration_display || raw.duration || raw.duracao);
+      const averagePaceSecKm = toNumber(raw.average_pace_sec_km ?? raw.averagePaceSecKm) || parsePaceSeconds(raw.average_pace_display || raw.averagePace || raw.pace_medio || raw.pace);
+      const averageHeartRateBpm = toNumber(raw.average_heart_rate_bpm ?? raw.averageHeartRateBpm ?? raw.avgHeartRate ?? raw.fc_media);
+
+      if (!looksRunning && !distanceKm && !averagePaceSecKm) return null;
+
+      const avgSpeed = parseLocaleNumber(raw.average_speed_kmh ?? raw.averageSpeedKmh ?? raw.velocidade_media);
+      return {
+        id: `run-${entry.id || index}-${Math.round(distanceKm * 100)}-${durationSeconds || index}`,
+        entry,
+        source: raw.source || entry.origem || 'radar',
+        date: raw.date || raw.data || entry.data_iso || entry.data_br || '',
+        title: raw.title || raw.titulo || entry.entrada_original || 'Corrida registrada',
+        distanceKm,
+        durationSeconds,
+        averagePaceSecKm: averagePaceSecKm || (distanceKm && durationSeconds ? durationSeconds / distanceKm : 0),
+        bestPaceSecKm: toNumber(raw.best_pace_sec_km ?? raw.bestPaceSecKm) || parsePaceSeconds(raw.best_pace_display || raw.bestPace || raw.melhor_pace),
+        averageSpeedKmh: avgSpeed || (durationSeconds && distanceKm ? distanceKm / (durationSeconds / 3600) : 0),
+        maxSpeedKmh: parseLocaleNumber(raw.max_speed_kmh ?? raw.maxSpeedKmh ?? raw.velocidade_maxima),
+        averageCadenceSpm: toNumber(raw.average_cadence_spm ?? raw.averageCadenceSpm ?? raw.cadencia_media),
+        maxCadenceSpm: toNumber(raw.max_cadence_spm ?? raw.maxCadenceSpm ?? raw.cadencia_maxima),
+        averageStrideCm: toNumber(raw.average_stride_cm ?? raw.averageStrideCm ?? raw.passada_cm),
+        verticalOscillationCm: toNumber(raw.vertical_oscillation_cm ?? raw.verticalOscillationCm),
+        verticalRatioPercent: toNumber(raw.vertical_ratio_percent ?? raw.verticalRatioPercent),
+        groundContactTimeMs: toNumber(raw.ground_contact_time_ms ?? raw.groundContactTimeMs),
+        steps: toNumber(raw.steps ?? raw.passos),
+        caloriesKcal: toNumber(raw.calories_kcal ?? raw.caloriesKcal ?? raw.calorias),
+        averageHeartRateBpm,
+        maxHeartRateBpm: toNumber(raw.max_heart_rate_bpm ?? raw.maxHeartRateBpm ?? raw.fc_maxima),
+        minHeartRateBpm: toNumber(raw.min_heart_rate_bpm ?? raw.minHeartRateBpm ?? raw.fc_minima),
+        aerobicTrainingEffect: toNumber(raw.aerobic_training_effect ?? raw.aerobicTrainingEffect),
+        anaerobicTrainingEffect: toNumber(raw.anaerobic_training_effect ?? raw.anaerobicTrainingEffect),
+        trainingLoad: toNumber(raw.training_load ?? raw.trainingLoad ?? raw.carga_treino),
+        confidence: raw.confidence || raw.confianca || 'media'
+      };
+    }
+
+    function parseRunningActivityFromText(entry, index = 0) {
+      const text = [
+        entry.entrada_original,
+        entry.resumo,
+        entry.insight_curto,
+        entry.insight_profundo,
+        ...(entry.categorias || []),
+        ...(entry.dimensoes_afetadas || [])
+      ].filter(Boolean).join(' ');
+      const clean = normalizeStrategicText(text);
+      if (!/\b(corrida|corri|running|pace|km|quilometro|quilometros)\b/.test(clean)) return null;
+
+      const distanceKm = firstRunningNumber(text, [
+        /dist[aâ]ncia[^0-9]{0,12}(\d+(?:[,.]\d+)?)\s*km/i,
+        /(\d+(?:[,.]\d+)?)\s*km\b/i
+      ]);
+      const durationSeconds = firstRunningDuration(text, [
+        /dura[cç][aã]o[^0-9]{0,12}(\d{1,2}:\d{2}(?::\d{2})?)/i,
+        /tempo[^0-9]{0,12}(\d{1,2}:\d{2}(?::\d{2})?)/i,
+        /(\d+h\d{1,2}min|\d+\s*min)/i
+      ]);
+      const averagePaceSecKm = firstRunningPace(text, [
+        /pace(?:\s*m[eé]dio)?[^0-9]{0,12}(\d{1,2}:\d{2})/i,
+        /ritmo[^0-9]{0,12}(\d{1,2}:\d{2})/i
+      ]);
+      const run = normalizeRunningActivityObject({
+        activity_type: 'running',
+        date: entry.data_iso || entry.data_br,
+        title: entry.entrada_original || 'Corrida registrada',
+        distance_km: distanceKm,
+        duration_seconds: durationSeconds,
+        average_pace_sec_km: averagePaceSecKm,
+        average_speed_kmh: firstRunningNumber(text, [/velocidade\s*m[eé]dia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        max_speed_kmh: firstRunningNumber(text, [/velocidade\s*m[aá]xima[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        average_cadence_spm: firstRunningNumber(text, [/cad[eê]ncia\s*m[eé]dia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /cad[eê]ncia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        max_cadence_spm: firstRunningNumber(text, [/cad[eê]ncia\s*m[aá]xima[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        average_stride_cm: firstRunningNumber(text, [/passada[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        vertical_oscillation_cm: firstRunningNumber(text, [/oscila[cç][aã]o\s*vertical[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        vertical_ratio_percent: firstRunningNumber(text, [/ratio\s*vertical[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /rela[cç][aã]o\s*vertical[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        ground_contact_time_ms: firstRunningNumber(text, [/contato\s*com\s*solo[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        steps: firstRunningNumber(text, [/passos[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        calories_kcal: firstRunningNumber(text, [/calorias[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /(\d+(?:[,.]\d+)?)\s*kcal/i]),
+        average_heart_rate_bpm: firstRunningNumber(text, [/fc\s*m[eé]dia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /frequ[eê]ncia\s*card[ií]aca\s*m[eé]dia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        max_heart_rate_bpm: firstRunningNumber(text, [/fc\s*m[aá]xima[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /pico\s*card[ií]aco[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        aerobic_training_effect: firstRunningNumber(text, [/efeito\s*aer[oó]bico[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        anaerobic_training_effect: firstRunningNumber(text, [/efeito\s*anaer[oó]bico[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        training_load: firstRunningNumber(text, [/carga\s*(?:de\s*)?treino[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i])
+      }, entry, index);
+
+      if (!run || (!run.distanceKm && !run.durationSeconds && !run.averagePaceSecKm)) return null;
+      return run;
+    }
+
+    function extractRunningCandidatesFromEntry(entry, index = 0) {
+      const candidates = [];
+      const radar = getRadarIntelligence(entry) || {};
+      [
+        entry.body_activity,
+        entry.bodyActivity,
+        entry.structured_body_activity,
+        radar.body_activity,
+        radar.bodyActivity,
+        radar.activity,
+        radar.running
+      ].forEach(raw => {
+        const normalized = normalizeRunningActivityObject(raw, entry, index);
+        if (normalized) candidates.push(normalized);
+      });
+
+      const metrics = Array.isArray(entry.metricas_detectadas) ? entry.metricas_detectadas : [];
+      const metricObj = {};
+      metrics.forEach(item => {
+        const key = normalizeStrategicText(item.nome || item.name);
+        const value = toNumber(item.valor ?? item.value);
+        if (/dist|km/.test(key)) metricObj.distance_km = value;
+        if (/dura|tempo/.test(key)) metricObj.duration_seconds = String(item.unidade || '').includes('min') ? value * 60 : value;
+        if (/caloria|kcal/.test(key)) metricObj.calories_kcal = value;
+        if (/batimento|frequencia|heart|bpm|fc/.test(key)) metricObj.average_heart_rate_bpm = value;
+        if (/cadencia/.test(key)) metricObj.average_cadence_spm = value;
+        if (/carga/.test(key)) metricObj.training_load = value;
+      });
+      const metricRun = normalizeRunningActivityObject({
+        activity_type: /corrida|running|run/i.test(JSON.stringify(entry)) ? 'running' : '',
+        ...metricObj
+      }, entry, index);
+      if (metricRun) candidates.push(metricRun);
+
+      const textRun = parseRunningActivityFromText(entry, index);
+      if (textRun) candidates.push(textRun);
+
+      return candidates;
+    }
+
+    function getRunningActivities(entries = viewEntries) {
+      const seen = new Set();
+      const runs = [];
+      entries.forEach((entry, index) => {
+        extractRunningCandidatesFromEntry(entry, index).forEach(run => {
+          const key = [
+            run.date || entry.data_iso || entry.data_br,
+            Math.round(toNumber(run.distanceKm) * 100),
+            Math.round(toNumber(run.durationSeconds)),
+            Math.round(toNumber(run.averagePaceSecKm)),
+            Math.round(toNumber(run.averageHeartRateBpm))
+          ].join('|');
+          if (seen.has(key)) return;
+          seen.add(key);
+          runs.push({
+            ...run,
+            dateLabel: run.date ? isoToBrDate(run.date) || run.date : formatEntryDateLine(entry),
+            timestamp: getEntryTimestamp(entry) || Date.parse(run.date || '') || index
+          });
+        });
+      });
+      return runs.sort((a, b) => a.timestamp - b.timestamp);
+    }
+
+    function summarizeRunningActivities(runs) {
+      const valid = runs.filter(run => run.distanceKm || run.durationSeconds);
+      const chronological = [...valid].sort((a, b) => a.timestamp - b.timestamp);
+      const totalDistance = valid.reduce((sum, run) => sum + toNumber(run.distanceKm), 0);
+      const totalDuration = valid.reduce((sum, run) => sum + toNumber(run.durationSeconds), 0);
+      const totalLoad = valid.reduce((sum, run) => sum + toNumber(run.trainingLoad), 0);
+      const latest = chronological.at(-1) || null;
+      const fastest = [...valid].filter(r => r.averagePaceSecKm).sort((a, b) => a.averagePaceSecKm - b.averagePaceSecKm)[0] || null;
+      const longest = [...valid].sort((a, b) => b.distanceKm - a.distanceKm)[0] || null;
+      const maxHr = [...valid].sort((a, b) => toNumber(b.maxHeartRateBpm) - toNumber(a.maxHeartRateBpm))[0] || null;
+      const bestEfficiency = valid
+        .map(run => ({ ...run, aerobicEfficiency: runningAerobicEfficiency(run) }))
+        .filter(run => run.aerobicEfficiency)
+        .sort((a, b) => b.aerobicEfficiency - a.aerobicEfficiency)[0] || null;
+      return {
+        runs: chronological,
+        count: valid.length,
+        totalDistance,
+        totalDuration,
+        totalLoad,
+        latest,
+        fastest,
+        longest,
+        maxHr,
+        bestEfficiency,
+        avgPace: totalDistance && totalDuration ? totalDuration / totalDistance : 0,
+        avgHr: average(valid.map(r => r.averageHeartRateBpm).filter(Boolean)),
+        avgCadence: average(valid.map(r => r.averageCadenceSpm).filter(Boolean))
+      };
+    }
+
+    function average(values) {
+      const clean = values.map(toNumber).filter(Boolean);
+      return clean.length ? clean.reduce((a, b) => a + b, 0) / clean.length : 0;
+    }
+
+    function runningAerobicEfficiency(run) {
+      const speed = toNumber(run.averageSpeedKmh) || (run.distanceKm && run.durationSeconds ? run.distanceKm / (run.durationSeconds / 3600) : 0);
+      const hr = toNumber(run.averageHeartRateBpm);
+      return speed && hr ? speed / hr : 0;
+    }
+
+    function runningDecision(summary) {
+      if (!summary.count) return 'Ainda sem corrida reconhecida. Importe um print ou JSON do treino para criar linha de base.';
+      if (summary.count === 1) return 'Primeira linha de base registrada. O próximo valor importante não é velocidade absoluta: é repetir distância parecida com menor FC, melhor pace ou menor carga percebida.';
+      const latest = summary.latest;
+      const previous = summary.runs.at(-2);
+      const paceDelta = toNumber(latest.averagePaceSecKm) - toNumber(previous.averagePaceSecKm);
+      const hrDelta = toNumber(latest.averageHeartRateBpm) - toNumber(previous.averageHeartRateBpm);
+      if (paceDelta < -10 && hrDelta <= 3) return 'Sinal bom: você correu mais rápido com frequência cardíaca controlada. Isso sugere melhora de eficiência aeróbica dentro do seu próprio histórico.';
+      if (paceDelta > 20 && hrDelta > 5) return 'Sinal de carga: pace piorou e FC subiu. Próxima corrida deve favorecer zona confortável, sono e consistência.';
+      if (toNumber(latest.trainingLoad) > toNumber(previous.trainingLoad) * 1.35) return 'Carga subiu bastante. Vale proteger recuperação antes de tentar novo salto.';
+      return 'Evolução estável. O melhor próximo passo é consistência: distância parecida, técnica relaxada e observar FC média.';
+    }
+
+    function renderRunningDashboard() {
+      const box = document.getElementById('runningDashboardBox');
+      const listBox = document.getElementById('runningListBox');
+      if (!box || !listBox) return;
+      const runs = getRunningActivities(viewEntries);
+      const summary = summarizeRunningActivities(runs);
+
+      if (!summary.count) {
+        box.innerHTML = '<div class="empty">Nenhuma corrida reconhecida ainda. Cole um JSON de treino, envie print do Zepp/Amazfit ou escreva uma frase com “corrida”, distância, duração, pace e FC.</div>';
+        listBox.innerHTML = '<div class="empty">Sem histórico de corridas.</div>';
+        renderRunningComparison();
+        return;
+      }
+
+      const latest = summary.latest;
+      const pr = (label, run, value, hint) => `
+        <article class="running-pr">
+          <strong>${escapeHtml(label)}</strong>
+          <b>${escapeHtml(value)}</b>
+          <span>${escapeHtml(hint || run?.dateLabel || '')}</span>
+        </article>
+      `;
+
+      box.innerHTML = `
+        <div class="running-hero">
+          <small>Running command center</small>
+          <h2>${summary.count} corrida(s)</h2>
+          <p>${escapeHtml(runningDecision(summary))}</p>
+          <div class="running-hero-grid">
+            <div class="running-tile"><small>Volume</small><strong>${summary.totalDistance.toFixed(2)} km</strong></div>
+            <div class="running-tile"><small>Tempo</small><strong>${durationDisplay(summary.totalDuration)}</strong></div>
+            <div class="running-tile"><small>Pace médio</small><strong>${paceDisplay(summary.avgPace)}</strong></div>
+            <div class="running-tile"><small>FC média</small><strong>${Math.round(summary.avgHr || 0)} bpm</strong></div>
+          </div>
+        </div>
+        <div class="running-side">
+          ${pr('Pace mais rápido', summary.fastest, paceDisplay(summary.fastest?.averagePaceSecKm), summary.fastest?.dateLabel)}
+          ${pr('Maior distância', summary.longest, `${toNumber(summary.longest?.distanceKm).toFixed(2)} km`, summary.longest?.dateLabel)}
+          ${pr('Melhor eficiência aeróbica', summary.bestEfficiency, summary.bestEfficiency ? runningAerobicEfficiency(summary.bestEfficiency).toFixed(4) : 'n/a', 'velocidade média / FC média')}
+          ${pr('Carga acumulada', latest, String(Math.round(summary.totalLoad || 0)), 'soma de training load no período')}
+        </div>
+      `;
+
+      listBox.innerHTML = summary.runs.slice().reverse().map(run => `
+        <article class="running-list-card">
+          <h3>${escapeHtml(run.dateLabel || 'Corrida sem data')}</h3>
+          <p>${escapeHtml(String(run.title || '').slice(0, 180))}</p>
+          <div class="tags">
+            <span>${toNumber(run.distanceKm).toFixed(2)} km</span>
+            <span>${durationDisplay(run.durationSeconds)}</span>
+            <span>${paceDisplay(run.averagePaceSecKm)}</span>
+            <span>${Math.round(toNumber(run.averageHeartRateBpm)) || 0} bpm</span>
+            <span>cad ${Math.round(toNumber(run.averageCadenceSpm)) || 0}</span>
+            <span>carga ${Math.round(toNumber(run.trainingLoad)) || 0}</span>
+          </div>
+        </article>
+      `).join('');
+
+      populateRunningComparisonSelects(summary.runs);
+      renderRunningComparison();
+    }
+
+    function populateRunningComparisonSelects(runs) {
+      const a = document.getElementById('runCompareA');
+      const b = document.getElementById('runCompareB');
+      if (!a || !b) return;
+      const options = runs.map((run, index) => `<option value="${index}">${escapeHtml(run.dateLabel || 'Corrida')} - ${toNumber(run.distanceKm).toFixed(2)} km - ${paceDisplay(run.averagePaceSecKm)}</option>`).join('');
+      const currentA = a.value || Math.max(0, runs.length - 2);
+      const currentB = b.value || Math.max(0, runs.length - 1);
+      a.innerHTML = options || '<option value="">Sem corridas</option>';
+      b.innerHTML = options || '<option value="">Sem corridas</option>';
+      a.value = String(Math.min(Number(currentA), Math.max(0, runs.length - 1)));
+      b.value = String(Math.min(Number(currentB), Math.max(0, runs.length - 1)));
+    }
+
+    function renderRunningComparison() {
+      const box = document.getElementById('runningComparisonBox');
+      if (!box) return;
+      const runs = getRunningActivities(viewEntries);
+      if (runs.length < 2) {
+        box.innerHTML = '<div class="empty">Com duas corridas ou mais, o Radar compara pace, FC, carga e eficiência.</div>';
+        return;
+      }
+      const aIndex = Number(document.getElementById('runCompareA')?.value || 0);
+      const bIndex = Number(document.getElementById('runCompareB')?.value || runs.length - 1);
+      const a = runs[aIndex] || runs[0];
+      const b = runs[bIndex] || runs.at(-1);
+      const paceDelta = toNumber(b.averagePaceSecKm) - toNumber(a.averagePaceSecKm);
+      const hrDelta = toNumber(b.averageHeartRateBpm) - toNumber(a.averageHeartRateBpm);
+      const effDelta = runningAerobicEfficiency(b) - runningAerobicEfficiency(a);
+      const card = (title, value, body) => `
+        <article class="running-compare">
+          <small>${escapeHtml(title)}</small>
+          <h3>${escapeHtml(value)}</h3>
+          <p>${escapeHtml(body)}</p>
+        </article>
+      `;
+      box.innerHTML = [
+        card('Pace', `${paceDelta < 0 ? '' : '+'}${Math.round(paceDelta)} s/km`, paceDelta < 0 ? 'Melhorou: menos segundos por km.' : 'Piorou ou ficou mais lento.'),
+        card('Frequência cardíaca', `${hrDelta < 0 ? '' : '+'}${Math.round(hrDelta)} bpm`, hrDelta <= 0 ? 'Custo cardíaco menor ou estável.' : 'Custo cardíaco subiu; observe recuperação.'),
+        card('Eficiência aeróbica', `${effDelta >= 0 ? '+' : ''}${effDelta.toFixed(4)}`, effDelta > 0 ? 'Mais velocidade por batimento.' : 'Menos velocidade por batimento nessa comparação.')
+      ].join('');
+    }
+
     function renderBodyDashboard() {
       const commandBox = document.getElementById('bodyCommandBox');
       const laneBox = document.getElementById('bodyLaneBox');
@@ -5103,6 +5690,66 @@
             { label: 'Snapshots', data: rows.map(r => r.snapshotCount) },
             { label: 'VO2 max', data: rows.map(r => r.vo2Max) },
             { label: 'Gordura corporal (%)', data: rows.map(r => r.bodyFatPercent) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+    }
+
+    function renderRunningCharts() {
+      if (!document.getElementById('runningPaceHrChart')) return;
+      const runs = getRunningActivities(viewEntries);
+      const labels = runs.map(run => run.dateLabel || isoToBrDate(run.date) || 'corrida');
+
+      renderChart('runningPaceHrChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Pace médio (s/km)', data: runs.map(r => Math.round(toNumber(r.averagePaceSecKm))) },
+            { label: 'FC média (bpm)', data: runs.map(r => Math.round(toNumber(r.averageHeartRateBpm))) },
+            { label: 'Eficiência x1000', data: runs.map(r => Math.round(runningAerobicEfficiency(r) * 1000)) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('runningDistanceChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Distância (km)', data: runs.map(r => Number(toNumber(r.distanceKm).toFixed(2))) },
+            { label: 'Duração (min)', data: runs.map(r => Math.round(toNumber(r.durationSeconds) / 60)) },
+            { label: 'Velocidade média (km/h)', data: runs.map(r => Number(toNumber(r.averageSpeedKmh).toFixed(2))) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('runningMechanicsChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Cadência média', data: runs.map(r => Math.round(toNumber(r.averageCadenceSpm))) },
+            { label: 'Passada (cm)', data: runs.map(r => Math.round(toNumber(r.averageStrideCm))) },
+            { label: 'Contato solo (ms)', data: runs.map(r => Math.round(toNumber(r.groundContactTimeMs))) },
+            { label: 'Oscilação vertical (cm)', data: runs.map(r => Number(toNumber(r.verticalOscillationCm).toFixed(1))) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('runningLoadChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Carga de treino', data: runs.map(r => Math.round(toNumber(r.trainingLoad))) },
+            { label: 'Calorias', data: runs.map(r => Math.round(toNumber(r.caloriesKcal))) },
+            { label: 'Efeito aeróbico', data: runs.map(r => Number(toNumber(r.aerobicTrainingEffect).toFixed(1))) },
+            { label: 'Efeito anaeróbico', data: runs.map(r => Number(toNumber(r.anaerobicTrainingEffect).toFixed(1))) }
           ]
         },
         options: baseChartOptions('')
@@ -8405,10 +9052,12 @@
     function jsonImportKind(item, amount) {
       const rawType = normalizeStrategicText([
         jsonFirst(item, ['type', 'tipo', 'natureza', 'kind'], ''),
+        jsonFirst(item, ['activity_type', 'activityType', 'sport', 'modalidade'], ''),
         jsonFirst(item, ['category', 'categoria', 'ledger'], ''),
         jsonFirst(item, ['description', 'descricao', 'historico', 'memo', 'title'], '')
       ].join(' '));
 
+      if (/running|corrida|correr|pace|cadencia|training load|carga de treino/.test(rawType)) return 'corrida';
       if (/ticker|acao|acoes|fii|cdb|tesouro|cripto|etf|aporte|invest|dividendo|jcp|rendimento|provento/.test(rawType)) {
         if (/dividendo|jcp|rendimento|provento|cupom|yield/.test(rawType)) return 'renda_passiva';
         return 'investimento';
@@ -8444,6 +9093,23 @@
       else if (kind === 'ganho') parts.push(`Ganho de R$ ${absAmount.toFixed(2)}.`);
       else if (kind === 'renda_passiva') parts.push(`Renda passiva ou rendimento de R$ ${absAmount.toFixed(2)}.`);
       else if (kind === 'investimento') parts.push(`Investimento ou aporte de R$ ${absAmount.toFixed(2)}.`);
+      else if (kind === 'corrida') {
+        const run = normalizeRunningActivityObject(item, {}, index);
+        parts.push('Atividade corporal canônica: body_activity running.');
+        if (run?.distanceKm) parts.push(`Corrida de ${run.distanceKm.toFixed(2)} km.`);
+        if (run?.durationSeconds) parts.push(`Duração ${durationDisplay(run.durationSeconds)}.`);
+        if (run?.averagePaceSecKm) parts.push(`Pace médio ${paceDisplay(run.averagePaceSecKm)}.`);
+        if (run?.bestPaceSecKm) parts.push(`Melhor pace ${paceDisplay(run.bestPaceSecKm)}.`);
+        if (run?.averageSpeedKmh) parts.push(`Velocidade média ${run.averageSpeedKmh.toFixed(2)} km/h.`);
+        if (run?.maxSpeedKmh) parts.push(`Velocidade máxima ${run.maxSpeedKmh.toFixed(2)} km/h.`);
+        if (run?.averageHeartRateBpm) parts.push(`FC média ${Math.round(run.averageHeartRateBpm)} bpm.`);
+        if (run?.maxHeartRateBpm) parts.push(`FC máxima ${Math.round(run.maxHeartRateBpm)} bpm.`);
+        if (run?.averageCadenceSpm) parts.push(`Cadência média ${Math.round(run.averageCadenceSpm)} spm.`);
+        if (run?.averageStrideCm) parts.push(`Passada média ${Math.round(run.averageStrideCm)} cm.`);
+        if (run?.groundContactTimeMs) parts.push(`Contato com solo ${Math.round(run.groundContactTimeMs)} ms.`);
+        if (run?.caloriesKcal) parts.push(`Calorias ${Math.round(run.caloriesKcal)} kcal.`);
+        if (run?.trainingLoad) parts.push(`Carga de treino ${Math.round(run.trainingLoad)}.`);
+      }
       else if (absAmount) parts.push(`Valor de R$ ${absAmount.toFixed(2)}.`);
 
       if (ticker) parts.push(`Ticker/ativo: ${ticker}.`);

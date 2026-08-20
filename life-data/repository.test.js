@@ -114,6 +114,31 @@ test('persistIngestionPlan writes semantic, financial, nutrition and mission eve
   assert.ok(hasSql(client, 'insert into mission_events'));
 });
 
+test('persistIngestionPlan writes body activity events', async () => {
+  const client = new FakeDbClient();
+  const plan = buildIngestionPlan({
+    source: 'zepp_screenshot',
+    recordType: 'body_activity',
+    sourceRecordId: 'run-2026-08-10',
+    device: { id: 'amazfit-trex3-guido', model: 'Amazfit T-Rex 3' },
+    payload: {
+      activity_type: 'running',
+      date: '2026-08-10',
+      distance_km: 5.02,
+      duration_seconds: 3252,
+      average_pace_sec_km: 647,
+      average_heart_rate_bpm: 138,
+      training_load: 86
+    }
+  });
+
+  const result = await persistIngestionPlan(client, plan);
+
+  assert.equal(result.canonical.bodyActivities.length, 1);
+  assert.ok(hasSql(client, 'insert into body_activities'));
+  assert.equal(countSql(client, 'insert into body_activities'), 1);
+});
+
 test('persistIngestionPlan rejects invalid plans before opening a transaction', async () => {
   const client = new FakeDbClient();
 
@@ -164,6 +189,7 @@ function tableNameFor(sql) {
     ['insert into raw_records', 'raw'],
     ['insert into health_measurements', 'measurement'],
     ['insert into health_daily', 'daily'],
+    ['insert into body_activities', 'body_activity'],
     ['insert into semantic_events', 'semantic'],
     ['insert into financial_events', 'financial'],
     ['insert into nutrition_events', 'nutrition'],

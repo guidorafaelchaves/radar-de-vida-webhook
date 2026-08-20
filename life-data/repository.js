@@ -71,6 +71,7 @@ export async function persistCanonicalDrafts(client, context) {
   const healthDaily = canonical.healthDaily
     ? await upsertHealthDaily(client, context, canonical.healthDaily)
     : null;
+  const bodyActivities = await insertBodyActivities(client, context, canonical.bodyActivities || []);
 
   const semanticEvents = [];
   for (const event of canonical.semanticEvents || []) {
@@ -103,11 +104,80 @@ export async function persistCanonicalDrafts(client, context) {
   return {
     healthMeasurements,
     healthDaily,
+    bodyActivities,
     semanticEvents,
     financialEvents,
     nutritionEvents,
     missionEvents
   };
+}
+
+async function insertBodyActivities(client, context, activities) {
+  const rows = [];
+  for (const activity of activities) {
+    const m = activity.metrics || {};
+    const result = await client.query(
+      `insert into body_activities
+        (raw_record_id, source_id, device_id, activity_key, activity_type, subtype,
+         title, date, start_time, end_time, timezone, distance_m, duration_seconds,
+         average_pace_sec_km, best_pace_sec_km, average_speed_kmh, max_speed_kmh,
+         average_cadence_spm, max_cadence_spm, average_stride_cm,
+         vertical_oscillation_cm, vertical_ratio_percent, ground_contact_time_ms,
+         steps, calories_kcal, average_heart_rate_bpm, max_heart_rate_bpm,
+         min_heart_rate_bpm, aerobic_training_effect, anaerobic_training_effect,
+         training_load, aerobic_efficiency, quality_status, metadata)
+       values ($1, $2, $3, coalesce($4, $5 || ':' || coalesce($8::text, '') || ':' || coalesce($10::text, '') || ':' || $13::text),
+         $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+         $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
+         $32, $33, $34::jsonb)
+       on conflict (source_id, activity_key) do update set
+         title = coalesce(excluded.title, body_activities.title),
+         distance_m = coalesce(excluded.distance_m, body_activities.distance_m),
+         duration_seconds = coalesce(excluded.duration_seconds, body_activities.duration_seconds),
+         average_pace_sec_km = coalesce(excluded.average_pace_sec_km, body_activities.average_pace_sec_km),
+         average_heart_rate_bpm = coalesce(excluded.average_heart_rate_bpm, body_activities.average_heart_rate_bpm),
+         metadata = body_activities.metadata || excluded.metadata
+       returning id, activity_type`,
+      [
+        context.rawRecordId,
+        context.sourceId,
+        context.deviceId || null,
+        nullIfEmpty(activity.sourceRecordId),
+        activity.activityType || 'activity',
+        nullIfEmpty(activity.subtype),
+        nullIfEmpty(activity.title),
+        dateOrNull(activity.date),
+        nullIfEmpty(activity.startTime),
+        nullIfEmpty(activity.endTime),
+        nullIfEmpty(activity.timezone),
+        numberOrNull(m.distanceMeters),
+        integerOrNull(m.durationSeconds),
+        numberOrNull(m.averagePaceSecKm),
+        numberOrNull(m.bestPaceSecKm),
+        numberOrNull(m.averageSpeedKmh),
+        numberOrNull(m.maxSpeedKmh),
+        numberOrNull(m.averageCadenceSpm),
+        numberOrNull(m.maxCadenceSpm),
+        numberOrNull(m.averageStrideCm),
+        numberOrNull(m.verticalOscillationCm),
+        numberOrNull(m.verticalRatioPercent),
+        numberOrNull(m.groundContactTimeMs),
+        integerOrNull(m.steps),
+        numberOrNull(m.caloriesKcal),
+        numberOrNull(m.averageHeartRateBpm),
+        numberOrNull(m.maxHeartRateBpm),
+        numberOrNull(m.minHeartRateBpm),
+        numberOrNull(m.aerobicTrainingEffect),
+        numberOrNull(m.anaerobicTrainingEffect),
+        numberOrNull(m.trainingLoad),
+        numberOrNull(m.aerobicEfficiency),
+        activity.quality?.status || 'valid',
+        jsonParam({ raw: activity.raw, quality: activity.quality })
+      ]
+    );
+    rows.push(firstRow(result, 'body_activity'));
+  }
+  return rows;
 }
 
 async function acquireClient(db) {

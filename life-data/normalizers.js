@@ -189,3 +189,76 @@ export function buildDailySummary(snapshot) {
   };
 }
 
+export function normalizeBodyActivity(input = {}) {
+  const performance = input.performance || {};
+  const cardio = input.cardio || input.heartRate || {};
+  const biomechanics = input.biomechanics || input.runningDynamics || {};
+  const training = input.training || {};
+  const energy = input.energy || {};
+  const timezone = cleanText(input.timezone) || DEFAULT_TIMEZONE;
+  const activityType = cleanText(input.activityType || input.activity_type || input.type) || 'activity';
+  const distanceKm = toNumber(input.distanceKm ?? input.distance_km ?? performance.distanceKm);
+  const distanceMeters = toNumber(input.distanceMeters ?? input.distance_meters ?? performance.distanceMeters) || distanceKm * 1000;
+  const durationSeconds = toNumber(input.durationSeconds ?? input.duration_seconds ?? performance.durationSeconds);
+  const avgPaceSecKm = toNumber(input.averagePaceSecKm ?? input.average_pace_sec_km ?? performance.averagePaceSecKm) ||
+    (distanceMeters && durationSeconds ? durationSeconds / (distanceMeters / 1000) : 0);
+  const avgSpeedKmh = toNumber(input.averageSpeedKmh ?? input.average_speed_kmh ?? performance.averageSpeedKmh) ||
+    (durationSeconds && distanceMeters ? (distanceMeters / 1000) / (durationSeconds / 3600) : 0);
+  const avgHr = toNumber(input.averageHeartRateBpm ?? input.average_heart_rate_bpm ?? cardio.averageBpm ?? cardio.avgHeartRate);
+
+  return {
+    schemaVersion: LIFE_DATA_SCHEMA_VERSION,
+    source: cleanText(input.source) || 'radar_body_activity',
+    sourceRecordId: cleanText(input.sourceRecordId || input.source_record_id),
+    activityType,
+    subtype: cleanText(input.subtype || input.sport || activityType),
+    title: cleanText(input.title || input.titulo) || activityType,
+    date: cleanText(input.date || input.day || input.data),
+    startTime: cleanText(input.startTime || input.start_time || input.startedAt),
+    endTime: cleanText(input.endTime || input.end_time || input.endedAt),
+    timezone,
+    metrics: {
+      distanceMeters,
+      durationSeconds,
+      averagePaceSecKm: avgPaceSecKm,
+      bestPaceSecKm: toNumber(input.bestPaceSecKm ?? input.best_pace_sec_km ?? performance.bestPaceSecKm),
+      averageSpeedKmh: avgSpeedKmh,
+      maxSpeedKmh: toNumber(input.maxSpeedKmh ?? input.max_speed_kmh ?? performance.maxSpeedKmh),
+      averageCadenceSpm: toNumber(input.averageCadenceSpm ?? input.average_cadence_spm ?? biomechanics.averageCadenceSpm),
+      maxCadenceSpm: toNumber(input.maxCadenceSpm ?? input.max_cadence_spm ?? biomechanics.maxCadenceSpm),
+      averageStrideCm: toNumber(input.averageStrideCm ?? input.average_stride_cm ?? biomechanics.averageStrideCm),
+      verticalOscillationCm: toNumber(input.verticalOscillationCm ?? input.vertical_oscillation_cm ?? biomechanics.verticalOscillationCm),
+      verticalRatioPercent: toNumber(input.verticalRatioPercent ?? input.vertical_ratio_percent ?? biomechanics.verticalRatioPercent),
+      groundContactTimeMs: toNumber(input.groundContactTimeMs ?? input.ground_contact_time_ms ?? biomechanics.groundContactTimeMs),
+      steps: toNumber(input.steps ?? input.passos),
+      caloriesKcal: toNumber(input.caloriesKcal ?? input.calories_kcal ?? energy.caloriesKcal),
+      averageHeartRateBpm: avgHr,
+      maxHeartRateBpm: toNumber(input.maxHeartRateBpm ?? input.max_heart_rate_bpm ?? cardio.maxBpm),
+      minHeartRateBpm: toNumber(input.minHeartRateBpm ?? input.min_heart_rate_bpm ?? cardio.minBpm),
+      aerobicTrainingEffect: toNumber(input.aerobicTrainingEffect ?? input.aerobic_training_effect ?? training.aerobicTrainingEffect),
+      anaerobicTrainingEffect: toNumber(input.anaerobicTrainingEffect ?? input.anaerobic_training_effect ?? training.anaerobicTrainingEffect),
+      trainingLoad: toNumber(input.trainingLoad ?? input.training_load ?? training.trainingLoad),
+      aerobicEfficiency: avgHr && avgSpeedKmh ? avgSpeedKmh / avgHr : 0
+    },
+    quality: assessBodyActivityQuality(input),
+    raw: input
+  };
+}
+
+export function assessBodyActivityQuality(input = {}) {
+  const issues = [];
+  const type = cleanText(input.activityType || input.activity_type || input.type);
+  const distanceKm = toNumber(input.distanceKm ?? input.distance_km);
+  const durationSeconds = toNumber(input.durationSeconds ?? input.duration_seconds);
+  const avgHr = toNumber(input.averageHeartRateBpm ?? input.average_heart_rate_bpm);
+
+  if (!type) issues.push('activity_type_missing');
+  if (distanceKm < 0 || distanceKm > 300) issues.push('distance_implausible');
+  if (durationSeconds < 0 || durationSeconds > 86400) issues.push('duration_implausible');
+  if (avgHr && (avgHr < 30 || avgHr > 230)) issues.push('heart_rate_implausible');
+
+  return {
+    status: issues.length ? 'suspected' : 'valid',
+    issues
+  };
+}
