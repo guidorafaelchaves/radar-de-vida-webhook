@@ -3356,24 +3356,24 @@
       <section class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
-            <h2>Mapa corporal do periodo</h2>
-            <p class="hint">Indices de decisao para entender se o corpo pede expansao, manutencao ou recuperacao.</p>
-          </div>
-        </div>
-        <div id="bodyLaneBox" class="body-lane-grid">
-          <div class="empty">Calculando mapa corporal...</div>
-        </div>
-      </section>
-
-      <section class="panel" style="margin-top:16px;">
-        <div class="panel-header">
-          <div>
             <h2>Corridas</h2>
             <p class="hint">Modulo canônico para treinos de corrida: pace, frequência cardíaca, carga, mecânica, progresso e decisão prática.</p>
           </div>
         </div>
         <div id="runningDashboardBox" class="running-command">
           <div class="empty">Aguardando corridas importadas por JSON, print, frase manual ou Health Connect.</div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Mapa corporal do periodo</h2>
+            <p class="hint">Indices de decisao para entender se o corpo pede expansao, manutencao ou recuperacao.</p>
+          </div>
+        </div>
+        <div id="bodyLaneBox" class="body-lane-grid">
+          <div class="empty">Calculando mapa corporal...</div>
         </div>
       </section>
 
@@ -5440,9 +5440,11 @@
       const decision = bodyDecisionText(summary, readiness);
       const profile = computeBodyProfile(summary);
       const profileDecision = bodyProfileDecision(profile, summary);
+      const runningSummary = summarizeRunningActivities(getRunningActivities(viewEntries));
       const insights = buildZeppInsights(summary, readiness);
       const gaps = buildZeppDataGaps(summary);
       const latest = summary.latest || {};
+      const latestRun = runningSummary.latest;
       const metric = (label, value, hint) => `
         <div class="body-index-card">
           <small>${escapeHtml(label)}</small>
@@ -5473,6 +5475,11 @@
             <small>Ultima leitura</small>
             <strong>${escapeHtml(latest.date || latest.entry?.data_br || 'sem data')}</strong>
             <p>Peso ${profile.weight ? profile.weight.toFixed(1) + ' kg' : 'ausente'}; gordura ${profile.fat ? profile.fat.toFixed(1) + '%' : 'ausente'}; depois: ${Math.round(toNumber(latest.steps) || 0).toLocaleString('pt-BR')} passos, ${minutesHuman(toNumber(latest.activeMinutes))} ativos.</p>
+          </div>
+          <div class="body-decision">
+            <small>Corridas</small>
+            <strong>${runningSummary.count ? `${runningSummary.count} corrida(s) - ${runningSummary.totalDistance.toFixed(2)} km` : 'Nenhuma corrida reconhecida'}</strong>
+            <p>${runningSummary.count ? `Última: ${latestRun?.dateLabel || 'sem data'}, ${paceDisplay(latestRun?.averagePaceSecKm)}, FC ${Math.round(toNumber(latestRun?.averageHeartRateBpm)) || 0} bpm. ${runningDecision(runningSummary)}` : 'Cole JSON de treino, envie print do Zepp/Amazfit ou escreva uma frase com corrida, distância, duração, pace e FC.'}</p>
           </div>
           ${insights.map(([title, body]) => `
             <div class="body-decision">
