@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Radar de Vida v8.0 — Life Data Engine</title>
-  <meta name="application-name" content="Radar de Vida v8.0" />
-  <meta name="radar-version" content="v8.0" />
+  <title>Radar de Vida v8.1 — Training Intelligence</title>
+  <meta name="application-name" content="Radar de Vida v8.1" />
+  <meta name="radar-version" content="v8.1" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -1112,6 +1112,226 @@
 
     .body-lane .zepp-meter {
       margin-top: auto;
+    }
+
+    .training-center {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .training-hero {
+      border: 1px solid rgba(22,52,40,.14);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(12,28,22,.98), rgba(24,88,66,.96)),
+        #10251c;
+      color: #fff;
+      padding: 18px;
+      min-height: 284px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .training-hero small,
+    .training-metric small,
+    .training-insight small,
+    .training-modality small {
+      text-transform: uppercase;
+      font-weight: 950;
+      letter-spacing: .06em;
+      font-size: 10px;
+    }
+
+    .training-hero small,
+    .training-metric small {
+      color: rgba(255,255,255,.68);
+    }
+
+    .training-hero h2 {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: .95;
+    }
+
+    .training-hero p {
+      margin: 0;
+      color: rgba(255,255,255,.78);
+      line-height: 1.45;
+    }
+
+    .training-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .training-metric {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      padding: 10px;
+      min-height: 86px;
+    }
+
+    .training-metric strong {
+      display: block;
+      color: #fff;
+      font-size: 22px;
+      line-height: 1.05;
+      margin-top: 5px;
+    }
+
+    .training-metric span {
+      display: block;
+      color: rgba(255,255,255,.72);
+      font-size: 11px;
+      line-height: 1.28;
+      margin-top: 5px;
+    }
+
+    .training-side,
+    .training-insight-grid,
+    .training-modality-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .training-side {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .training-insight,
+    .training-modality {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.92);
+      padding: 13px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .training-insight small,
+    .training-modality small {
+      color: var(--muted);
+    }
+
+    .training-insight strong,
+    .training-modality strong {
+      font-size: 18px;
+      line-height: 1.18;
+    }
+
+    .training-insight p,
+    .training-modality p,
+    .exercise-importer p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .exercise-workbench {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .exercise-importer textarea {
+      width: 100%;
+      min-height: 230px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+
+    .exercise-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .exercise-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      flex: 1 1 220px;
+    }
+
+    .exercise-list {
+      display: grid;
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .exercise-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.92);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .exercise-card h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .exercise-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .exercise-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .exercise-tags span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .body-subnav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .body-subnav button {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--ink);
+      box-shadow: none;
+      padding: 9px 13px;
+    }
+
+    .body-subnav button.primary-subtab {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
     }
 
     .body-table {
@@ -2798,7 +3018,7 @@
   <div class="app">
     <header class="topbar">
       <section class="hero market-hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v8.0 — Life Data Engine</div>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v8.1 — Training Intelligence</div>
         <div class="market-topline">
           <div class="market-brand">
             <small>Radar Life Exchange</small>
@@ -3347,25 +3567,83 @@
           </div>
           <button class="secondary" onclick="loadData()">Atualizar corpo</button>
         </div>
+        <div class="body-subnav">
+          <button class="primary-subtab" onclick="scrollBodySection('bodyProfileSection')">Perfil corporal</button>
+          <button onclick="scrollBodySection('bodyTrainingSection')">Exercicios</button>
+          <button onclick="scrollBodySection('bodyExerciseImportSection')">Importar JSON</button>
+          <button onclick="scrollBodySection('bodyExerciseChartsSection')">Graficos</button>
+          <button onclick="scrollBodySection('bodyExerciseHistorySection')">Historico</button>
+        </div>
 
+        <div id="bodyProfileSection"></div>
         <div id="bodyCommandBox" class="body-command">
           <div class="empty">Aguardando dados corporais...</div>
         </div>
       </section>
 
-      <section class="panel" style="margin-top:16px;">
+      <section id="bodyTrainingSection" class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
-            <h2>Corridas</h2>
-            <p class="hint">Modulo canônico para treinos de corrida: pace, frequência cardíaca, carga, mecânica, progresso e decisão prática.</p>
+            <h2>Centro de evolução física</h2>
+            <p class="hint">Painel profissional de exercícios: carga, consistência, modalidades, intensidade, evolução e próximos ajustes de treino.</p>
           </div>
         </div>
-        <div id="runningDashboardBox" class="running-command">
-          <div class="empty">Aguardando corridas importadas por JSON, print, frase manual ou Health Connect.</div>
+        <div id="trainingDashboardBox" class="training-center">
+          <div class="empty">Aguardando exercícios importados por JSON, print, frase manual ou Health Connect.</div>
         </div>
       </section>
 
-      <section class="panel" style="margin-top:16px;">
+      <section id="bodyExerciseImportSection" class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Inserir exercícios por JSON</h2>
+            <p class="hint">Cole dados estruturados de corrida, musculação, caminhada, pedal, natação ou treino funcional. Cada sessão entra no histórico pelo mesmo fluxo do Radar.</p>
+          </div>
+        </div>
+        <div class="exercise-workbench">
+          <div class="exercise-importer">
+            <p>Formato recomendado: array de sessões ou objeto com <strong>workouts</strong>, <strong>exercises</strong>, <strong>activities</strong> ou <strong>treinos</strong>. O Radar aceita campos em português ou inglês.</p>
+            <textarea id="exerciseJsonText" spellcheck="false" placeholder='Exemplo:
+{
+  "source": "zepp_chatgpt",
+  "workouts": [
+    {
+      "date": "2026-08-20",
+      "activity_type": "running",
+      "distance_km": 5.02,
+      "duration_seconds": 3252,
+      "average_pace_display": "10:47",
+      "average_heart_rate_bpm": 138,
+      "training_load": 86,
+      "calories_kcal": 637
+    },
+    {
+      "date": "2026-08-20",
+      "activity_type": "strength",
+      "title": "Treino de pernas",
+      "duration_minutes": 52,
+      "sets": 18,
+      "reps": 156,
+      "rpe": 7,
+      "exercises": ["agachamento", "leg press", "cadeira extensora"]
+    }
+  ]
+}'></textarea>
+            <div class="exercise-actions">
+              <span id="exerciseJsonStatus" class="exercise-status">Use para importar histórico detalhado de exercícios sem misturar com extratos financeiros.</span>
+              <button class="secondary" onclick="previewExerciseJsonImport()">Prever</button>
+              <button id="exerciseJsonButton" onclick="sendExerciseJsonImport()">Importar exercícios</button>
+            </div>
+          </div>
+          <div>
+            <div id="trainingInsightBox" class="training-insight-grid">
+              <div class="empty">Os insights de treino aparecerão após a importação.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="bodyExerciseHistorySection" class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
             <h2>Mapa corporal do periodo</h2>
@@ -3377,31 +3655,15 @@
         </div>
       </section>
 
-      <section class="panel" style="margin-top:16px;">
+      <section id="bodyExerciseChartsSection" class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
-            <h2>Comparação de corridas</h2>
-            <p class="hint">Compare treinos contra você mesmo. O Radar procura eficiência: pace melhor com FC controlada e carga sustentável.</p>
+            <h2>Histórico de exercícios</h2>
+            <p class="hint">Sessões reconhecidas por modalidade, duração, intensidade, carga, volume e sinais corporais.</p>
           </div>
         </div>
-        <div class="running-selects">
-          <select id="runCompareA" class="select" onchange="renderRunningComparison()"></select>
-          <select id="runCompareB" class="select" onchange="renderRunningComparison()"></select>
-        </div>
-        <div id="runningComparisonBox" class="running-comparison-grid">
-          <div class="empty">Selecione duas corridas para comparar.</div>
-        </div>
-      </section>
-
-      <section class="panel" style="margin-top:16px;">
-        <div class="panel-header">
-          <div>
-            <h2>Histórico de corridas</h2>
-            <p class="hint">Cada treino vira uma peça da sua evolução longitudinal, sem depender de médias genéricas.</p>
-          </div>
-        </div>
-        <div id="runningListBox" class="running-list">
-          <div class="empty">Nenhuma corrida reconhecida ainda.</div>
+        <div id="exerciseHistoryBox" class="exercise-list">
+          <div class="empty">Nenhum exercício reconhecido ainda.</div>
         </div>
       </section>
 
@@ -3438,20 +3700,20 @@
             <canvas id="bodyDataDepthChart"></canvas>
           </div>
           <div class="chart-box full">
-            <div class="chart-title">Corrida: pace, frequência cardíaca e eficiência aeróbica</div>
-            <canvas id="runningPaceHrChart"></canvas>
+            <div class="chart-title">Evolução de treino: carga, duração e consistência</div>
+            <canvas id="exerciseLoadChart"></canvas>
           </div>
           <div class="chart-box">
-            <div class="chart-title">Corrida: distância e duração</div>
-            <canvas id="runningDistanceChart"></canvas>
+            <div class="chart-title">Volume por modalidade</div>
+            <canvas id="exerciseVolumeChart"></canvas>
           </div>
           <div class="chart-box">
-            <div class="chart-title">Corrida: cadência, passada e contato com solo</div>
-            <canvas id="runningMechanicsChart"></canvas>
+            <div class="chart-title">Distribuição de intensidade</div>
+            <canvas id="exerciseIntensityChart"></canvas>
           </div>
           <div class="chart-box">
-            <div class="chart-title">Corrida: carga, calorias e efeito de treino</div>
-            <canvas id="runningLoadChart"></canvas>
+            <div class="chart-title">Performance e sinais por sessão</div>
+            <canvas id="exercisePerformanceChart"></canvas>
           </div>
         </div>
       </section>
@@ -3521,7 +3783,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    const APP_DISPLAY_TITLE = 'Radar de Vida v8.0 — Life Data Engine';
+    const APP_DISPLAY_TITLE = 'Radar de Vida v8.1 — Training Intelligence';
     document.title = APP_DISPLAY_TITLE;
 
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
@@ -3614,9 +3876,18 @@
         renderMissions();
       } else if (activeView === 'body') {
         renderBodyDashboard();
+        renderTrainingDashboard();
+        renderExerciseCharts();
       } else if (rawData && allEntries.length) {
         renderCharts();
       }
+    }
+
+    function scrollBodySection(id) {
+      switchView('body');
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 30);
     }
 
     async function loadData() {
@@ -3715,7 +3986,7 @@
       renderCards();
       renderZeppDashboard();
       renderBodyDashboard();
-      renderRunningDashboard();
+      renderTrainingDashboard();
       renderRecurringIntelligence();
       renderComparison();
       renderMonthReading();
@@ -3730,7 +4001,7 @@
         renderCharts();
       } else if (activeView === 'body') {
         renderBodyCharts();
-        renderRunningCharts();
+        renderExerciseCharts();
       }
     }
 
@@ -5421,6 +5692,366 @@
       ].join('');
     }
 
+    function normalizeExerciseType(value = '') {
+      const text = normalizeStrategicText(value);
+      if (/corrida|running|run\b|correr|pace/.test(text)) return 'running';
+      if (/caminhada|walk|walking|passos/.test(text)) return 'walking';
+      if (/bike|bicicleta|cycling|ciclismo|pedal|spinning/.test(text)) return 'cycling';
+      if (/musculacao|muscula[cç][aã]o|forca|força|strength|weights|peso|academia|supino|agachamento|leg press|remada|puxada/.test(text)) return 'strength';
+      if (/natacao|nata[cç][aã]o|swim|swimming/.test(text)) return 'swimming';
+      if (/funcional|hiit|cross|circuito|calistenia|burpee/.test(text)) return 'functional';
+      if (/mobilidade|alongamento|yoga|pilates|mobility|stretch/.test(text)) return 'mobility';
+      if (/eliptico|esteira|remo|ergometr/.test(text)) return 'cardio';
+      return text ? 'other' : '';
+    }
+
+    function exerciseTypeLabel(type) {
+      return ({
+        running: 'Corrida',
+        walking: 'Caminhada',
+        cycling: 'Pedal',
+        strength: 'Forca',
+        swimming: 'Natacao',
+        functional: 'Funcional',
+        mobility: 'Mobilidade',
+        cardio: 'Cardio',
+        other: 'Outro'
+      })[type] || 'Exercicio';
+    }
+
+    function inferExerciseIntensity(activity) {
+      const rpe = toNumber(activity.rpe);
+      const load = toNumber(activity.trainingLoad);
+      const hr = toNumber(activity.averageHeartRateBpm);
+      const durationMin = toNumber(activity.durationSeconds) / 60;
+      if (rpe >= 8 || load >= 85 || hr >= 150 || durationMin >= 90) return 'alta';
+      if (rpe >= 6 || load >= 45 || hr >= 120 || durationMin >= 35) return 'moderada';
+      return 'leve';
+    }
+
+    function normalizeExerciseActivityObject(raw = {}, entry = {}, index = 0) {
+      if (!raw || typeof raw !== 'object') return null;
+
+      const typeText = [
+        raw.activity_type, raw.activityType, raw.type, raw.sport, raw.modalidade, raw.tipo,
+        raw.title, raw.titulo, raw.name, raw.nome, raw.description, raw.descricao
+      ].filter(Boolean).join(' ');
+      const activityType = normalizeExerciseType(typeText);
+      const running = normalizeRunningActivityObject(raw, entry, index);
+
+      const durationSeconds = toNumber(raw.duration_seconds ?? raw.durationSeconds)
+        || toNumber(raw.duration_minutes ?? raw.durationMinutes ?? raw.minutos ?? raw.duracao_minutos) * 60
+        || parseDurationSeconds(raw.duration_display || raw.duration || raw.duracao || raw.tempo);
+      const distanceKm = parseLocaleNumber(raw.distance_km ?? raw.distanceKm ?? raw.distance ?? raw.distancia_km ?? raw.distancia);
+      const caloriesKcal = toNumber(raw.calories_kcal ?? raw.caloriesKcal ?? raw.calories ?? raw.calorias);
+      const trainingLoad = toNumber(raw.training_load ?? raw.trainingLoad ?? raw.carga_treino ?? raw.carga);
+      const averageHeartRateBpm = toNumber(raw.average_heart_rate_bpm ?? raw.averageHeartRateBpm ?? raw.avgHeartRate ?? raw.fc_media ?? raw.bpm_medio);
+      const maxHeartRateBpm = toNumber(raw.max_heart_rate_bpm ?? raw.maxHeartRateBpm ?? raw.fc_maxima ?? raw.bpm_maximo);
+      const rpe = toNumber(raw.rpe ?? raw.perceived_exertion ?? raw.esforco_percebido ?? raw.esforco);
+      const sets = toNumber(raw.sets ?? raw.series);
+      const reps = toNumber(raw.reps ?? raw.repetitions ?? raw.repeticoes);
+      const volumeKg = toNumber(raw.volume_kg ?? raw.volumeKg ?? raw.tonnage_kg ?? raw.tonelagem_kg ?? raw.volume);
+      const exercises = Array.isArray(raw.exercises) ? raw.exercises
+        : Array.isArray(raw.exercicios) ? raw.exercicios
+        : String(raw.exercises || raw.exercicios || raw.movimentos || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+
+      const hasExerciseSignal = activityType || running || durationSeconds || distanceKm || caloriesKcal || trainingLoad || averageHeartRateBpm || rpe || sets || reps || volumeKg || exercises.length;
+      if (!hasExerciseSignal) return null;
+
+      const mergedType = running ? 'running' : (activityType || 'other');
+      const activity = {
+        ...(running || {}),
+        id: `exercise-${entry.id || 'json'}-${index}-${Math.round(distanceKm * 100)}-${Math.round(durationSeconds)}`,
+        entry,
+        source: raw.source || raw.origem || entry.origem || 'radar',
+        date: raw.date || raw.data || raw.started_at || raw.startTime || entry.data_iso || entry.data_br || '',
+        title: raw.title || raw.titulo || raw.name || raw.nome || entry.entrada_original || `${exerciseTypeLabel(mergedType)} registrado`,
+        activityType: mergedType,
+        modalityLabel: exerciseTypeLabel(mergedType),
+        distanceKm: distanceKm || toNumber(running?.distanceKm),
+        durationSeconds: durationSeconds || toNumber(running?.durationSeconds),
+        caloriesKcal: caloriesKcal || toNumber(running?.caloriesKcal),
+        trainingLoad: trainingLoad || toNumber(running?.trainingLoad),
+        averageHeartRateBpm: averageHeartRateBpm || toNumber(running?.averageHeartRateBpm),
+        maxHeartRateBpm: maxHeartRateBpm || toNumber(running?.maxHeartRateBpm),
+        averagePaceSecKm: toNumber(raw.average_pace_sec_km ?? raw.averagePaceSecKm) || parsePaceSeconds(raw.average_pace_display || raw.averagePace || raw.pace_medio || raw.pace) || toNumber(running?.averagePaceSecKm),
+        averageSpeedKmh: parseLocaleNumber(raw.average_speed_kmh ?? raw.averageSpeedKmh ?? raw.velocidade_media) || toNumber(running?.averageSpeedKmh),
+        averageCadenceSpm: toNumber(raw.average_cadence_spm ?? raw.averageCadenceSpm ?? raw.cadencia_media) || toNumber(running?.averageCadenceSpm),
+        averageStrideCm: toNumber(raw.average_stride_cm ?? raw.averageStrideCm ?? raw.passada_cm) || toNumber(running?.averageStrideCm),
+        groundContactTimeMs: toNumber(raw.ground_contact_time_ms ?? raw.groundContactTimeMs) || toNumber(running?.groundContactTimeMs),
+        aerobicTrainingEffect: toNumber(raw.aerobic_training_effect ?? raw.aerobicTrainingEffect) || toNumber(running?.aerobicTrainingEffect),
+        anaerobicTrainingEffect: toNumber(raw.anaerobic_training_effect ?? raw.anaerobicTrainingEffect) || toNumber(running?.anaerobicTrainingEffect),
+        rpe,
+        sets,
+        reps,
+        volumeKg,
+        exercises,
+        notes: raw.notes || raw.observacao || raw.observacoes || raw.comment || '',
+        confidence: raw.confidence || raw.confianca || 'media'
+      };
+      activity.intensity = inferExerciseIntensity(activity);
+      activity.aerobicEfficiency = runningAerobicEfficiency(activity);
+      activity.strengthDensity = activity.volumeKg && activity.durationSeconds ? activity.volumeKg / (activity.durationSeconds / 60) : 0;
+      return activity;
+    }
+
+    function parseExerciseActivityFromText(entry, index = 0) {
+      const text = [
+        entry.entrada_original,
+        entry.resumo,
+        entry.insight_curto,
+        entry.insight_profundo,
+        ...(entry.categorias || []),
+        ...(entry.dimensoes_afetadas || [])
+      ].filter(Boolean).join(' ');
+      const clean = normalizeStrategicText(text);
+      if (!/\b(treino|corrida|corri|caminhada|bike|bicicleta|pedal|musculacao|musculação|academia|forca|força|supino|agachamento|natacao|natação|funcional|hiit|mobilidade|alongamento|yoga|pilates)\b/.test(clean)) return null;
+
+      const raw = {
+        activity_type: clean,
+        date: entry.data_iso || entry.data_br,
+        title: entry.entrada_original || 'Exercicio registrado',
+        distance_km: firstRunningNumber(text, [/dist[aâ]ncia[^0-9]{0,12}(\d+(?:[,.]\d+)?)\s*km/i, /(\d+(?:[,.]\d+)?)\s*km\b/i]),
+        duration_seconds: firstRunningDuration(text, [/dura[cç][aã]o[^0-9]{0,12}(\d{1,2}:\d{2}(?::\d{2})?)/i, /tempo[^0-9]{0,12}(\d{1,2}:\d{2}(?::\d{2})?)/i, /(\d+h\d{1,2}min|\d+\s*min)/i]),
+        average_pace_sec_km: firstRunningPace(text, [/pace(?:\s*m[eé]dio)?[^0-9]{0,12}(\d{1,2}:\d{2})/i, /ritmo[^0-9]{0,12}(\d{1,2}:\d{2})/i]),
+        calories_kcal: firstRunningNumber(text, [/calorias[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /(\d+(?:[,.]\d+)?)\s*kcal/i]),
+        average_heart_rate_bpm: firstRunningNumber(text, [/fc\s*m[eé]dia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /bpm\s*m[eé]dio[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /frequ[eê]ncia\s*card[ií]aca\s*m[eé]dia[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        max_heart_rate_bpm: firstRunningNumber(text, [/fc\s*m[aá]xima[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /pico\s*card[ií]aco[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        training_load: firstRunningNumber(text, [/carga\s*(?:de\s*)?treino[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        rpe: firstRunningNumber(text, [/rpe[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i, /esfor[cç]o[^0-9]{0,12}(\d+(?:[,.]\d+)?)/i]),
+        sets: firstRunningNumber(text, [/(\d+)\s*s[eé]ries/i]),
+        reps: firstRunningNumber(text, [/(\d+)\s*repeti[cç][oõ]es/i, /(\d+)\s*reps/i]),
+        volume_kg: firstRunningNumber(text, [/volume[^0-9]{0,12}(\d+(?:[,.]\d+)?)\s*kg/i])
+      };
+      return normalizeExerciseActivityObject(raw, entry, index);
+    }
+
+    function extractExerciseCandidatesFromEntry(entry, index = 0) {
+      const candidates = [];
+      const radar = getRadarIntelligence(entry) || {};
+      [
+        entry.body_activity,
+        entry.bodyActivity,
+        entry.structured_body_activity,
+        entry.exercise,
+        entry.workout,
+        radar.body_activity,
+        radar.bodyActivity,
+        radar.activity,
+        radar.exercise,
+        radar.workout,
+        radar.running
+      ].forEach(raw => {
+        if (Array.isArray(raw)) {
+          raw.forEach((item, subIndex) => {
+            const normalized = normalizeExerciseActivityObject(item, entry, `${index}-${subIndex}`);
+            if (normalized) candidates.push(normalized);
+          });
+          return;
+        }
+        const normalized = normalizeExerciseActivityObject(raw, entry, index);
+        if (normalized) candidates.push(normalized);
+      });
+
+      extractRunningCandidatesFromEntry(entry, index).forEach(run => {
+        const normalized = normalizeExerciseActivityObject({ ...run, activity_type: 'running' }, entry, index);
+        if (normalized) candidates.push(normalized);
+      });
+
+      const textExercise = parseExerciseActivityFromText(entry, index);
+      if (textExercise) candidates.push(textExercise);
+      return candidates;
+    }
+
+    function getExerciseActivities(entries = viewEntries) {
+      const seen = new Set();
+      const exercises = [];
+      entries.forEach((entry, index) => {
+        extractExerciseCandidatesFromEntry(entry, index).forEach(activity => {
+          const key = [
+            activity.date || entry.data_iso || entry.data_br,
+            activity.activityType,
+            Math.round(toNumber(activity.distanceKm) * 100),
+            Math.round(toNumber(activity.durationSeconds)),
+            Math.round(toNumber(activity.trainingLoad)),
+            String(activity.title || '').slice(0, 45)
+          ].join('|');
+          if (seen.has(key)) return;
+          seen.add(key);
+          exercises.push({
+            ...activity,
+            dateLabel: activity.date ? isoToBrDate(activity.date) || activity.date : formatEntryDateLine(entry),
+            timestamp: getEntryTimestamp(entry) || Date.parse(activity.date || '') || index
+          });
+        });
+      });
+      return exercises.sort((a, b) => a.timestamp - b.timestamp);
+    }
+
+    function summarizeExerciseActivities(exercises) {
+      const valid = exercises.filter(item => item.activityType || item.durationSeconds || item.distanceKm || item.trainingLoad);
+      const chronological = [...valid].sort((a, b) => a.timestamp - b.timestamp);
+      const byType = {};
+      const intensity = { leve: 0, moderada: 0, alta: 0 };
+      valid.forEach(item => {
+        byType[item.activityType] = byType[item.activityType] || { type: item.activityType, label: item.modalityLabel, count: 0, duration: 0, distance: 0, load: 0, calories: 0, volumeKg: 0 };
+        byType[item.activityType].count += 1;
+        byType[item.activityType].duration += toNumber(item.durationSeconds);
+        byType[item.activityType].distance += toNumber(item.distanceKm);
+        byType[item.activityType].load += toNumber(item.trainingLoad);
+        byType[item.activityType].calories += toNumber(item.caloriesKcal);
+        byType[item.activityType].volumeKg += toNumber(item.volumeKg);
+        intensity[item.intensity] = (intensity[item.intensity] || 0) + 1;
+      });
+      const days = new Set(valid.map(item => item.dateLabel || item.date).filter(Boolean));
+      const totalDuration = valid.reduce((sum, item) => sum + toNumber(item.durationSeconds), 0);
+      const totalDistance = valid.reduce((sum, item) => sum + toNumber(item.distanceKm), 0);
+      const totalLoad = valid.reduce((sum, item) => sum + toNumber(item.trainingLoad), 0);
+      const totalCalories = valid.reduce((sum, item) => sum + toNumber(item.caloriesKcal), 0);
+      const totalVolumeKg = valid.reduce((sum, item) => sum + toNumber(item.volumeKg), 0);
+      const dominant = Object.values(byType).sort((a, b) => b.duration - a.duration || b.count - a.count)[0] || null;
+      const latest = chronological.at(-1) || null;
+      const longest = [...valid].sort((a, b) => toNumber(b.durationSeconds) - toNumber(a.durationSeconds))[0] || null;
+      const hardest = [...valid].sort((a, b) => (toNumber(b.trainingLoad) || toNumber(b.rpe) * 12 || toNumber(b.durationSeconds) / 60) - (toNumber(a.trainingLoad) || toNumber(a.rpe) * 12 || toNumber(a.durationSeconds) / 60))[0] || null;
+      const consistencyScore = Math.round(clamp((days.size * 18) + Math.min(32, valid.length * 6)));
+      const loadScore = Math.round(clamp(Math.min(70, totalDuration / 18) + Math.min(30, totalLoad / 5)));
+      const balanceScore = Math.round(clamp(100 - Math.abs((intensity.alta || 0) / Math.max(1, valid.length) - 0.2) * 180));
+      const professionalScore = Math.round(clamp(consistencyScore * 0.4 + loadScore * 0.35 + balanceScore * 0.25));
+      return {
+        activities: chronological,
+        count: valid.length,
+        byType,
+        modalityRows: Object.values(byType).sort((a, b) => b.duration - a.duration),
+        intensity,
+        activeDays: days.size,
+        totalDuration,
+        totalDistance,
+        totalLoad,
+        totalCalories,
+        totalVolumeKg,
+        avgHr: average(valid.map(i => i.averageHeartRateBpm).filter(Boolean)),
+        avgRpe: average(valid.map(i => i.rpe).filter(Boolean)),
+        dominant,
+        latest,
+        longest,
+        hardest,
+        consistencyScore,
+        loadScore,
+        balanceScore,
+        professionalScore
+      };
+    }
+
+    function trainingDecision(summary, bodySummary = {}) {
+      if (!summary.count) return 'Sem sessoes estruturadas. Importe um JSON de treino ou registre uma atividade com modalidade, duracao, intensidade e metricas principais.';
+      const hardShare = (summary.intensity.alta || 0) / Math.max(1, summary.count);
+      const sleepLow = toNumber(bodySummary.avgSleepMinutes) && bodySummary.avgSleepMinutes < 390;
+      if (hardShare > 0.35) return 'Carga intensa concentrada. A melhor pratica agora e alternar estimulo forte com recuperacao ativa, sono e proteina antes de novo salto.';
+      if (sleepLow && summary.totalDuration > 3600) return 'Treino existe, mas recuperacao esta curta. Para evoluir sem quebrar, priorize sono e um treino leve tecnico na proxima sessao.';
+      if (summary.activeDays >= 3 && hardShare <= 0.25) return 'Boa base de consistencia. Proxima fase: progressao pequena e mensuravel, aumentando volume ou qualidade sem subir tudo ao mesmo tempo.';
+      if (summary.count === 1) return 'Linha de base criada. O proximo treino deve repetir contexto parecido para o Radar enxergar tendencia real, nao apenas evento isolado.';
+      return 'Evolucao em construcao. Procure alternar base aerobica, forca, mobilidade e recuperacao para transformar exercicio em sistema.';
+    }
+
+    function buildTrainingInsights(summary, bodySummary = {}) {
+      if (!summary.count) {
+        return [
+          ['Primeiro objetivo', 'Importe treinos por JSON com data, modalidade, duracao, distancia, carga, FC, RPE e calorias.'],
+          ['Padrao olimpico simples', 'Toda sessao precisa dizer: o que foi feito, quanto durou, quao intenso foi e como o corpo respondeu.']
+        ];
+      }
+      const hardShare = Math.round(((summary.intensity.alta || 0) / Math.max(1, summary.count)) * 100);
+      const baseShare = Math.round(((summary.intensity.leve || 0) / Math.max(1, summary.count)) * 100);
+      const dominant = summary.dominant?.label || 'mista';
+      return [
+        ['Decisao de treino', trainingDecision(summary, bodySummary)],
+        ['Consistencia', `${summary.activeDays} dia(s) com treino e ${summary.count} sessao(oes). Sem consistencia, intensidade vira ruido; com consistencia, intensidade vira progresso.`],
+        ['Distribuicao de intensidade', `${hardShare}% das sessoes foram altas e ${baseShare}% leves. A referencia pratica e deixar a maior parte facil/moderada e reservar intensidade para dias escolhidos.`],
+        ['Modalidade dominante', `${dominant}. Se essa dominancia for intencional, otimo. Se for acidente, inclua complemento: forca para corrida, mobilidade para musculacao, base aerobica para saude geral.`]
+      ];
+    }
+
+    function renderTrainingDashboard() {
+      const box = document.getElementById('trainingDashboardBox');
+      const insightBox = document.getElementById('trainingInsightBox');
+      const listBox = document.getElementById('exerciseHistoryBox');
+      if (!box || !insightBox || !listBox) return;
+
+      const exercises = getExerciseActivities(viewEntries);
+      const summary = summarizeExerciseActivities(exercises);
+      const bodySummary = summarizeZeppSnapshots(viewEntries);
+      const decision = trainingDecision(summary, bodySummary);
+
+      if (!summary.count) {
+        box.innerHTML = '<div class="empty">Nenhum exercicio estruturado reconhecido. Cole um JSON de treino, print do Zepp/Amazfit ou uma frase com modalidade, duracao, FC, distancia, carga ou RPE.</div>';
+        insightBox.innerHTML = buildTrainingInsights(summary, bodySummary).map(([title, body]) => `<article class="training-insight"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>`).join('');
+        listBox.innerHTML = '<div class="empty">Sem historico de exercicios.</div>';
+        return;
+      }
+
+      const metric = (label, value, hint) => `
+        <div class="training-metric">
+          <small>${escapeHtml(label)}</small>
+          <strong>${escapeHtml(value)}</strong>
+          <span>${escapeHtml(hint)}</span>
+        </div>
+      `;
+      box.innerHTML = `
+        <div class="training-hero">
+          <small>Training command center</small>
+          <h2>${summary.professionalScore}</h2>
+          <p><strong>${escapeHtml(summary.professionalScore >= 70 ? 'Treino como sistema' : summary.professionalScore >= 45 ? 'Treino em construcao' : 'Linha de base')}</strong>. ${escapeHtml(decision)}</p>
+          <div class="training-grid">
+            ${metric('Sessoes', String(summary.count), `${summary.activeDays} dia(s) ativos`)}
+            ${metric('Tempo', minutesHuman(summary.totalDuration / 60), 'volume total do periodo')}
+            ${metric('Carga', String(Math.round(summary.totalLoad || 0)), 'training load acumulado')}
+            ${metric('Intensidade', `${summary.intensity.alta || 0} alta(s)`, `${summary.intensity.moderada || 0} moderada(s), ${summary.intensity.leve || 0} leve(s)`)}
+            ${metric('Distancia', `${summary.totalDistance.toFixed(2)} km`, 'corrida, pedal ou caminhada')}
+            ${metric('Calorias', `${Math.round(summary.totalCalories || 0)} kcal`, 'gasto estimado')}
+            ${metric('FC media', `${Math.round(summary.avgHr || 0)} bpm`, 'custo cardiovascular medio')}
+            ${metric('Volume forca', `${Math.round(summary.totalVolumeKg || 0).toLocaleString('pt-BR')} kg`, 'tonelagem registrada')}
+          </div>
+        </div>
+        <div class="training-side">
+          <div class="training-insight"><h3>Ultima sessao</h3><p>${escapeHtml(summary.latest ? `${summary.latest.modalityLabel} em ${summary.latest.dateLabel}: ${durationDisplay(summary.latest.durationSeconds)}, ${Math.round(toNumber(summary.latest.averageHeartRateBpm)) || 0} bpm.` : 'Sem ultima sessao.')}</p></div>
+          <div class="training-insight"><h3>Maior estimulo</h3><p>${escapeHtml(summary.hardest ? `${summary.hardest.modalityLabel}: carga ${Math.round(toNumber(summary.hardest.trainingLoad) || toNumber(summary.hardest.rpe) * 12 || 0)}, ${durationDisplay(summary.hardest.durationSeconds)}.` : 'Sem carga identificada.')}</p></div>
+          <div class="training-insight"><h3>Maior duracao</h3><p>${escapeHtml(summary.longest ? `${summary.longest.modalityLabel}: ${durationDisplay(summary.longest.durationSeconds)} em ${summary.longest.dateLabel}.` : 'Sem duracao identificada.')}</p></div>
+          <div class="training-insight"><h3>Proxima sessao sugerida</h3><p>${escapeHtml(summary.balanceScore < 55 ? 'Sessao leve tecnica ou mobilidade. O objetivo e absorver carga.' : 'Sessao de base: zona confortavel, tecnica limpa e registro completo no fim.')}</p></div>
+        </div>
+      `;
+
+      insightBox.innerHTML = buildTrainingInsights(summary, bodySummary).map(([title, body]) => `
+        <article class="training-insight"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>
+      `).join('') + `
+        <div class="training-modality-grid">
+          ${summary.modalityRows.map(row => `
+            <article class="training-modality">
+              <h3>${escapeHtml(row.label || exerciseTypeLabel(row.type))}</h3>
+              <strong>${row.count} sessao(oes)</strong>
+              <span>${minutesHuman(row.duration / 60)} | ${row.distance ? row.distance.toFixed(2) + ' km | ' : ''}carga ${Math.round(row.load || 0)}</span>
+            </article>
+          `).join('')}
+        </div>
+      `;
+
+      listBox.innerHTML = summary.activities.slice().reverse().map(activity => `
+        <article class="exercise-card">
+          <h3>${escapeHtml(activity.modalityLabel)} - ${escapeHtml(activity.dateLabel || 'sem data')}</h3>
+          <p>${escapeHtml(String(activity.title || '').slice(0, 220))}</p>
+          <div class="exercise-tags">
+            <span>${durationDisplay(activity.durationSeconds)}</span>
+            <span>${activity.distanceKm ? activity.distanceKm.toFixed(2) + ' km' : 'sem distancia'}</span>
+            <span>${Math.round(toNumber(activity.averageHeartRateBpm)) || 0} bpm</span>
+            <span>carga ${Math.round(toNumber(activity.trainingLoad)) || 0}</span>
+            <span>RPE ${toNumber(activity.rpe) || 'n/a'}</span>
+            <span>${escapeHtml(activity.intensity)}</span>
+            ${activity.volumeKg ? `<span>${Math.round(activity.volumeKg).toLocaleString('pt-BR')} kg volume</span>` : ''}
+            ${activity.exercises?.slice(0, 4).map(name => `<span>${escapeHtml(name)}</span>`).join('') || ''}
+          </div>
+        </article>
+      `).join('');
+    }
+
     function renderBodyDashboard() {
       const commandBox = document.getElementById('bodyCommandBox');
       const laneBox = document.getElementById('bodyLaneBox');
@@ -5440,11 +6071,11 @@
       const decision = bodyDecisionText(summary, readiness);
       const profile = computeBodyProfile(summary);
       const profileDecision = bodyProfileDecision(profile, summary);
-      const runningSummary = summarizeRunningActivities(getRunningActivities(viewEntries));
+      const trainingSummary = summarizeExerciseActivities(getExerciseActivities(viewEntries));
       const insights = buildZeppInsights(summary, readiness);
       const gaps = buildZeppDataGaps(summary);
       const latest = summary.latest || {};
-      const latestRun = runningSummary.latest;
+      const latestTraining = trainingSummary.latest;
       const metric = (label, value, hint) => `
         <div class="body-index-card">
           <small>${escapeHtml(label)}</small>
@@ -5477,9 +6108,9 @@
             <p>Peso ${profile.weight ? profile.weight.toFixed(1) + ' kg' : 'ausente'}; gordura ${profile.fat ? profile.fat.toFixed(1) + '%' : 'ausente'}; depois: ${Math.round(toNumber(latest.steps) || 0).toLocaleString('pt-BR')} passos, ${minutesHuman(toNumber(latest.activeMinutes))} ativos.</p>
           </div>
           <div class="body-decision">
-            <small>Corridas</small>
-            <strong>${runningSummary.count ? `${runningSummary.count} corrida(s) - ${runningSummary.totalDistance.toFixed(2)} km` : 'Nenhuma corrida reconhecida'}</strong>
-            <p>${runningSummary.count ? `Última: ${latestRun?.dateLabel || 'sem data'}, ${paceDisplay(latestRun?.averagePaceSecKm)}, FC ${Math.round(toNumber(latestRun?.averageHeartRateBpm)) || 0} bpm. ${runningDecision(runningSummary)}` : 'Cole JSON de treino, envie print do Zepp/Amazfit ou escreva uma frase com corrida, distância, duração, pace e FC.'}</p>
+            <small>Treino estruturado</small>
+            <strong>${trainingSummary.count ? `${trainingSummary.count} sessao(oes) - ${minutesHuman(trainingSummary.totalDuration / 60)}` : 'Nenhum treino reconhecido'}</strong>
+            <p>${trainingSummary.count ? `Ultima: ${latestTraining?.modalityLabel || 'treino'} em ${latestTraining?.dateLabel || 'sem data'}, ${durationDisplay(latestTraining?.durationSeconds)}, FC ${Math.round(toNumber(latestTraining?.averageHeartRateBpm)) || 0} bpm. ${trainingDecision(trainingSummary, summary)}` : 'Cole JSON de treino, envie print do Zepp/Amazfit ou escreva uma frase com modalidade, duracao, carga, RPE, FC ou distancia.'}</p>
           </div>
           ${insights.map(([title, body]) => `
             <div class="body-decision">
@@ -5757,6 +6388,83 @@
             { label: 'Calorias', data: runs.map(r => Math.round(toNumber(r.caloriesKcal))) },
             { label: 'Efeito aeróbico', data: runs.map(r => Number(toNumber(r.aerobicTrainingEffect).toFixed(1))) },
             { label: 'Efeito anaeróbico', data: runs.map(r => Number(toNumber(r.anaerobicTrainingEffect).toFixed(1))) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+    }
+
+    function renderExerciseCharts() {
+      if (!document.getElementById('exerciseLoadChart')) return;
+      const exercises = getExerciseActivities(viewEntries);
+      const byDay = {};
+      exercises.forEach(activity => {
+        const label = activity.dateLabel || isoToBrDate(activity.date) || 'sem data';
+        byDay[label] = byDay[label] || { sessions: 0, duration: 0, load: 0, calories: 0, distance: 0, volumeKg: 0, avgHrValues: [] };
+        byDay[label].sessions += 1;
+        byDay[label].duration += toNumber(activity.durationSeconds) / 60;
+        byDay[label].load += toNumber(activity.trainingLoad);
+        byDay[label].calories += toNumber(activity.caloriesKcal);
+        byDay[label].distance += toNumber(activity.distanceKm);
+        byDay[label].volumeKg += toNumber(activity.volumeKg);
+        if (activity.averageHeartRateBpm) byDay[label].avgHrValues.push(activity.averageHeartRateBpm);
+      });
+      const labels = Object.keys(byDay);
+      const rows = labels.map(label => byDay[label]);
+      const summary = summarizeExerciseActivities(exercises);
+
+      renderChart('exerciseLoadChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Carga de treino', data: rows.map(r => Math.round(r.load)) },
+            { label: 'Duracao (min)', data: rows.map(r => Math.round(r.duration)) },
+            { label: 'Sessoes', data: rows.map(r => r.sessions) },
+            { label: 'Calorias', data: rows.map(r => Math.round(r.calories)) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('exerciseVolumeChart', {
+        type: 'bar',
+        data: {
+          labels: summary.modalityRows.map(row => row.label || exerciseTypeLabel(row.type)),
+          datasets: [
+            { label: 'Tempo (min)', data: summary.modalityRows.map(row => Math.round(row.duration / 60)) },
+            { label: 'Distancia (km)', data: summary.modalityRows.map(row => Number(row.distance.toFixed(2))) },
+            { label: 'Volume forca (100 kg)', data: summary.modalityRows.map(row => Math.round(row.volumeKg / 100)) },
+            { label: 'Sessoes', data: summary.modalityRows.map(row => row.count) }
+          ]
+        },
+        options: baseChartOptions('')
+      });
+
+      renderChart('exerciseIntensityChart', {
+        type: 'doughnut',
+        data: {
+          labels: ['Leve', 'Moderada', 'Alta'],
+          datasets: [{
+            label: 'Sessoes',
+            data: [summary.intensity.leve || 0, summary.intensity.moderada || 0, summary.intensity.alta || 0]
+          }]
+        },
+        options: {
+          ...baseChartOptions(''),
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+
+      renderChart('exercisePerformanceChart', {
+        type: 'bar',
+        data: {
+          labels: exercises.map(activity => `${activity.modalityLabel} ${activity.dateLabel || ''}`.trim()).slice(-18),
+          datasets: [
+            { label: 'FC media', data: exercises.map(a => Math.round(toNumber(a.averageHeartRateBpm))).slice(-18) },
+            { label: 'RPE x10', data: exercises.map(a => Math.round(toNumber(a.rpe) * 10)).slice(-18) },
+            { label: 'Pace (s/km)', data: exercises.map(a => Math.round(toNumber(a.averagePaceSecKm))).slice(-18) },
+            { label: 'Densidade forca', data: exercises.map(a => Math.round(toNumber(a.strengthDensity))).slice(-18) }
           ]
         },
         options: baseChartOptions('')
@@ -9126,6 +9834,144 @@
       if (notes) parts.push(`Observação: ${notes}.`);
 
       return parts.join(' ');
+    }
+
+    function unwrapExerciseJsonItems(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (!payload || typeof payload !== 'object') return [];
+      const keys = [
+        'workouts', 'treinos', 'sessoes', 'sessions', 'activities', 'atividades',
+        'exercises', 'exercicios', 'runs', 'corridas', 'items', 'itens', 'data', 'dados'
+      ];
+      for (const key of keys) {
+        if (Array.isArray(payload[key])) return payload[key];
+      }
+      return [payload];
+    }
+
+    function exerciseActivityToRadarText(activity, index, rootMeta = {}) {
+      const parts = [
+        'Importacao JSON de exercicio estruturado.',
+        `Atividade corporal canonica: body_activity ${activity.activityType || 'other'}.`,
+        `Sessao ${index + 1}: ${activity.modalityLabel || exerciseTypeLabel(activity.activityType)}.`
+      ];
+      if (activity.date) parts.push(`Data: ${activity.date}.`);
+      if (activity.title) parts.push(`Titulo: ${activity.title}.`);
+      if (activity.durationSeconds) parts.push(`Duracao ${durationDisplay(activity.durationSeconds)}.`);
+      if (activity.distanceKm) parts.push(`Distancia ${activity.distanceKm.toFixed(2)} km.`);
+      if (activity.averagePaceSecKm) parts.push(`Pace medio ${paceDisplay(activity.averagePaceSecKm)}.`);
+      if (activity.averageSpeedKmh) parts.push(`Velocidade media ${activity.averageSpeedKmh.toFixed(2)} km/h.`);
+      if (activity.averageHeartRateBpm) parts.push(`FC media ${Math.round(activity.averageHeartRateBpm)} bpm.`);
+      if (activity.maxHeartRateBpm) parts.push(`FC maxima ${Math.round(activity.maxHeartRateBpm)} bpm.`);
+      if (activity.averageCadenceSpm) parts.push(`Cadencia media ${Math.round(activity.averageCadenceSpm)} spm.`);
+      if (activity.averageStrideCm) parts.push(`Passada media ${Math.round(activity.averageStrideCm)} cm.`);
+      if (activity.groundContactTimeMs) parts.push(`Contato com solo ${Math.round(activity.groundContactTimeMs)} ms.`);
+      if (activity.caloriesKcal) parts.push(`Calorias ${Math.round(activity.caloriesKcal)} kcal.`);
+      if (activity.trainingLoad) parts.push(`Carga de treino ${Math.round(activity.trainingLoad)}.`);
+      if (activity.aerobicTrainingEffect) parts.push(`Efeito aerobico ${activity.aerobicTrainingEffect}.`);
+      if (activity.anaerobicTrainingEffect) parts.push(`Efeito anaerobico ${activity.anaerobicTrainingEffect}.`);
+      if (activity.rpe) parts.push(`RPE ${activity.rpe}.`);
+      if (activity.sets) parts.push(`Series ${Math.round(activity.sets)}.`);
+      if (activity.reps) parts.push(`Repeticoes ${Math.round(activity.reps)}.`);
+      if (activity.volumeKg) parts.push(`Volume de forca ${Math.round(activity.volumeKg)} kg.`);
+      if (activity.exercises?.length) parts.push(`Exercicios: ${activity.exercises.slice(0, 16).join(', ')}.`);
+      if (activity.notes) parts.push(`Observacao: ${activity.notes}.`);
+      const source = jsonFirst(rootMeta, ['source', 'origem'], activity.source || 'exercise_json_import');
+      parts.push(`Fonte: ${source}.`);
+      parts.push('Objetivo de leitura: acompanhar evolucao historica, carga, recuperacao, consistencia, modalidades e decisao do proximo treino.');
+      return parts.join(' ');
+    }
+
+    function parseExerciseJsonImportInput() {
+      const raw = document.getElementById('exerciseJsonText')?.value.trim() || '';
+      if (!raw) throw new Error('Cole um JSON de exercicios antes de importar.');
+      let payload;
+      try {
+        payload = JSON.parse(raw);
+      } catch (err) {
+        throw new Error('JSON de exercicios invalido: ' + err.message);
+      }
+      const rootMeta = !Array.isArray(payload) && payload && typeof payload === 'object' ? payload : {};
+      const candidates = unwrapExerciseJsonItems(payload);
+      if (!candidates.length) throw new Error('Nenhuma sessao de treino encontrada no JSON.');
+      const entries = candidates.map((item, index) => {
+        if (typeof item === 'string') return `Importacao JSON de exercicio estruturado. Sessao ${index + 1}: ${item}. Fonte: exercise_json_import.`;
+        const activity = normalizeExerciseActivityObject(item, {}, index);
+        return activity ? exerciseActivityToRadarText(activity, index, rootMeta) : '';
+      }).filter(Boolean);
+      if (!entries.length) throw new Error('O JSON foi lido, mas nenhuma sessao virou treino importavel.');
+      return entries;
+    }
+
+    function previewExerciseJsonImport() {
+      const status = document.getElementById('exerciseJsonStatus');
+      try {
+        const entries = parseExerciseJsonImportInput();
+        const sample = entries.slice(0, 2).map((entry, i) => `${i + 1}. ${entry.slice(0, 170)}`).join(' | ');
+        status.textContent = `${entries.length} sessao(oes) detectada(s). Exemplo: ${sample}`;
+      } catch (err) {
+        status.textContent = err.message;
+        toast(err.message);
+      }
+    }
+
+    async function sendExerciseJsonImport() {
+      const status = document.getElementById('exerciseJsonStatus');
+      const button = document.getElementById('exerciseJsonButton');
+      let entries;
+      try {
+        entries = parseExerciseJsonImportInput();
+      } catch (err) {
+        status.textContent = err.message;
+        toast(err.message);
+        return;
+      }
+
+      if (entries.length > 200) {
+        status.textContent = `Foram detectadas ${entries.length} sessoes. Divida em blocos de ate 200.`;
+        toast('Importacao bloqueada: muitos exercicios de uma vez.');
+        return;
+      }
+
+      const ok = confirm(`Importar ${entries.length} sessao(oes) de exercicio para o Radar?\n\nElas serao salvas no Google Docs pelo fluxo manual atual.`);
+      if (!ok) return;
+
+      showLoading(`Importando exercicios: 0/${entries.length}`);
+      button.disabled = true;
+      let saved = 0;
+      let skipped = 0;
+
+      try {
+        for (let i = 0; i < entries.length; i += 1) {
+          const text = entries[i];
+          const duplicate = detectManualDuplicate(text);
+          if (duplicate.exact) {
+            skipped += 1;
+            continue;
+          }
+          const response = await fetch('/api/manual-entry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, from: 'exercise_json_import' })
+          });
+          const data = await response.json();
+          if (!data || !data.ok) throw new Error((data && data.error) || `Falha no exercicio ${i + 1}.`);
+          if (data.duplicateIgnored) skipped += 1;
+          else saved += 1;
+          showLoading(`Importando exercicios: ${i + 1}/${entries.length}`);
+        }
+        document.getElementById('exerciseJsonText').value = '';
+        status.textContent = `Importacao concluida: ${saved} salva(s), ${skipped} ignorada(s).`;
+        toast(`Exercicios importados: ${saved} sessao(oes) salva(s).`);
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Erro na importacao de exercicios: ' + err.message;
+        toast('Erro na importacao de exercicios: ' + err.message);
+      } finally {
+        button.disabled = false;
+        hideLoading();
+      }
     }
 
     function previewJsonImport() {

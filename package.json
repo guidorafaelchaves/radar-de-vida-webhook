@@ -1,7 +1,7 @@
 {
   "name": "radar-whatsapp-webhook",
   "version": "0.1.0",
-  "description": "Radar de Vida v8.0 - Life Data Engine foundation",
+  "description": "Radar de Vida v8.1 - Training Intelligence",
   "type": "module",
   "main": "server.js",
   "scripts": {
