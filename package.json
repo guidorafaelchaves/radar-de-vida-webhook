@@ -1,7 +1,7 @@
 {
   "name": "radar-whatsapp-webhook",
   "version": "0.1.0",
-  "description": "Radar de Vida v8.1 - Training Intelligence",
+  "description": "Radar de Vida v8.2 - Running Performance Intelligence",
   "type": "module",
   "main": "server.js",
   "scripts": {

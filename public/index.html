@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Radar de Vida v8.1 — Training Intelligence</title>
-  <meta name="application-name" content="Radar de Vida v8.1" />
-  <meta name="radar-version" content="v8.1" />
+  <title>Radar de Vida v8.2 — Running Performance Intelligence</title>
+  <meta name="application-name" content="Radar de Vida v8.2" />
+  <meta name="radar-version" content="v8.2" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -3018,7 +3018,7 @@
   <div class="app">
     <header class="topbar">
       <section class="hero market-hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v8.1 — Training Intelligence</div>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v8.2 — Running Performance Intelligence</div>
         <div class="market-topline">
           <div class="market-brand">
             <small>Radar Life Exchange</small>
@@ -3570,6 +3570,7 @@
         <div class="body-subnav">
           <button class="primary-subtab" onclick="scrollBodySection('bodyProfileSection')">Perfil corporal</button>
           <button onclick="scrollBodySection('bodyTrainingSection')">Exercicios</button>
+          <button onclick="scrollBodySection('bodyRunningSection')">Corrida</button>
           <button onclick="scrollBodySection('bodyExerciseImportSection')">Importar JSON</button>
           <button onclick="scrollBodySection('bodyExerciseChartsSection')">Graficos</button>
           <button onclick="scrollBodySection('bodyExerciseHistorySection')">Historico</button>
@@ -3590,6 +3591,18 @@
         </div>
         <div id="trainingDashboardBox" class="training-center">
           <div class="empty">Aguardando exercícios importados por JSON, print, frase manual ou Health Connect.</div>
+        </div>
+      </section>
+
+      <section id="bodyRunningSection" class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2>Corrida / Performance</h2>
+            <p class="hint">Area dedicada para corridas importadas por JSON: pace, FC, eficiencia aerobica, carga, mecanica e evolucao historica.</p>
+          </div>
+        </div>
+        <div id="runningPerformanceBox" class="running-command">
+          <div class="empty">Aguardando corridas estruturadas. Importe JSON com distance_km, duration, pace, heart rate, cadence, stride, calories e training_load.</div>
         </div>
       </section>
 
@@ -3643,7 +3656,7 @@
         </div>
       </section>
 
-      <section id="bodyExerciseHistorySection" class="panel" style="margin-top:16px;">
+      <section id="bodyMapSection" class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
             <h2>Mapa corporal do periodo</h2>
@@ -3655,7 +3668,7 @@
         </div>
       </section>
 
-      <section id="bodyExerciseChartsSection" class="panel" style="margin-top:16px;">
+      <section id="bodyExerciseHistorySection" class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
             <h2>Histórico de exercícios</h2>
@@ -3667,7 +3680,7 @@
         </div>
       </section>
 
-      <section class="panel" style="margin-top:16px;">
+      <section id="bodyExerciseChartsSection" class="panel" style="margin-top:16px;">
         <div class="panel-header">
           <div>
             <h2>Graficos do corpo</h2>
@@ -3698,6 +3711,22 @@
           <div class="chart-box">
             <div class="chart-title">Qualidade da captura Health Connect</div>
             <canvas id="bodyDataDepthChart"></canvas>
+          </div>
+          <div class="chart-box full">
+            <div class="chart-title">Corrida: pace, frequência cardíaca e eficiência aeróbica</div>
+            <canvas id="runningPaceHrChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Corrida: distância e duração</div>
+            <canvas id="runningDistanceChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Corrida: cadência, passada e contato com solo</div>
+            <canvas id="runningMechanicsChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Corrida: carga, calorias e efeito de treino</div>
+            <canvas id="runningLoadChart"></canvas>
           </div>
           <div class="chart-box full">
             <div class="chart-title">Evolução de treino: carga, duração e consistência</div>
@@ -3783,7 +3812,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    const APP_DISPLAY_TITLE = 'Radar de Vida v8.1 — Training Intelligence';
+    const APP_DISPLAY_TITLE = 'Radar de Vida v8.2 — Running Performance Intelligence';
     document.title = APP_DISPLAY_TITLE;
 
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
@@ -3877,6 +3906,8 @@
       } else if (activeView === 'body') {
         renderBodyDashboard();
         renderTrainingDashboard();
+        renderRunningPerformance();
+        renderRunningCharts();
         renderExerciseCharts();
       } else if (rawData && allEntries.length) {
         renderCharts();
@@ -3987,6 +4018,7 @@
       renderZeppDashboard();
       renderBodyDashboard();
       renderTrainingDashboard();
+      renderRunningPerformance();
       renderRecurringIntelligence();
       renderComparison();
       renderMonthReading();
@@ -4001,6 +4033,7 @@
         renderCharts();
       } else if (activeView === 'body') {
         renderBodyCharts();
+        renderRunningCharts();
         renderExerciseCharts();
       }
     }
@@ -5435,11 +5468,11 @@
       const durationSeconds = firstRunningDuration(text, [
         /dura[cç][aã]o[^0-9]{0,12}(\d{1,2}:\d{2}(?::\d{2})?)/i,
         /tempo[^0-9]{0,12}(\d{1,2}:\d{2}(?::\d{2})?)/i,
-        /(\d+h\d{1,2}min|\d+\s*min)/i
+        /(\d+\s*h\s*\d{1,2}\s*min(?:\s*\d{1,2}\s*s)?|\d+\s*min\s*\d{1,2}\s*s|\d+\s*min)/i
       ]);
       const averagePaceSecKm = firstRunningPace(text, [
         /pace(?:\s*m[eé]dio)?[^0-9]{0,12}(\d{1,2}:\d{2})/i,
-        /ritmo[^0-9]{0,12}(\d{1,2}:\d{2})/i
+        /ritmo(?:\s*m[eé]dio)?[^0-9]{0,18}(\d{1,2}:\d{2})/i
       ]);
       const run = normalizeRunningActivityObject({
         activity_type: 'running',
@@ -5690,6 +5723,103 @@
         card('Frequência cardíaca', `${hrDelta < 0 ? '' : '+'}${Math.round(hrDelta)} bpm`, hrDelta <= 0 ? 'Custo cardíaco menor ou estável.' : 'Custo cardíaco subiu; observe recuperação.'),
         card('Eficiência aeróbica', `${effDelta >= 0 ? '+' : ''}${effDelta.toFixed(4)}`, effDelta > 0 ? 'Mais velocidade por batimento.' : 'Menos velocidade por batimento nessa comparação.')
       ].join('');
+    }
+
+    function runningCoachCards(summary) {
+      if (!summary.count) return [
+        ['Sem base', 'Importe uma corrida com distancia, duracao, pace e FC para criar a primeira linha de base.']
+      ];
+      const latest = summary.latest;
+      const cards = [
+        ['Leitura tecnica', runningDecision(summary)],
+        ['Base aerobica', summary.avgHr ? `FC media do periodo: ${Math.round(summary.avgHr)} bpm. O Radar acompanha se voce fica mais rapido com o mesmo custo cardiaco.` : 'Ainda falta FC media para medir custo cardiaco.'],
+        ['Economia de corrida', summary.avgCadence ? `Cadencia media detectada: ${Math.round(summary.avgCadence)} spm. Quando houver passada e contato com solo, o painel mede mecanica.` : 'Cadencia, passada e contato com solo melhoram a leitura tecnica quando vierem no JSON.'],
+        ['Proximo treino', summary.count === 1 ? 'Repita uma distancia parecida em condicao semelhante. A evolucao nasce da comparacao, nao do recorde isolado.' : 'Alterne uma corrida confortavel com uma sessao curta de tecnica ou progressao leve.']
+      ];
+      if (latest?.trainingLoad) cards.push(['Controle de carga', `Ultima carga registrada: ${Math.round(latest.trainingLoad)}. Evite aumentar distancia, pace e carga na mesma semana.`]);
+      return cards;
+    }
+
+    function renderRunningPerformance() {
+      const box = document.getElementById('runningPerformanceBox');
+      if (!box) return;
+      const runs = getRunningActivities(viewEntries);
+      const summary = summarizeRunningActivities(runs);
+
+      if (!summary.count) {
+        box.innerHTML = `
+          <div class="running-hero">
+            <small>Running command center</small>
+            <h2>0</h2>
+            <p>Nenhuma corrida estruturada detectada neste periodo. Use o importador JSON de exercicios ou o importador geral com campos como distance_km, duration_seconds, average_pace_display, average_heart_rate_bpm, calories_kcal e training_load.</p>
+          </div>
+          <div class="running-side">
+            <article class="running-pr"><strong>Formato minimo</strong><b>5 campos</b><span>data, distancia, duracao, pace, FC media</span></article>
+            <article class="running-pr"><strong>Formato ideal</strong><b>10+ campos</b><span>adicione cadencia, passada, contato solo, calorias, carga e efeitos de treino</span></article>
+          </div>
+        `;
+        return;
+      }
+
+      const latest = summary.latest;
+      const paceImprovement = summary.runs.length >= 2
+        ? toNumber(summary.runs.at(-2).averagePaceSecKm) - toNumber(latest.averagePaceSecKm)
+        : 0;
+      const hrDelta = summary.runs.length >= 2
+        ? toNumber(latest.averageHeartRateBpm) - toNumber(summary.runs.at(-2).averageHeartRateBpm)
+        : 0;
+      const pr = (label, value, hint) => `
+        <article class="running-pr">
+          <strong>${escapeHtml(label)}</strong>
+          <b>${escapeHtml(value)}</b>
+          <span>${escapeHtml(hint)}</span>
+        </article>
+      `;
+
+      box.innerHTML = `
+        <div class="running-hero">
+          <small>Running command center</small>
+          <h2>${summary.totalDistance.toFixed(2)} km</h2>
+          <p><strong>${escapeHtml(summary.count === 1 ? 'Linha de base criada' : 'Evolucao comparavel')}</strong>. ${escapeHtml(runningDecision(summary))}</p>
+          <div class="running-hero-grid">
+            <div class="running-tile"><small>Corridas</small><strong>${summary.count}</strong></div>
+            <div class="running-tile"><small>Tempo total</small><strong>${durationDisplay(summary.totalDuration)}</strong></div>
+            <div class="running-tile"><small>Pace medio</small><strong>${paceDisplay(summary.avgPace)}</strong></div>
+            <div class="running-tile"><small>FC media</small><strong>${Math.round(summary.avgHr || 0)} bpm</strong></div>
+          </div>
+        </div>
+        <div class="running-side">
+          ${pr('Ultima corrida', `${toNumber(latest.distanceKm).toFixed(2)} km`, `${latest.dateLabel || 'sem data'} | ${durationDisplay(latest.durationSeconds)} | ${paceDisplay(latest.averagePaceSecKm)}`)}
+          ${pr('Melhor pace', paceDisplay(summary.fastest?.averagePaceSecKm), summary.fastest?.dateLabel || 'sem data')}
+          ${pr('Maior distancia', `${toNumber(summary.longest?.distanceKm).toFixed(2)} km`, summary.longest?.dateLabel || 'sem data')}
+          ${pr('Eficiencia aerobica', summary.bestEfficiency ? runningAerobicEfficiency(summary.bestEfficiency).toFixed(4) : 'n/a', 'velocidade media / FC media')}
+          ${summary.runs.length >= 2 ? pr('Delta vs anterior', `${paceImprovement >= 0 ? '-' : '+'}${Math.abs(Math.round(paceImprovement))} s/km`, `FC ${hrDelta >= 0 ? '+' : ''}${Math.round(hrDelta)} bpm`) : ''}
+          ${pr('Carga total', String(Math.round(summary.totalLoad || 0)), 'training load do periodo')}
+        </div>
+        <div class="training-insight-grid" style="grid-column:1/-1">
+          ${runningCoachCards(summary).map(([title, body]) => `<article class="training-insight"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>`).join('')}
+        </div>
+        <div class="exercise-list" style="grid-column:1/-1">
+          ${summary.runs.slice().reverse().map(run => `
+            <article class="exercise-card">
+              <h3>Corrida - ${escapeHtml(run.dateLabel || 'sem data')}</h3>
+              <p>${escapeHtml(String(run.title || '').slice(0, 240))}</p>
+              <div class="exercise-tags">
+                <span>${toNumber(run.distanceKm).toFixed(2)} km</span>
+                <span>${durationDisplay(run.durationSeconds)}</span>
+                <span>${paceDisplay(run.averagePaceSecKm)}</span>
+                <span>${Math.round(toNumber(run.averageHeartRateBpm)) || 0} bpm medio</span>
+                <span>${Math.round(toNumber(run.maxHeartRateBpm)) || 0} bpm pico</span>
+                <span>${Math.round(toNumber(run.caloriesKcal)) || 0} kcal</span>
+                <span>carga ${Math.round(toNumber(run.trainingLoad)) || 0}</span>
+                ${run.averageCadenceSpm ? `<span>cad ${Math.round(run.averageCadenceSpm)} spm</span>` : ''}
+                ${run.averageStrideCm ? `<span>passada ${Math.round(run.averageStrideCm)} cm</span>` : ''}
+                ${run.groundContactTimeMs ? `<span>solo ${Math.round(run.groundContactTimeMs)} ms</span>` : ''}
+              </div>
+            </article>
+          `).join('')}
+        </div>
+      `;
     }
 
     function normalizeExerciseType(value = '') {
