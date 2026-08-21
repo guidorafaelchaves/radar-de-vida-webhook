@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Radar de Vida v8.2 — Running Performance Intelligence</title>
-  <meta name="application-name" content="Radar de Vida v8.2" />
-  <meta name="radar-version" content="v8.2" />
+  <title>Radar de Vida v8.3 — Sparse Body Charts</title>
+  <meta name="application-name" content="Radar de Vida v8.3" />
+  <meta name="radar-version" content="v8.3" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -3018,7 +3018,7 @@
   <div class="app">
     <header class="topbar">
       <section class="hero market-hero">
-        <div class="eyebrow"><span class="dot"></span> Radar de Vida v8.2 — Running Performance Intelligence</div>
+        <div class="eyebrow"><span class="dot"></span> Radar de Vida v8.3 — Sparse Body Charts</div>
         <div class="market-topline">
           <div class="market-brand">
             <small>Radar Life Exchange</small>
@@ -3812,7 +3812,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    const APP_DISPLAY_TITLE = 'Radar de Vida v8.2 — Running Performance Intelligence';
+    const APP_DISPLAY_TITLE = 'Radar de Vida v8.3 — Sparse Body Charts';
     document.title = APP_DISPLAY_TITLE;
 
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwELBGVWCkdc9IS5BEpGw7O1-oSRWkMIawcyvEDHTXbeLoAY6p34gcn8RlLvksxT87f/exec';
@@ -6367,26 +6367,47 @@
       };
     }
 
+    function chartMetricOrNull(row, field) {
+      if (!row || !row.snapshotCount) return null;
+      const value = toNumber(row[field]);
+      return value > 0 ? value : null;
+    }
+
+    function chartScoreOrNull(row, field) {
+      if (!row || !row.snapshotCount) return null;
+      const value = toNumber(row[field]);
+      return value > 0 ? Math.round(value) : null;
+    }
+
+    function manualMetricOrNull(row, field) {
+      const value = toNumber(row?.[field]);
+      return value > 0 ? value : null;
+    }
+
+    function bodyCompositionScoreOrNull(row) {
+      if (!row || !row.snapshotCount) return null;
+      const weight = toNumber(row.weightKg);
+      const fat = toNumber(row.bodyFatPercent);
+      const vo2 = toNumber(row.vo2Max);
+      if (!weight && !fat && !vo2) return null;
+      return Math.round(clamp((weight ? 35 : 0) + (fat ? 35 : 0) + (vo2 ? 20 : 0) + (row.dataDepthScore ? 10 : 0)));
+    }
+
     function renderBodyCharts() {
       if (!document.getElementById('bodyIndexChart')) return;
       const { labels, rows, byDate } = getBodyChartRows();
-      const caloriesIn = byDate.map(r => r.calorias_ingeridas);
-      const protein = byDate.map(r => r.proteina_g);
+      const caloriesIn = byDate.map(r => manualMetricOrNull(r, 'calorias_ingeridas'));
+      const protein = byDate.map(r => manualMetricOrNull(r, 'proteina_g'));
 
       renderChart('bodyIndexChart', {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: 'Peso (kg)', data: rows.map(r => r.weightKg) },
-            { label: 'Gordura corporal (%)', data: rows.map(r => r.bodyFatPercent) },
-            { label: 'VO2 max', data: rows.map(r => r.vo2Max) },
-            { label: 'Qualidade composicao', data: rows.map(r => {
-              const weight = toNumber(r.weightKg);
-              const fat = toNumber(r.bodyFatPercent);
-              const vo2 = toNumber(r.vo2Max);
-              return Math.round(clamp((weight ? 35 : 0) + (fat ? 35 : 0) + (vo2 ? 20 : 0) + (r.dataDepthScore ? 10 : 0)));
-            }) }
+            { label: 'Peso (kg)', data: rows.map(r => chartMetricOrNull(r, 'weightKg')) },
+            { label: 'Gordura corporal (%)', data: rows.map(r => chartMetricOrNull(r, 'bodyFatPercent')) },
+            { label: 'VO2 max', data: rows.map(r => chartMetricOrNull(r, 'vo2Max')) },
+            { label: 'Qualidade composicao', data: rows.map(bodyCompositionScoreOrNull) }
           ]
         },
         options: baseChartOptions('')
@@ -6397,11 +6418,11 @@
         data: {
           labels,
           datasets: [
-            { label: 'Recuperacao', data: rows.map(r => r.recoveryScore) },
-            { label: 'Carga corporal', data: rows.map(r => r.loadScore) },
-            { label: 'Combustivel', data: rows.map(r => r.fuelScore) },
-            { label: 'Cardio', data: rows.map(r => r.cardioScore) },
-            { label: 'Dados liberados', data: rows.map(r => r.dataDepthScore) }
+            { label: 'Recuperacao', data: rows.map(r => chartScoreOrNull(r, 'recoveryScore')) },
+            { label: 'Carga corporal', data: rows.map(r => chartScoreOrNull(r, 'loadScore')) },
+            { label: 'Combustivel', data: rows.map(r => chartScoreOrNull(r, 'fuelScore')) },
+            { label: 'Cardio', data: rows.map(r => chartScoreOrNull(r, 'cardioScore')) },
+            { label: 'Dados liberados', data: rows.map(r => chartScoreOrNull(r, 'dataDepthScore')) }
           ]
         },
         options: baseChartOptions('')
@@ -6412,9 +6433,9 @@
         data: {
           labels,
           datasets: [
-            { label: 'Sono total', data: rows.map(r => r.sleepMinutes) },
-            { label: 'Sono profundo', data: rows.map(r => r.deepSleepMinutes) },
-            { label: 'Sono REM', data: rows.map(r => r.remSleepMinutes) }
+            { label: 'Sono total', data: rows.map(r => chartMetricOrNull(r, 'sleepMinutes')) },
+            { label: 'Sono profundo', data: rows.map(r => chartMetricOrNull(r, 'deepSleepMinutes')) },
+            { label: 'Sono REM', data: rows.map(r => chartMetricOrNull(r, 'remSleepMinutes')) }
           ]
         },
         options: baseChartOptions('min')
@@ -6425,10 +6446,10 @@
         data: {
           labels,
           datasets: [
-            { label: 'FC media', data: rows.map(r => r.avgHeartRate) },
-            { label: 'FC pico', data: rows.map(r => r.maxHeartRate) },
-            { label: 'HRV RMSSD', data: rows.map(r => r.hrvRmssdMs) },
-            { label: 'Respiracao', data: rows.map(r => r.respiratoryRate) }
+            { label: 'FC media', data: rows.map(r => chartMetricOrNull(r, 'avgHeartRate')) },
+            { label: 'FC pico', data: rows.map(r => chartMetricOrNull(r, 'maxHeartRate')) },
+            { label: 'HRV RMSSD', data: rows.map(r => chartMetricOrNull(r, 'hrvRmssdMs')) },
+            { label: 'Respiracao', data: rows.map(r => chartMetricOrNull(r, 'respiratoryRate')) }
           ]
         },
         options: baseChartOptions('')
@@ -6439,9 +6460,9 @@
         data: {
           labels,
           datasets: [
-            { label: 'Agua HC (L)', data: rows.map(r => Number(r.hydrationLiters.toFixed(1))) },
-            { label: 'Proteina HC (g)', data: rows.map(r => r.nutritionProteinGrams) },
-            { label: 'Calorias HC', data: rows.map(r => r.nutritionCalories) },
+            { label: 'Agua HC (L)', data: rows.map(r => chartMetricOrNull(r, 'hydrationLiters') ? Number(chartMetricOrNull(r, 'hydrationLiters').toFixed(1)) : null) },
+            { label: 'Proteina HC (g)', data: rows.map(r => chartMetricOrNull(r, 'nutritionProteinGrams')) },
+            { label: 'Calorias HC', data: rows.map(r => chartMetricOrNull(r, 'nutritionCalories')) },
             { label: 'Calorias manuais/IA', data: caloriesIn },
             { label: 'Proteina manual/IA', data: protein }
           ]
@@ -6454,10 +6475,10 @@
         data: {
           labels,
           datasets: [
-            { label: 'Profundidade dos dados', data: rows.map(r => r.dataDepthScore) },
-            { label: 'Snapshots', data: rows.map(r => r.snapshotCount) },
-            { label: 'VO2 max', data: rows.map(r => r.vo2Max) },
-            { label: 'Gordura corporal (%)', data: rows.map(r => r.bodyFatPercent) }
+            { label: 'Profundidade dos dados', data: rows.map(r => chartScoreOrNull(r, 'dataDepthScore')) },
+            { label: 'Snapshots', data: rows.map(r => chartMetricOrNull(r, 'snapshotCount')) },
+            { label: 'VO2 max', data: rows.map(r => chartMetricOrNull(r, 'vo2Max')) },
+            { label: 'Gordura corporal (%)', data: rows.map(r => chartMetricOrNull(r, 'bodyFatPercent')) }
           ]
         },
         options: baseChartOptions('')
@@ -9539,6 +9560,7 @@
         responsive: true,
         maintainAspectRatio: false,
         resizeDelay: 150,
+        spanGaps: true,
         plugins: {
           legend: {
             position: 'bottom',

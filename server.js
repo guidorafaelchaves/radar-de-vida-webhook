@@ -1,5 +1,5 @@
 /**
- * Radar de Vida v8.2 — server.js
+ * Radar de Vida v8.3 — server.js
  * Render + Express + Google Docs Apps Script + Radar Visual Documental
  *
  * Mantém tudo que já está funcionando:
@@ -47,8 +47,8 @@ const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
 const PORT = process.env.PORT || 3000;
-const RADAR_APP_VERSION = 'v8.2';
-const RADAR_APP_LABEL = `Radar de Vida ${RADAR_APP_VERSION} - Running Performance Intelligence`;
+const RADAR_APP_VERSION = 'v8.3';
+const RADAR_APP_LABEL = `Radar de Vida ${RADAR_APP_VERSION} - Sparse Body Charts`;
 
 function pickOpenAiTextModelInfo() {
   const explicit = String(process.env.OPENAI_TEXT_MODEL || '').trim();
