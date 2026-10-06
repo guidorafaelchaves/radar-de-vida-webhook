@@ -3765,7 +3765,7 @@
         <div class="panel-header">
           <div>
             <h2>Missoes</h2>
-            <p class="hint">Missões extraídas das frases do WhatsApp: criação, sucesso, falha, pausa e desdobramentos.</p>
+            <p class="hint">Missões extraídas das frases do WhatsApp: criação, sucesso, falha, pausa e desdobramentos. Todas permanecem aqui, independentemente do mês, até serem excluídas por você.</p>
           </div>
           <button class="secondary" onclick="loadData()">Atualizar missoes</button>
         </div>
@@ -3782,7 +3782,7 @@
           <article class="weird-card">
             <small>Missoes ativas</small>
             <strong id="missionsActiveCount">0</strong>
-            <p>Em andamento no periodo selecionado.</p>
+            <p>Em andamento em todo o histórico.</p>
           </article>
           <article class="weird-card">
             <small>Taxa de conclusão</small>
@@ -3792,7 +3792,7 @@
           <article class="weird-card">
             <small>Momentum</small>
             <strong id="missionsAvgProgress">0%</strong>
-            <p>Força operacional das missões no período.</p>
+            <p>Força operacional de todas as missões registradas.</p>
           </article>
           <article class="weird-card">
             <small>Ultimo movimento</small>
@@ -6950,7 +6950,8 @@
       const box = document.getElementById('missionsBox');
       if (!box) return;
 
-      const missions = buildMissions(viewEntries);
+      // Missões são históricas e independentes do filtro mensal da visão geral.
+      const missions = buildMissions(allEntries);
       currentMissions = missions;
       const active = missions.filter(m => m.status !== 'concluida');
       const done = missions.filter(m => m.status === 'concluida');
@@ -6967,7 +6968,7 @@
       document.getElementById('missionsLastUpdate').textContent = latest ? formatEntryDateLine(latest) : '-';
 
       if (!missions.length) {
-        box.innerHTML = '<div class="empty">Nenhuma missao encontrada no periodo selecionado.</div>';
+        box.innerHTML = '<div class="empty">Nenhuma missao encontrada no historico.</div>';
         return;
       }
 
@@ -7605,7 +7606,8 @@
       const box = document.getElementById('missionsBox');
       if (!box) return;
 
-      const missions = buildMissions(viewEntries);
+      // Missões são históricas e independentes do filtro mensal da visão geral.
+      const missions = buildMissions(allEntries);
       currentMissions = missions;
       const active = missions.filter(m => ['ativa', 'em_progresso'].includes(m.status));
       const done = missions.filter(m => m.status === 'concluida');
