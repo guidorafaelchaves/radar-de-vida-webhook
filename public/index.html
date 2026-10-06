@@ -3921,6 +3921,55 @@
       }, 30);
     }
 
+
+    const MISSION_DELETE_MARKER = '[[RDV_MISSION_DELETE_V1]]';
+
+    function parseMissionDeleteTombstone(entry) {
+      const raw = String(entry && entry.entrada_original || '');
+      const sender = String(entry && entry.remetente || '').trim().toLowerCase();
+      const source = String(entry && entry.origem || '').trim().toLowerCase();
+
+      const isTombstone =
+        raw.includes(MISSION_DELETE_MARKER) ||
+        sender === 'mission_delete_panel' ||
+        source === 'render_mission_delete';
+
+      if (!isTombstone) return null;
+
+      const idsMatch = raw.match(/^entry_ids\s*=\s*(.+)$/mi);
+      const keyMatch = raw.match(/^mission_key\s*=\s*(.*)$/mi);
+      const titleMatch = raw.match(/^mission_title\s*=\s*(.*)$/mi);
+      const entryIds = idsMatch
+        ? unique(idsMatch[1].split(',').map(value => value.trim()).filter(Boolean))
+        : [];
+
+      return {
+        entryIds,
+        missionKey: keyMatch ? keyMatch[1].trim() : '',
+        missionTitle: titleMatch ? titleMatch[1].trim() : ''
+      };
+    }
+
+    function applyMissionDeletionTombstones(entries) {
+      const deletedEntryIds = new Set();
+      const tombstoneEntryIds = new Set();
+
+      (entries || []).forEach(entry => {
+        const tombstone = parseMissionDeleteTombstone(entry);
+        if (!tombstone) return;
+
+        if (entry && entry.id) tombstoneEntryIds.add(String(entry.id));
+        tombstone.entryIds.forEach(id => deletedEntryIds.add(String(id)));
+      });
+
+      return (entries || []).filter(entry => {
+        const id = String(entry && entry.id || '');
+        if (tombstoneEntryIds.has(id)) return false;
+        if (deletedEntryIds.has(id)) return false;
+        return !parseMissionDeleteTombstone(entry);
+      });
+    }
+
     async function loadData() {
       showLoading('Lendo Google Docs...');
       try {
@@ -3932,7 +3981,8 @@
           throw new Error((data && data.error) || 'Resposta inválida do Apps Script.');
         }
 
-        allEntries = normalizeEntries(data.entries || []);
+        const normalizedEntries = normalizeEntries(data.entries || []);
+        allEntries = applyMissionDeletionTombstones(normalizedEntries);
         availableMonths = buildAvailableMonths(allEntries);
 
         setupMonthSelector();
@@ -7372,34 +7422,39 @@
         return;
       }
 
-      const mode = askDeleteMode(`Excluir missao: ${mission.title}`);
-      if (!mode) return;
-
       const ok = confirm(
-        `Confirmar exclusao da missao?\n\n${mission.title}\n\n` +
-        `Modo: ${deleteModeLabel(mode)}.\n` +
-        `Registros relacionados: ${ids.length}.`
+        `Excluir esta missao do Radar?\n\n${mission.title}\n\n` +
+        `A missao e seus ${ids.length} registro(s) relacionados deixarao de aparecer no painel.\n` +
+        'O diario bruto fica preservado como historico de seguranca.'
       );
       if (!ok) return;
 
       showLoading('Excluindo missao...');
       try {
-        for (const id of ids) {
-          const response = await fetch('/api/delete-entry', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, mode })
-          });
+        const response = await fetch('/api/delete-mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            missionKey: mission.key,
+            missionTitle: mission.title,
+            entryIds: ids
+          })
+        });
 
-          const data = await response.json();
+        const data = await response.json();
 
-          if (!data || !data.ok) {
-            throw new Error((data && data.error) || `Falha ao excluir registro ${id}.`);
-          }
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || 'Falha ao excluir missao.');
         }
 
-        toast(mode === 'permanent' ? 'Missao apagada do Google Docs.' : 'Missao excluida do painel.');
+        const deletedIds = new Set(ids.map(String));
+        allEntries = allEntries.filter(entry => !deletedIds.has(String(entry.id || '')));
+        currentMissions = currentMissions.filter(item => item.key !== mission.key);
+        applySelectedMonth();
+
+        toast('Missao excluida do Radar.');
         await loadData();
+        switchView('missions');
       } catch (err) {
         console.error(err);
         toast('Erro ao excluir missao: ' + err.message);
