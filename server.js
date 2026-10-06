@@ -2798,7 +2798,8 @@ app.get('/', (req, res) => {
       lifeDataPlan: '/api/life-data/plan',
       zeppHealthSnapshot: '/api/zepp-health-snapshot',
       zeppTextEntry: '/api/zepp-text-entry',
-      deleteEntry: '/api/delete-entry'
+      deleteEntry: '/api/delete-entry',
+      deleteMission: '/api/delete-mission'
     },
     config: {
       hasGoogleDocsApiUrl: Boolean(GOOGLE_DOCS_API_URL),
@@ -3248,6 +3249,112 @@ app.post('/api/delete-entry', async (req, res) => {
       id,
       mode,
       action
+    });
+  }
+});
+
+
+app.post('/api/delete-mission', async (req, res) => {
+  if (!requireRadarApiToken(req, res)) return;
+
+  const missionKey = cleanText(req.body.missionKey || req.body.key);
+  const missionTitle = cleanText(req.body.missionTitle || req.body.title);
+  const entryIds = uniqueClean(
+    Array.isArray(req.body.entryIds)
+      ? req.body.entryIds.map(cleanText).filter(Boolean)
+      : []
+  );
+
+  if (!missionKey && !missionTitle) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Informe missionKey ou missionTitle.'
+    });
+  }
+
+  if (!entryIds.length) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Nenhum registro relacionado foi informado para exclusao.'
+    });
+  }
+
+  const deletedAt = nowIso();
+  const tombstoneText = [
+    '[[RDV_MISSION_DELETE_V1]]',
+    `mission_key=${missionKey}`,
+    `mission_title=${missionTitle.replace(/[\r\n]+/g, ' ').slice(0, 180)}`,
+    `entry_ids=${entryIds.join(',')}`,
+    `deleted_at=${deletedAt}`
+  ].join('\n');
+
+  try {
+    const tombstoneResult = await sendTextToAppsScript({
+      text: tombstoneText,
+      from: 'mission_delete_panel',
+      profileName: 'Painel Missoes',
+      source: 'render_mission_delete',
+      raw: {
+        missionKey,
+        missionTitle,
+        entryIds,
+        deletedAt
+      }
+    });
+
+    if (!tombstoneResult || !tombstoneResult.ok) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Nao foi possivel persistir o marcador de exclusao da missao.',
+        missionKey,
+        missionTitle,
+        tombstoneResult
+      });
+    }
+
+    const cleanup = [];
+    for (const id of entryIds) {
+      try {
+        const result = await callAppsScriptAction({
+          action: 'delete',
+          id,
+          mode: 'system'
+        });
+        cleanup.push({
+          id,
+          ok: Boolean(result && result.ok),
+          result
+        });
+      } catch (err) {
+        cleanup.push({
+          id,
+          ok: false,
+          error: err.message
+        });
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      missionKey,
+      missionTitle,
+      entryIds,
+      deletedAt,
+      tombstonePersisted: true,
+      cleanup: {
+        attempted: cleanup.length,
+        succeeded: cleanup.filter(item => item.ok).length,
+        failed: cleanup.filter(item => !item.ok).length,
+        results: cleanup
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message,
+      missionKey,
+      missionTitle,
+      entryIds
     });
   }
 });
